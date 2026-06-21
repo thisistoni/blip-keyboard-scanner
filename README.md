@@ -2,6 +2,8 @@
 
 Blip is an iOS keyboard scanner for company workflows. It adds a custom keyboard with a scan button, opens an in-app barcode or QR scanner, then inserts the result back into the original text field.
 
+![Blip app icon](Branding/AppIcon/blip-icon-source.png)
+
 ## Current Capabilities
 
 - Custom iOS keyboard extension with a familiar keyboard-style UI.
