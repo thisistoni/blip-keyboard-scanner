@@ -12,6 +12,12 @@ struct ScannerScreen: View {
     @AppStorage(SharedKeyboardState.Keys.scanFormatProfile, store: SharedKeyboardState.appStorageDefaults)
     private var scanFormatProfileRawValue = SharedKeyboardState.scanFormatProfile.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.scannerZoomLevel, store: SharedKeyboardState.appStorageDefaults)
+    private var scannerZoomLevelRawValue = SharedKeyboardState.scannerZoomLevel.rawValue
+
+    @AppStorage(SharedKeyboardState.Keys.scannerScanArea, store: SharedKeyboardState.appStorageDefaults)
+    private var scannerScanAreaRawValue = SharedKeyboardState.scannerScanArea.rawValue
+
     @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
     private var playScanSound = SharedKeyboardState.playScanSound
 
@@ -30,6 +36,14 @@ struct ScannerScreen: View {
 
     private var scanFormatProfile: ScanFormatProfile {
         ScanFormatProfile(rawValue: scanFormatProfileRawValue) ?? .allSupported
+    }
+
+    private var scannerZoomLevel: ScannerZoomLevel {
+        ScannerZoomLevel(rawValue: scannerZoomLevelRawValue) ?? .x1
+    }
+
+    private var scannerScanArea: ScannerScanArea {
+        ScannerScanArea(rawValue: scannerScanAreaRawValue) ?? .fullFrame
     }
 
     var body: some View {
@@ -97,9 +111,11 @@ struct ScannerScreen: View {
                 ScannerPresentation(
                     session: session,
                     playScanSound: playScanSound,
+                    defaultZoomLevel: scannerZoomLevel,
+                    scanArea: scannerScanArea,
                     flashlightModeRawValue: $scannerFlashlightModeRawValue
-                ) { code in
-                    handleScannedCode(code, for: session)
+                ) { result in
+                    handleScannedCode(result, for: session)
                 } onCancel: {
                     handleScannerCancel(for: session)
                 }
@@ -121,17 +137,29 @@ struct ScannerScreen: View {
         )
     }
 
-    private func handleScannedCode(_ code: String, for session: ScannerSession) {
-        let cleanedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanedCode.isEmpty else { return }
+    private func handleScannedCode(_ result: ScannerCodeResult, for session: ScannerSession) {
+        guard !result.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         ScanSoundPlayer.shared.playIfEnabled(playScanSound)
-        lastScannedCode = cleanedCode
+        lastScannedCode = result.value
+
+        if !result.isManualEntry {
+            ScanHistoryStore.record(
+                ScanHistoryItem(
+                    value: result.value,
+                    codeFormat: result.codeFormat,
+                    source: session.source.historySource,
+                    returnTargetRawValue: session.source == .keyboard ? session.returnTarget.rawValue : nil,
+                    insertionStatus: session.source == .keyboard ? .queuedForKeyboardInsertion : .notQueued
+                )
+            )
+        }
+
         activeSession = nil
 
         guard session.source == .keyboard else { return }
 
-        SharedKeyboardState.queuePendingInsertion(cleanedCode, requestIdentifier: session.id)
+        SharedKeyboardState.queuePendingInsertion(result.value, requestIdentifier: session.id)
 
         let returnDelay: TimeInterval = playScanSound ? 0.45 : 0.2
 
@@ -220,6 +248,15 @@ private struct ScannerSession: Identifiable, Equatable {
     enum Source: Equatable {
         case app
         case keyboard
+
+        var historySource: ScanHistorySource {
+            switch self {
+            case .app:
+                .app
+            case .keyboard:
+                .keyboard
+            }
+        }
     }
 
     let id: String
@@ -241,14 +278,17 @@ private struct ScannerSession: Identifiable, Equatable {
 private struct ScannerPresentation: View {
     let session: ScannerSession
     let playScanSound: Bool
+    let defaultZoomLevel: ScannerZoomLevel
+    let scanArea: ScannerScanArea
     @Binding var flashlightModeRawValue: String
-    let onCode: (String) -> Void
+    let onCode: (ScannerCodeResult) -> Void
     let onCancel: () -> Void
 
     @State private var isTorchAvailable = false
     @State private var isTorchOn = false
     @State private var scannerStatusMessage: String?
     @State private var scannedCode: String?
+    @State private var currentZoomFactor = 1.0
 
     private var flashlightMode: ScannerFlashlightMode {
         ScannerFlashlightMode(rawValue: flashlightModeRawValue) ?? .off
@@ -261,14 +301,23 @@ private struct ScannerPresentation: View {
                     BarcodeScannerView(
                         scanFormatProfile: session.scanFormatProfile,
                         flashlightMode: flashlightMode,
+                        defaultZoomFactor: defaultZoomLevel.factor,
+                        scanArea: scanArea,
                         isTorchAvailable: $isTorchAvailable,
                         isTorchOn: $isTorchOn,
                         statusMessage: $scannerStatusMessage,
+                        currentZoomFactor: $currentZoomFactor,
                         onCode: handleCode
                     )
                     .ignoresSafeArea()
                 } else {
                     ManualScanFallback(onCode: handleCode)
+                }
+
+                if scanArea == .centeredBox, BarcodeScannerView.isScannerAvailable {
+                    ScannerAreaGuideOverlay()
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
                 }
 
                 scannerOverlay
@@ -330,18 +379,74 @@ private struct ScannerPresentation: View {
             }
 
             Spacer()
+
+            if BarcodeScannerView.isScannerAvailable {
+                ZoomIndicator(value: currentZoomFactor)
+                    .padding(.bottom, 18)
+            }
         }
         .padding(.horizontal, 16)
         .allowsHitTesting(false)
     }
 
-    private func handleCode(_ code: String) {
+    private func handleCode(_ result: ScannerCodeResult) {
         guard scannedCode == nil else { return }
 
-        scannedCode = code
+        scannedCode = result.value
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            onCode(code)
+            onCode(result)
         }
+    }
+}
+
+private struct ScannerAreaGuideOverlay: View {
+    var body: some View {
+        GeometryReader { geometry in
+            let guideWidth = geometry.size.width * 0.70
+            let guideHeight = geometry.size.height * 0.32
+            let guideX = (geometry.size.width - guideWidth) / 2
+            let guideY = (geometry.size.height - guideHeight) / 2
+            let guideRect = CGRect(x: guideX, y: guideY, width: guideWidth, height: guideHeight)
+
+            ZStack(alignment: .topLeading) {
+                Color.black.opacity(0.34)
+                    .frame(width: geometry.size.width, height: guideRect.minY)
+
+                Color.black.opacity(0.34)
+                    .frame(width: geometry.size.width, height: geometry.size.height - guideRect.maxY)
+                    .offset(y: guideRect.maxY)
+
+                Color.black.opacity(0.34)
+                    .frame(width: guideRect.minX, height: guideRect.height)
+                    .offset(y: guideRect.minY)
+
+                Color.black.opacity(0.34)
+                    .frame(width: geometry.size.width - guideRect.maxX, height: guideRect.height)
+                    .offset(x: guideRect.maxX, y: guideRect.minY)
+
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(.white.opacity(0.92), lineWidth: 3)
+                    .frame(width: guideRect.width, height: guideRect.height)
+                    .offset(x: guideRect.minX, y: guideRect.minY)
+
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(.blue.opacity(0.85), lineWidth: 1)
+                    .frame(width: guideRect.width + 10, height: guideRect.height + 10)
+                    .offset(x: guideRect.minX - 5, y: guideRect.minY - 5)
+            }
+        }
+    }
+}
+
+private struct ZoomIndicator: View {
+    let value: Double
+
+    var body: some View {
+        Text(String(format: "%.1fx", value))
+            .font(.caption.monospacedDigit().weight(.semibold))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(.regularMaterial, in: Capsule())
     }
 }
 
@@ -374,7 +479,7 @@ private struct ScanStatusPill: View {
 
 private struct ManualScanFallback: View {
     @State private var code = ""
-    let onCode: (String) -> Void
+    let onCode: (ScannerCodeResult) -> Void
 
     var body: some View {
         List {
@@ -392,7 +497,13 @@ private struct ManualScanFallback: View {
                     .autocorrectionDisabled()
 
                 Button {
-                    onCode(code)
+                    onCode(
+                        ScannerCodeResult(
+                            value: code,
+                            codeFormat: nil,
+                            isManualEntry: true
+                        )
+                    )
                 } label: {
                     Label("Use Code", systemImage: "keyboard")
                 }

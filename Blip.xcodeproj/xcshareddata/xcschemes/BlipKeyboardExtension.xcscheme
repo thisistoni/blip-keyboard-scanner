@@ -16,7 +16,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "64C77595CC1329A55EB0B256"
+               BlueprintIdentifier = "2DBFED85946D74879F32AC31"
                BuildableName = "BlipKeyboardExtension.appex"
                BlueprintName = "BlipKeyboardExtension"
                ReferencedContainer = "container:Blip.xcodeproj">
@@ -33,7 +33,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "64C77595CC1329A55EB0B256"
+            BlueprintIdentifier = "2DBFED85946D74879F32AC31"
             BuildableName = "BlipKeyboardExtension.appex"
             BlueprintName = "BlipKeyboardExtension"
             ReferencedContainer = "container:Blip.xcodeproj">
@@ -57,7 +57,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "64C77595CC1329A55EB0B256"
+            BlueprintIdentifier = "2DBFED85946D74879F32AC31"
             BuildableName = "BlipKeyboardExtension.appex"
             BlueprintName = "BlipKeyboardExtension"
             ReferencedContainer = "container:Blip.xcodeproj">
@@ -76,7 +76,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "64C77595CC1329A55EB0B256"
+            BlueprintIdentifier = "2DBFED85946D74879F32AC31"
             BuildableName = "BlipKeyboardExtension.appex"
             BlueprintName = "BlipKeyboardExtension"
             ReferencedContainer = "container:Blip.xcodeproj">

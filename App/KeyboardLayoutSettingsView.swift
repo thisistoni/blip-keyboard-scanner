@@ -21,14 +21,25 @@ struct KeyboardLayoutSettingsView: View {
     @AppStorage(SharedKeyboardState.Keys.scanFormatProfile, store: SharedKeyboardState.appStorageDefaults)
     private var scanFormatProfileRawValue = SharedKeyboardState.scanFormatProfile.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.scannerZoomLevel, store: SharedKeyboardState.appStorageDefaults)
+    private var scannerZoomLevelRawValue = SharedKeyboardState.scannerZoomLevel.rawValue
+
+    @AppStorage(SharedKeyboardState.Keys.scannerScanArea, store: SharedKeyboardState.appStorageDefaults)
+    private var scannerScanAreaRawValue = SharedKeyboardState.scannerScanArea.rawValue
+
     @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
     private var playScanSound = SharedKeyboardState.playScanSound
+
+    @AppStorage(SharedKeyboardState.Keys.scanHistoryRetention, store: SharedKeyboardState.appStorageDefaults)
+    private var historyRetentionRawValue = SharedKeyboardState.scanHistoryRetention.rawValue
 
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
     @AppStorage(SharedKeyboardState.Keys.customReturnURL, store: SharedKeyboardState.appStorageDefaults)
     private var customReturnURL = ""
+
+    @State private var showingMailError = false
 
     private var keyboardLanguage: Binding<KeyboardLanguage> {
         Binding {
@@ -109,9 +120,112 @@ struct KeyboardLayoutSettingsView: View {
         }
     }
 
+    private var scannerZoomLevel: Binding<ScannerZoomLevel> {
+        Binding {
+            ScannerZoomLevel(rawValue: scannerZoomLevelRawValue) ?? .x1
+        } set: { newValue in
+            scannerZoomLevelRawValue = newValue.rawValue
+        }
+    }
+
+    private var scannerScanArea: Binding<ScannerScanArea> {
+        Binding {
+            ScannerScanArea(rawValue: scannerScanAreaRawValue) ?? .fullFrame
+        } set: { newValue in
+            scannerScanAreaRawValue = newValue.rawValue
+        }
+    }
+
+    private var historyRetention: Binding<ScanHistoryRetention> {
+        Binding {
+            ScanHistoryRetention(rawValue: historyRetentionRawValue) ?? .thirtyDays
+        } set: { newValue in
+            historyRetentionRawValue = newValue.rawValue
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Picker("Language", selection: keyboardLanguage) {
+                        ForEach(KeyboardLanguage.allCases) { language in
+                            Text(language.title).tag(language)
+                        }
+                    }
+
+                    ForEach(KeyboardLayoutSlot.allCases) { slot in
+                        LayoutToggleRow(
+                            slot: slot,
+                            isEnabled: layoutEnabledBinding(for: slot)
+                        )
+                    }
+
+                    if enabledLayoutSlots.isEmpty {
+                        Label("Scan-only keyboard", systemImage: "barcode.viewfinder")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("Opens With", selection: startupLayoutSlotBinding) {
+                            ForEach(enabledLayoutSlots) { slot in
+                                Text(slot.title).tag(slot)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Keyboard")
+                } footer: {
+                    Text("Choose the keyboard language and which layouts employees can cycle through. Turn every layout off to show only the Scan button.")
+                }
+
+                Section {
+                    Picker("After inserting a scan", selection: insertSuffix) {
+                        ForEach(InsertSuffix.allCases) { suffix in
+                            Text(suffix.title).tag(suffix)
+                        }
+                    }
+                } header: {
+                    Text("Scan Suffix")
+                }
+
+                Section {
+                    Toggle("Flashlight by default", isOn: flashlightEnabledByDefault)
+                    Toggle("Blip sound on scan", isOn: $playScanSound)
+
+                    Picker("Scan Formats", selection: scanFormatProfile) {
+                        ForEach(ScanFormatProfile.allCases) { profile in
+                            Text(profile.title).tag(profile)
+                        }
+                    }
+
+                    Text(scanFormatProfile.wrappedValue.detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Picker("Default Zoom", selection: scannerZoomLevel) {
+                        ForEach(ScannerZoomLevel.allCases) { zoomLevel in
+                            Text(zoomLevel.title).tag(zoomLevel)
+                        }
+                    }
+
+                    Text(scannerZoomLevel.wrappedValue.detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Picker("Scan Area", selection: scannerScanArea) {
+                        ForEach(ScannerScanArea.allCases) { area in
+                            Text(area.title).tag(area)
+                        }
+                    }
+
+                    Text(scannerScanArea.wrappedValue.detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } header: {
+                    Text("Scanner")
+                } footer: {
+                    Text("QR code contents are inserted as plain text. Blip does not open links automatically.")
+                }
+
                 Section {
                     Picker("Return to", selection: returnTarget) {
                         ForEach(ReturnTarget.allCases) { target in
@@ -146,93 +260,72 @@ struct KeyboardLayoutSettingsView: View {
                 }
 
                 Section {
-                    Picker("Language", selection: keyboardLanguage) {
-                        ForEach(KeyboardLanguage.allCases) { language in
-                            Text(language.title).tag(language)
+                    Picker("Keep History", selection: historyRetention) {
+                        ForEach(ScanHistoryRetention.allCases) { retention in
+                            Text(retention.title).tag(retention)
                         }
                     }
 
-                    ForEach(KeyboardLayoutSlot.allCases) { slot in
-                        LayoutToggleRow(
-                            slot: slot,
-                            isEnabled: layoutEnabledBinding(for: slot)
-                        )
-                    }
-
-                    if enabledLayoutSlots.isEmpty {
-                        Label("Scan-only keyboard", systemImage: "barcode.viewfinder")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Picker("Opens With", selection: startupLayoutSlotBinding) {
-                            ForEach(enabledLayoutSlots) { slot in
-                                Text(slot.title).tag(slot)
-                            }
-                        }
-                    }
-                } header: {
-                    Text("Keyboard Profile")
-                } footer: {
-                    Text("Turn on the layouts this keyboard should offer. If more than one layout is enabled, the keyboard switch key cycles through only those layouts. Turn every layout off to show only the Scan button.")
-                }
-
-                Section {
-                    Picker("After inserting a scan", selection: insertSuffix) {
-                        ForEach(InsertSuffix.allCases) { suffix in
-                            Text(suffix.title).tag(suffix)
-                        }
-                    }
-                } header: {
-                    Text("Scan Suffix")
-                }
-
-                Section {
-                    Toggle("Flashlight by default", isOn: flashlightEnabledByDefault)
-                    Toggle("Blip sound on scan", isOn: $playScanSound)
-
-                    Picker("Scan Formats", selection: scanFormatProfile) {
-                        ForEach(ScanFormatProfile.allCases) { profile in
-                            Text(profile.title).tag(profile)
-                        }
-                    }
-
-                    Text(scanFormatProfile.wrappedValue.detail)
+                    Text(historyRetention.wrappedValue.detail)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } header: {
-                    Text("Scanner")
+                    Text("History")
                 } footer: {
-                    Text("QR code contents are inserted as plain text. Blip does not open links automatically.")
+                    Text("Scan history is local to this device and can be cleared from the History tab.")
                 }
 
                 Section {
-                    SetupDiagnosticRow(
-                        title: "Keyboard enabled",
-                        value: setupStatus.isKeyboardEnabled
-                            ? NSLocalizedString("Yes", comment: "Affirmative diagnostics value")
-                            : NSLocalizedString("No", comment: "Negative diagnostics value")
-                    )
-
-                    SetupDiagnosticRow(
-                        title: "Matched entry",
-                        value: setupStatus.snapshot.matchedKeyboard ?? NSLocalizedString("None", comment: "No diagnostics value")
-                    )
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Raw AppleKeyboards")
-                            .font(.subheadline.weight(.semibold))
-                        Text(setupStatus.snapshot.rawKeyboardSummary)
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
+                    NavigationLink {
+                        CompanyProfilesView()
+                    } label: {
+                        Label("Company Profiles", systemImage: "doc.badge.gearshape")
                     }
-                    .padding(.vertical, 4)
                 } header: {
-                    Text("Setup Diagnostics")
+                    Text("Company Profiles")
                 } footer: {
-                    Text("This is temporary debugging data so we can verify what iOS reports on your iPhone.")
+                    Text("Export or import Blip settings for a consistent company setup. Profiles do not include scan history.")
+                }
+
+                Section {
+                    NavigationLink {
+                        PrivacyTrustView()
+                    } label: {
+                        Label("Privacy & Trust", systemImage: "lock.shield")
+                    }
+
+                    Button {
+                        sendFeedback()
+                    } label: {
+                        Label("Send Feedback", systemImage: "paperplane")
+                    }
+                } header: {
+                    Text("Help & Feedback")
+                } footer: {
+                    Text("Feedback opens an email draft with app and device context. Nothing is sent unless you send it.")
+                }
+
+                Section {
+                    NavigationLink {
+                        SetupDiagnosticsView(setupStatus: setupStatus)
+                    } label: {
+                        Label("Keyboard Setup Status", systemImage: setupStatus.isKeyboardEnabled ? "checkmark.circle" : "exclamationmark.circle")
+                    }
+                } header: {
+                    Text("Keyboard Status")
+                } footer: {
+                    Text("Use this when iOS Settings does not seem to match what Blip detects.")
                 }
             }
             .navigationTitle("Settings")
+            .onChange(of: historyRetentionRawValue) { _ in
+                _ = ScanHistoryStore.applyRetention()
+            }
+            .alert("Mail is not available", isPresented: $showingMailError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Install or configure Mail to send feedback from Blip.")
+            }
         }
     }
 
@@ -249,6 +342,17 @@ struct KeyboardLayoutSettingsView: View {
             }
 
             enabledLayoutSlots = KeyboardLayoutSlot.allCases.filter { slots.contains($0) }
+        }
+    }
+
+    private func sendFeedback() {
+        guard let url = SupportEmail.feedbackURL() else {
+            showingMailError = true
+            return
+        }
+
+        SupportEmail.open(url) {
+            showingMailError = true
         }
     }
 }
@@ -282,5 +386,40 @@ private struct SetupDiagnosticRow: View {
                 .multilineTextAlignment(.trailing)
                 .textSelection(.enabled)
         }
+    }
+}
+
+private struct SetupDiagnosticsView: View {
+    let setupStatus: SetupVerificationStatus
+
+    var body: some View {
+        List {
+            Section {
+                SetupDiagnosticRow(
+                    title: "Keyboard enabled",
+                    value: setupStatus.isKeyboardEnabled
+                        ? NSLocalizedString("Yes", comment: "Affirmative diagnostics value")
+                        : NSLocalizedString("No", comment: "Negative diagnostics value")
+                )
+
+                SetupDiagnosticRow(
+                    title: "Matched keyboard",
+                    value: setupStatus.snapshot.matchedKeyboard ?? NSLocalizedString("None", comment: "No diagnostics value")
+                )
+            }
+
+            Section {
+                Text(setupStatus.snapshot.rawKeyboardSummary)
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .padding(.vertical, 4)
+            } header: {
+                Text("iOS Keyboard Entries")
+            } footer: {
+                Text("These are the keyboard entries iOS currently reports to Blip.")
+            }
+        }
+        .navigationTitle("Keyboard Status")
     }
 }

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 enum KeyboardLanguage: String, CaseIterable, Identifiable {
@@ -268,6 +269,88 @@ enum ScanFormatProfile: String, CaseIterable, Identifiable {
     }
 }
 
+enum ScannerZoomLevel: String, CaseIterable, Identifiable {
+    case x1
+    case x1_5
+    case x2
+    case x3
+
+    var id: String { rawValue }
+
+    var factor: Double {
+        switch self {
+        case .x1:
+            1.0
+        case .x1_5:
+            1.5
+        case .x2:
+            2.0
+        case .x3:
+            3.0
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .x1:
+            "1x"
+        case .x1_5:
+            "1.5x"
+        case .x2:
+            "2x"
+        case .x3:
+            "3x"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .x1:
+            NSLocalizedString("Use the normal camera view.", comment: "Scanner zoom 1x detail")
+        case .x1_5:
+            NSLocalizedString("A small zoom for shelves and labels that are slightly farther away.", comment: "Scanner zoom 1.5x detail")
+        case .x2:
+            NSLocalizedString("A focused zoom for small barcodes.", comment: "Scanner zoom 2x detail")
+        case .x3:
+            NSLocalizedString("Maximum default zoom for tiny or distant codes.", comment: "Scanner zoom 3x detail")
+        }
+    }
+}
+
+enum ScannerScanArea: String, CaseIterable, Identifiable {
+    case fullFrame
+    case centeredBox
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .fullFrame:
+            NSLocalizedString("Full Frame", comment: "Full scanner frame scan area")
+        case .centeredBox:
+            NSLocalizedString("Centered Box", comment: "Centered scanner box scan area")
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .fullFrame:
+            NSLocalizedString("Scan any supported code visible to the camera.", comment: "Full frame scan area detail")
+        case .centeredBox:
+            NSLocalizedString("Only scan codes inside the centered guide box.", comment: "Centered box scan area detail")
+        }
+    }
+
+    var normalizedVisionRegion: CGRect? {
+        switch self {
+        case .fullFrame:
+            nil
+        case .centeredBox:
+            CGRect(x: 0.15, y: 0.34, width: 0.70, height: 0.32)
+        }
+    }
+}
+
 enum ReturnTarget: String, CaseIterable, Identifiable {
     case safari
     case chrome
@@ -440,6 +523,10 @@ enum SharedKeyboardState {
         static let playScanSound = "playScanSound"
         static let returnTarget = "returnTarget"
         static let customReturnURL = "customReturnURL"
+        static let scanHistoryItems = "scanHistoryItems"
+        static let scanHistoryRetention = "scanHistoryRetention"
+        static let scannerZoomLevel = "scannerZoomLevel"
+        static let scannerScanArea = "scannerScanArea"
     }
 
     static var defaults: UserDefaults? {
@@ -729,13 +816,52 @@ enum SharedKeyboardState {
         }
     }
 
+    static var scannerFlashlightMode: ScannerFlashlightMode {
+        get {
+            let rawValue = defaults?.string(forKey: Keys.scannerFlashlightMode) ?? ScannerFlashlightMode.off.rawValue
+            return ScannerFlashlightMode(rawValue: rawValue) ?? .off
+        }
+        set {
+            defaults?.set(newValue.rawValue, forKey: Keys.scannerFlashlightMode)
+        }
+    }
+
+    static var scanHistoryRetention: ScanHistoryRetention {
+        get {
+            let rawValue = defaults?.string(forKey: Keys.scanHistoryRetention) ?? ScanHistoryRetention.thirtyDays.rawValue
+            return ScanHistoryRetention(rawValue: rawValue) ?? .thirtyDays
+        }
+        set {
+            defaults?.set(newValue.rawValue, forKey: Keys.scanHistoryRetention)
+        }
+    }
+
+    static var scannerZoomLevel: ScannerZoomLevel {
+        get {
+            let rawValue = defaults?.string(forKey: Keys.scannerZoomLevel) ?? ScannerZoomLevel.x1.rawValue
+            return ScannerZoomLevel(rawValue: rawValue) ?? .x1
+        }
+        set {
+            defaults?.set(newValue.rawValue, forKey: Keys.scannerZoomLevel)
+        }
+    }
+
+    static var scannerScanArea: ScannerScanArea {
+        get {
+            let rawValue = defaults?.string(forKey: Keys.scannerScanArea) ?? ScannerScanArea.fullFrame.rawValue
+            return ScannerScanArea(rawValue: rawValue) ?? .fullFrame
+        }
+        set {
+            defaults?.set(newValue.rawValue, forKey: Keys.scannerScanArea)
+        }
+    }
+
     static func queuePendingInsertion(_ code: String, requestIdentifier: String? = nil) {
-        let cleanedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanedCode.isEmpty else { return }
+        guard !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let identifier = requestIdentifier?.isEmpty == false ? requestIdentifier! : UUID().uuidString
-        defaults?.set(cleanedCode, forKey: Keys.lastScannedCode)
-        defaults?.set(cleanedCode, forKey: Keys.pendingScannedCode)
+        defaults?.set(code, forKey: Keys.lastScannedCode)
+        defaults?.set(code, forKey: Keys.pendingScannedCode)
         defaults?.set(identifier, forKey: Keys.pendingScanIdentifier)
     }
 

@@ -7,43 +7,50 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		06B428A6F7C7FEF225736818 /* BlipKeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		131E626A6F7C6E8357158D97 /* BlipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD61044CDC70254AEC8CAAEB /* BlipApp.swift */; };
-		15A6A48FDA36639AADB8C130 /* KeyboardLayoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B48B9CF372BEC29D856C0A9 /* KeyboardLayoutEngine.swift */; };
-		245967CEE5B56E33563EFA4D /* ScannerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F277A502CF5429FBD303B365 /* ScannerScreen.swift */; };
-		3336CF28340D2D3110CB8666 /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55386136654FB6E969CB8E26 /* BarcodeScannerView.swift */; };
-		3775384FE52D6301853DD00A /* KeyboardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F4ABE75A41C4C64B76654C /* KeyboardSettings.swift */; };
-		5490E4D0EB843F53F0E55B67 /* KeyboardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75F4ABE75A41C4C64B76654C /* KeyboardSettings.swift */; };
-		753B12E6AD2150E186DBEF07 /* KeyboardLayoutSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76450C6C0A74F5CC092CA9EE /* KeyboardLayoutSettingsView.swift */; };
-		811EECFB7698187F046C1FF0 /* SystemSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8DD8A142B2B0C77B3DF44C /* SystemSettingsOpener.swift */; };
-		A1B2C3D4E5F60718293A4B5C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B60 /* Localizable.strings */; };
-		A1B2C3D4E5F60718293A4B5D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B60 /* Localizable.strings */; };
-		B1A2C3D4E5F60718293A4C02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */; };
-		B1A2C3D4E5F60718293A4C04 /* ScanSoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */; };
-		B1A2C3D4E5F60718293A4C06 /* blip.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C05 /* blip.mp3 */; };
-		B6C03F8633BABBB0D1D63440 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E0584D3879CDB8BAEED6E /* KeyboardViewController.swift */; };
-		F2C64EFEC9FDB77C45B74211 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DFB3275CA66D6D6AF81643 /* AppRootView.swift */; };
-		F9713DB52D326CC79C81F3B8 /* SourceAppReturnController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */; };
+		016F2660FD3B3C42CFB3B88B /* blip.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = F734A33224949622F8071EFB /* blip.mp3 */; };
+		038C48472D259D4A8A09D686 /* BlipKeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6F6828F175B2EA6283AE2569 /* BlipKeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		112C8602482855C75018A929 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A14A6BBDE409BA05BA1074C /* AppRootView.swift */; };
+		1B753FA075BE9F01F963A6C8 /* ScannerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD8752A0ED9DD4F722F13A8C /* ScannerScreen.swift */; };
+		28F0AF201A16A119DFD1ADE6 /* KeyboardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7636556798B59B570DF3FDEC /* KeyboardSettings.swift */; };
+		40F8928D20247E13575C8B1D /* CompanyProfilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1998ECC1E46ECFC99560FC /* CompanyProfilesView.swift */; };
+		57529D367579FBB392D934F1 /* KeyboardLayoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26321A8980AA74A3344BA6C0 /* KeyboardLayoutEngine.swift */; };
+		5A58F72225AA9AC29660CDBE /* PrivacyTrustView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271839042EB437631C2FC4D5 /* PrivacyTrustView.swift */; };
+		5EE50794936F1D0649608DC1 /* KeyboardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7636556798B59B570DF3FDEC /* KeyboardSettings.swift */; };
+		6C13EDB8BC00E0DC04A87530 /* KeyboardLayoutSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEA5B0A14FD586843C508DD /* KeyboardLayoutSettingsView.swift */; };
+		81D48C0E1E7375F69D833F3B /* SourceAppReturnController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5308A53DBB6DC61E056339 /* SourceAppReturnController.swift */; };
+		894B18C47218DDC15B7E8A76 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C8F80527E7467A2DC79EA75 /* HistoryView.swift */; };
+		99B3538C83F92ED9F21DC818 /* BlipCompanyProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */; };
+		9F8D52AEDD42C5D3C08FD6FE /* ScanSoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13418EDC64D955E03A48729 /* ScanSoundPlayer.swift */; };
+		AAA60C90D4EC9D200F3E16E4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C6FCE2FCF2F29D1426988ED7 /* Assets.xcassets */; };
+		AC272D255BBD9340650CBBCA /* ScanHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */; };
+		AF4C1479AB197174998705B2 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA2224923941FE359D09EB73 /* KeyboardViewController.swift */; };
+		BF2638979D1D4921030654F8 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 377B6F3B6C18EBA07618C583 /* Localizable.strings */; };
+		C7FC916F8A685C9A102F9524 /* BlipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C996AC636B03E56AE187B7 /* BlipApp.swift */; };
+		C8B533246884B21A3E3DC1EA /* BlipCompanyProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */; };
+		D92071A43A8542A555BDA2F5 /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CECF940A77E80308B06286 /* BarcodeScannerView.swift */; };
+		E54A46DB412041B7F6EE7942 /* SystemSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */; };
+		ED860D2D15741BE25855EFDA /* ScanHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */; };
+		FD047880801250BBA16B80FE /* SupportEmail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F4AAFBA4E577FB1CC1547E2 /* SupportEmail.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		B49B80DD367B21279DE7215A /* PBXContainerItemProxy */ = {
+		590893DD70F389A5AD3674FF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A83AC22E140E86DC369EC0A9 /* Project object */;
+			containerPortal = 0003C370165973758510B843 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 64C77595CC1329A55EB0B256;
+			remoteGlobalIDString = 2DBFED85946D74879F32AC31;
 			remoteInfo = BlipKeyboardExtension;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		47CB4A55C6522A8EFD6F02C1 /* Embed Foundation Extensions */ = {
+		A1D2CC38353DFCD6147462E1 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				06B428A6F7C7FEF225736818 /* BlipKeyboardExtension.appex in Embed Foundation Extensions */,
+				038C48472D259D4A8A09D686 /* BlipKeyboardExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -51,84 +58,104 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		04C8899AE23953A1D137C68A /* Blip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Blip.entitlements; sourceTree = "<group>"; };
-		09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceAppReturnController.swift; sourceTree = "<group>"; };
-		117E0584D3879CDB8BAEED6E /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
-		13DFB3275CA66D6D6AF81643 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
-		15CA2F5669ACD05C786DDF53 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		3C8DD8A142B2B0C77B3DF44C /* SystemSettingsOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSettingsOpener.swift; sourceTree = "<group>"; };
-		4B48B9CF372BEC29D856C0A9 /* KeyboardLayoutEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayoutEngine.swift; sourceTree = "<group>"; };
-		55386136654FB6E969CB8E26 /* BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
-		7332A72AF8BA81CB69B02DAC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		75F4ABE75A41C4C64B76654C /* KeyboardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSettings.swift; sourceTree = "<group>"; };
-		76450C6C0A74F5CC092CA9EE /* KeyboardLayoutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayoutSettingsView.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5F /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AD61044CDC70254AEC8CAAEB /* BlipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlipApp.swift; sourceTree = "<group>"; };
-		B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSoundPlayer.swift; sourceTree = "<group>"; };
-		B1A2C3D4E5F60718293A4C05 /* blip.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Sounds/blip.mp3; sourceTree = "<group>"; };
-		BD656434C814A84F42EE3532 /* Blip.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Blip.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BlipKeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		DC795F10DE030B49C24FDC06 /* BlipKeyboardExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlipKeyboardExtension.entitlements; sourceTree = "<group>"; };
-		F277A502CF5429FBD303B365 /* ScannerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerScreen.swift; sourceTree = "<group>"; };
+		0F4AAFBA4E577FB1CC1547E2 /* SupportEmail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportEmail.swift; sourceTree = "<group>"; };
+		1BA697C95BE99E6286ED83DC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		26321A8980AA74A3344BA6C0 /* KeyboardLayoutEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayoutEngine.swift; sourceTree = "<group>"; };
+		271839042EB437631C2FC4D5 /* PrivacyTrustView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyTrustView.swift; sourceTree = "<group>"; };
+		2A14A6BBDE409BA05BA1074C /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
+		35C96B9AE7D53BEFF432430C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		44CF3526A50C09EB7952DA29 /* BlipKeyboardExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlipKeyboardExtension.entitlements; sourceTree = "<group>"; };
+		5C8F80527E7467A2DC79EA75 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		61A0999AC9A0EB7CB50EDC6F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		64C996AC636B03E56AE187B7 /* BlipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlipApp.swift; sourceTree = "<group>"; };
+		6F6828F175B2EA6283AE2569 /* BlipKeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BlipKeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7636556798B59B570DF3FDEC /* KeyboardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSettings.swift; sourceTree = "<group>"; };
+		7B0CA1B63DBE419AAB686754 /* Blip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Blip.entitlements; sourceTree = "<group>"; };
+		81CECF940A77E80308B06286 /* BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
+		83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlipCompanyProfile.swift; sourceTree = "<group>"; };
+		92506F914D036514AB4055CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A13418EDC64D955E03A48729 /* ScanSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSoundPlayer.swift; sourceTree = "<group>"; };
+		AC5308A53DBB6DC61E056339 /* SourceAppReturnController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceAppReturnController.swift; sourceTree = "<group>"; };
+		BA2224923941FE359D09EB73 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		BD8752A0ED9DD4F722F13A8C /* ScannerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerScreen.swift; sourceTree = "<group>"; };
+		C6FCE2FCF2F29D1426988ED7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D2D91AC1B5A59D4A14198976 /* Blip.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Blip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSettingsOpener.swift; sourceTree = "<group>"; };
+		EDEA5B0A14FD586843C508DD /* KeyboardLayoutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayoutSettingsView.swift; sourceTree = "<group>"; };
+		EF1998ECC1E46ECFC99560FC /* CompanyProfilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyProfilesView.swift; sourceTree = "<group>"; };
+		EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistory.swift; sourceTree = "<group>"; };
+		F734A33224949622F8071EFB /* blip.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = blip.mp3; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		0CBCD6A278B005D6BEB035F2 /* Shared */ = {
+		041D7D6CC5534A1C2E2BB06E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				75F4ABE75A41C4C64B76654C /* KeyboardSettings.swift */,
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
-		19082302CD40D30F8B920178 = {
-			isa = PBXGroup;
-			children = (
-				9CA06A67F5157C9BEEABAE35 /* App */,
-				F7EBCABD56AFE8360D5E251C /* KeyboardExtension */,
-				0CBCD6A278B005D6BEB035F2 /* Shared */,
-				7EEECDE29DE1DEC1626D75E9 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		7EEECDE29DE1DEC1626D75E9 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				BD656434C814A84F42EE3532 /* Blip.app */,
-				C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */,
+				D2D91AC1B5A59D4A14198976 /* Blip.app */,
+				6F6828F175B2EA6283AE2569 /* BlipKeyboardExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		9CA06A67F5157C9BEEABAE35 /* App */ = {
+		3E4478054269881CEE5B784C /* Sounds */ = {
 			isa = PBXGroup;
 			children = (
-				13DFB3275CA66D6D6AF81643 /* AppRootView.swift */,
-				B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */,
-				04C8899AE23953A1D137C68A /* Blip.entitlements */,
-				AD61044CDC70254AEC8CAAEB /* BlipApp.swift */,
-				55386136654FB6E969CB8E26 /* BarcodeScannerView.swift */,
-				15CA2F5669ACD05C786DDF53 /* Info.plist */,
-				76450C6C0A74F5CC092CA9EE /* KeyboardLayoutSettingsView.swift */,
-				A1B2C3D4E5F60718293A4B60 /* Localizable.strings */,
-				B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */,
-				F277A502CF5429FBD303B365 /* ScannerScreen.swift */,
-				09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */,
-				B1A2C3D4E5F60718293A4C05 /* blip.mp3 */,
-				3C8DD8A142B2B0C77B3DF44C /* SystemSettingsOpener.swift */,
+				F734A33224949622F8071EFB /* blip.mp3 */,
+			);
+			path = Sounds;
+			sourceTree = "<group>";
+		};
+		5D1E2A6F666219876F85AD74 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */,
+				7636556798B59B570DF3FDEC /* KeyboardSettings.swift */,
+				EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		95AE9A36AD3AD44B5530AF50 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2A14A6BBDE409BA05BA1074C /* AppRootView.swift */,
+				C6FCE2FCF2F29D1426988ED7 /* Assets.xcassets */,
+				81CECF940A77E80308B06286 /* BarcodeScannerView.swift */,
+				7B0CA1B63DBE419AAB686754 /* Blip.entitlements */,
+				64C996AC636B03E56AE187B7 /* BlipApp.swift */,
+				EF1998ECC1E46ECFC99560FC /* CompanyProfilesView.swift */,
+				5C8F80527E7467A2DC79EA75 /* HistoryView.swift */,
+				92506F914D036514AB4055CD /* Info.plist */,
+				EDEA5B0A14FD586843C508DD /* KeyboardLayoutSettingsView.swift */,
+				271839042EB437631C2FC4D5 /* PrivacyTrustView.swift */,
+				BD8752A0ED9DD4F722F13A8C /* ScannerScreen.swift */,
+				A13418EDC64D955E03A48729 /* ScanSoundPlayer.swift */,
+				AC5308A53DBB6DC61E056339 /* SourceAppReturnController.swift */,
+				0F4AAFBA4E577FB1CC1547E2 /* SupportEmail.swift */,
+				E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */,
+				377B6F3B6C18EBA07618C583 /* Localizable.strings */,
+				3E4478054269881CEE5B784C /* Sounds */,
 			);
 			path = App;
 			sourceTree = "<group>";
 		};
-		F7EBCABD56AFE8360D5E251C /* KeyboardExtension */ = {
+		C8E5FD9569C0D9C2D2E7DF00 = {
 			isa = PBXGroup;
 			children = (
-				DC795F10DE030B49C24FDC06 /* BlipKeyboardExtension.entitlements */,
-				7332A72AF8BA81CB69B02DAC /* Info.plist */,
-				4B48B9CF372BEC29D856C0A9 /* KeyboardLayoutEngine.swift */,
-				117E0584D3879CDB8BAEED6E /* KeyboardViewController.swift */,
+				95AE9A36AD3AD44B5530AF50 /* App */,
+				EBBB7493AB98D492BB0DD954 /* KeyboardExtension */,
+				5D1E2A6F666219876F85AD74 /* Shared */,
+				041D7D6CC5534A1C2E2BB06E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EBBB7493AB98D492BB0DD954 /* KeyboardExtension */ = {
+			isa = PBXGroup;
+			children = (
+				44CF3526A50C09EB7952DA29 /* BlipKeyboardExtension.entitlements */,
+				35C96B9AE7D53BEFF432430C /* Info.plist */,
+				26321A8980AA74A3344BA6C0 /* KeyboardLayoutEngine.swift */,
+				BA2224923941FE359D09EB73 /* KeyboardViewController.swift */,
 			);
 			path = KeyboardExtension;
 			sourceTree = "<group>";
@@ -136,32 +163,11 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		58F9FBF98206738272445A88 /* Blip */ = {
+		2DBFED85946D74879F32AC31 /* BlipKeyboardExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 75586EDEDB65C49A56C57FD4 /* Build configuration list for PBXNativeTarget "Blip" */;
+			buildConfigurationList = 4EE449065301D05407DE8686 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */;
 			buildPhases = (
-				97D5A74C3EFEEFA1D3D71C95 /* Sources */,
-				A1B2C3D4E5F60718293A4B61 /* Resources */,
-				47CB4A55C6522A8EFD6F02C1 /* Embed Foundation Extensions */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				EB8075E902212BDB44F01196 /* PBXTargetDependency */,
-			);
-			name = Blip;
-			packageProductDependencies = (
-			);
-			productName = Blip;
-			productReference = BD656434C814A84F42EE3532 /* Blip.app */;
-			productType = "com.apple.product-type.application";
-		};
-		64C77595CC1329A55EB0B256 /* BlipKeyboardExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 6211FA73471C50F78C79E9E0 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */;
-			buildPhases = (
-				698734B50F43C454AE05AF6F /* Sources */,
-				A1B2C3D4E5F60718293A4B62 /* Resources */,
+				4B3548926874B12A90294B4F /* Sources */,
 			);
 			buildRules = (
 			);
@@ -171,113 +177,133 @@
 			packageProductDependencies = (
 			);
 			productName = BlipKeyboardExtension;
-			productReference = C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */;
+			productReference = 6F6828F175B2EA6283AE2569 /* BlipKeyboardExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		E6DB53EB56234A16885B866A /* Blip */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FFE96B6C9E5AAEBF3ED2F9B7 /* Build configuration list for PBXNativeTarget "Blip" */;
+			buildPhases = (
+				36D50C0EC0A8F2CA9E395DE2 /* Sources */,
+				56D69C1BAC5ECEC44750D4E6 /* Resources */,
+				A1D2CC38353DFCD6147462E1 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BD2C5782A69F5204BF0BC429 /* PBXTargetDependency */,
+			);
+			name = Blip;
+			packageProductDependencies = (
+			);
+			productName = Blip;
+			productReference = D2D91AC1B5A59D4A14198976 /* Blip.app */;
+			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A83AC22E140E86DC369EC0A9 /* Project object */ = {
+		0003C370165973758510B843 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					58F9FBF98206738272445A88 = {
+					2DBFED85946D74879F32AC31 = {
 						DevelopmentTeam = 3TRF6L2MC2;
 						ProvisioningStyle = Automatic;
 					};
-					64C77595CC1329A55EB0B256 = {
+					E6DB53EB56234A16885B866A = {
 						DevelopmentTeam = 3TRF6L2MC2;
 						ProvisioningStyle = Automatic;
 					};
 				};
 			};
-			buildConfigurationList = 0DF62E4E573FB74E8286D3AF /* Build configuration list for PBXProject "Blip" */;
+			buildConfigurationList = 5D20434E83D2CEA88116A74C /* Build configuration list for PBXProject "Blip" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
-				en,
 				de,
+				en,
 			);
-			mainGroup = 19082302CD40D30F8B920178;
+			mainGroup = C8E5FD9569C0D9C2D2E7DF00;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 7EEECDE29DE1DEC1626D75E9 /* Products */;
+			productRefGroup = 041D7D6CC5534A1C2E2BB06E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				58F9FBF98206738272445A88 /* Blip */,
-				64C77595CC1329A55EB0B256 /* BlipKeyboardExtension */,
+				E6DB53EB56234A16885B866A /* Blip */,
+				2DBFED85946D74879F32AC31 /* BlipKeyboardExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A1B2C3D4E5F60718293A4B61 /* Resources */ = {
+		56D69C1BAC5ECEC44750D4E6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B1A2C3D4E5F60718293A4C02 /* Assets.xcassets in Resources */,
-				A1B2C3D4E5F60718293A4B5C /* Localizable.strings in Resources */,
-				B1A2C3D4E5F60718293A4C06 /* blip.mp3 in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A1B2C3D4E5F60718293A4B62 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A1B2C3D4E5F60718293A4B5D /* Localizable.strings in Resources */,
+				AAA60C90D4EC9D200F3E16E4 /* Assets.xcassets in Resources */,
+				BF2638979D1D4921030654F8 /* Localizable.strings in Resources */,
+				016F2660FD3B3C42CFB3B88B /* blip.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		698734B50F43C454AE05AF6F /* Sources */ = {
+		36D50C0EC0A8F2CA9E395DE2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				15A6A48FDA36639AADB8C130 /* KeyboardLayoutEngine.swift in Sources */,
-				5490E4D0EB843F53F0E55B67 /* KeyboardSettings.swift in Sources */,
-				B6C03F8633BABBB0D1D63440 /* KeyboardViewController.swift in Sources */,
+				112C8602482855C75018A929 /* AppRootView.swift in Sources */,
+				D92071A43A8542A555BDA2F5 /* BarcodeScannerView.swift in Sources */,
+				C7FC916F8A685C9A102F9524 /* BlipApp.swift in Sources */,
+				99B3538C83F92ED9F21DC818 /* BlipCompanyProfile.swift in Sources */,
+				40F8928D20247E13575C8B1D /* CompanyProfilesView.swift in Sources */,
+				894B18C47218DDC15B7E8A76 /* HistoryView.swift in Sources */,
+				6C13EDB8BC00E0DC04A87530 /* KeyboardLayoutSettingsView.swift in Sources */,
+				28F0AF201A16A119DFD1ADE6 /* KeyboardSettings.swift in Sources */,
+				5A58F72225AA9AC29660CDBE /* PrivacyTrustView.swift in Sources */,
+				ED860D2D15741BE25855EFDA /* ScanHistory.swift in Sources */,
+				9F8D52AEDD42C5D3C08FD6FE /* ScanSoundPlayer.swift in Sources */,
+				1B753FA075BE9F01F963A6C8 /* ScannerScreen.swift in Sources */,
+				81D48C0E1E7375F69D833F3B /* SourceAppReturnController.swift in Sources */,
+				FD047880801250BBA16B80FE /* SupportEmail.swift in Sources */,
+				E54A46DB412041B7F6EE7942 /* SystemSettingsOpener.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		97D5A74C3EFEEFA1D3D71C95 /* Sources */ = {
+		4B3548926874B12A90294B4F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F2C64EFEC9FDB77C45B74211 /* AppRootView.swift in Sources */,
-				131E626A6F7C6E8357158D97 /* BlipApp.swift in Sources */,
-				3336CF28340D2D3110CB8666 /* BarcodeScannerView.swift in Sources */,
-				753B12E6AD2150E186DBEF07 /* KeyboardLayoutSettingsView.swift in Sources */,
-				3775384FE52D6301853DD00A /* KeyboardSettings.swift in Sources */,
-				B1A2C3D4E5F60718293A4C04 /* ScanSoundPlayer.swift in Sources */,
-				245967CEE5B56E33563EFA4D /* ScannerScreen.swift in Sources */,
-				F9713DB52D326CC79C81F3B8 /* SourceAppReturnController.swift in Sources */,
-				811EECFB7698187F046C1FF0 /* SystemSettingsOpener.swift in Sources */,
+				C8B533246884B21A3E3DC1EA /* BlipCompanyProfile.swift in Sources */,
+				57529D367579FBB392D934F1 /* KeyboardLayoutEngine.swift in Sources */,
+				5EE50794936F1D0649608DC1 /* KeyboardSettings.swift in Sources */,
+				AF4C1479AB197174998705B2 /* KeyboardViewController.swift in Sources */,
+				AC272D255BBD9340650CBBCA /* ScanHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		EB8075E902212BDB44F01196 /* PBXTargetDependency */ = {
+		BD2C5782A69F5204BF0BC429 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 64C77595CC1329A55EB0B256 /* BlipKeyboardExtension */;
-			targetProxy = B49B80DD367B21279DE7215A /* PBXContainerItemProxy */;
+			target = 2DBFED85946D74879F32AC31 /* BlipKeyboardExtension */;
+			targetProxy = 590893DD70F389A5AD3674FF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		A1B2C3D4E5F60718293A4B60 /* Localizable.strings */ = {
+		377B6F3B6C18EBA07618C583 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				A1B2C3D4E5F60718293A4B5E /* en */,
-				A1B2C3D4E5F60718293A4B5F /* de */,
+				1BA697C95BE99E6286ED83DC /* de */,
+				61A0999AC9A0EB7CB50EDC6F /* en */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -285,7 +311,7 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		22CE1EBFB481513586A2F0DB /* Debug */ = {
+		163CC58C30ACED6969E8E007 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -302,7 +328,83 @@
 			};
 			name = Debug;
 		};
-		6E8CE3CE23ED5130A5030E4B /* Debug */ = {
+		3622B0E00380FEDB171BBC62 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 3TRF6L2MC2;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		3BE59E4A6D77E37A940DA316 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/Blip.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A9BA5E677BE1D5237A09836D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -368,24 +470,7 @@
 			};
 			name = Debug;
 		};
-		7A552E940FCD84CDED6AB348 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = KeyboardExtension/BlipKeyboardExtension.entitlements;
-				INFOPLIST_FILE = KeyboardExtension/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip.KeyboardExtension;
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		7CC136DECC805596CB6AFDF4 /* Debug */ = {
+		AFF82CAFA35DE230BE607AA5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
@@ -402,77 +487,18 @@
 			};
 			name = Debug;
 		};
-		B40ABEFA1DE64C813E292E10 /* Release */ = {
+		B971009EB03CB90F97E80385 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INFINITE_RECURSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
-				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
-				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
-				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
-				CLANG_WARN_STRICT_PROTOTYPES = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = 3TRF6L2MC2;
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		B5355ABB4B51900198E6A8B1 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = App/Blip.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				INFOPLIST_FILE = App/Info.plist;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = KeyboardExtension/BlipKeyboardExtension.entitlements;
+				INFOPLIST_FILE = KeyboardExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip;
+				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip.KeyboardExtension;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -481,34 +507,34 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0DF62E4E573FB74E8286D3AF /* Build configuration list for PBXProject "Blip" */ = {
+		4EE449065301D05407DE8686 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				6E8CE3CE23ED5130A5030E4B /* Debug */,
-				B40ABEFA1DE64C813E292E10 /* Release */,
+				AFF82CAFA35DE230BE607AA5 /* Debug */,
+				B971009EB03CB90F97E80385 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		6211FA73471C50F78C79E9E0 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */ = {
+		5D20434E83D2CEA88116A74C /* Build configuration list for PBXProject "Blip" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				7CC136DECC805596CB6AFDF4 /* Debug */,
-				7A552E940FCD84CDED6AB348 /* Release */,
+				A9BA5E677BE1D5237A09836D /* Debug */,
+				3622B0E00380FEDB171BBC62 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		75586EDEDB65C49A56C57FD4 /* Build configuration list for PBXNativeTarget "Blip" */ = {
+		FFE96B6C9E5AAEBF3ED2F9B7 /* Build configuration list for PBXNativeTarget "Blip" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				22CE1EBFB481513586A2F0DB /* Debug */,
-				B5355ABB4B51900198E6A8B1 /* Release */,
+				163CC58C30ACED6969E8E007 /* Debug */,
+				3BE59E4A6D77E37A940DA316 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = A83AC22E140E86DC369EC0A9 /* Project object */;
+	rootObject = 0003C370165973758510B843 /* Project object */;
 }

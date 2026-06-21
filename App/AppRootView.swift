@@ -36,6 +36,12 @@ struct AppRootView: View {
                 }
                 .tag(AppTab.scan)
 
+            HistoryView()
+                .tabItem {
+                    Label("History", systemImage: "clock.arrow.circlepath")
+                }
+                .tag(AppTab.history)
+
             KeyboardLayoutSettingsView(setupStatus: setupStatus)
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
@@ -55,11 +61,13 @@ struct AppRootView: View {
 
     private func refreshSetupStatus() {
         setupStatus = .current
+        _ = ScanHistoryStore.applyRetention()
     }
 }
 
 private enum AppTab: Hashable {
     case scan
+    case history
     case settings
 }
 

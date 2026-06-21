@@ -2,6 +2,12 @@ import AVFoundation
 import SwiftUI
 import Vision
 
+struct ScannerCodeResult: Equatable {
+    let value: String
+    let codeFormat: String?
+    let isManualEntry: Bool
+}
+
 struct BarcodeScannerView: UIViewControllerRepresentable {
     static var isScannerAvailable: Bool {
         BarcodeCaptureViewController.defaultVideoDevice() != nil
@@ -9,17 +15,21 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
 
     let scanFormatProfile: ScanFormatProfile
     let flashlightMode: ScannerFlashlightMode
+    let defaultZoomFactor: Double
+    let scanArea: ScannerScanArea
     @Binding var isTorchAvailable: Bool
     @Binding var isTorchOn: Bool
     @Binding var statusMessage: String?
-    let onCode: (String) -> Void
+    @Binding var currentZoomFactor: Double
+    let onCode: (ScannerCodeResult) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
             onCode: onCode,
             isTorchAvailable: $isTorchAvailable,
             isTorchOn: $isTorchOn,
-            statusMessage: $statusMessage
+            statusMessage: $statusMessage,
+            currentZoomFactor: $currentZoomFactor
         )
     }
 
@@ -27,12 +37,16 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         let controller = BarcodeCaptureViewController()
         controller.delegate = context.coordinator
         controller.scanFormatProfile = scanFormatProfile
+        controller.defaultZoomFactor = defaultZoomFactor
+        controller.scanArea = scanArea
         controller.setTorch(on: flashlightMode == .on)
         return controller
     }
 
     func updateUIViewController(_ uiViewController: BarcodeCaptureViewController, context: Context) {
         uiViewController.scanFormatProfile = scanFormatProfile
+        uiViewController.defaultZoomFactor = defaultZoomFactor
+        uiViewController.scanArea = scanArea
         uiViewController.setTorch(on: flashlightMode == .on)
     }
 
@@ -42,30 +56,37 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     }
 
     final class Coordinator: NSObject, BarcodeCaptureViewControllerDelegate {
-        private let onCode: (String) -> Void
+        private let onCode: (ScannerCodeResult) -> Void
         private var isTorchAvailable: Binding<Bool>
         private var isTorchOn: Binding<Bool>
         private var statusMessage: Binding<String?>
+        private var currentZoomFactor: Binding<Double>
 
         init(
-            onCode: @escaping (String) -> Void,
+            onCode: @escaping (ScannerCodeResult) -> Void,
             isTorchAvailable: Binding<Bool>,
             isTorchOn: Binding<Bool>,
-            statusMessage: Binding<String?>
+            statusMessage: Binding<String?>,
+            currentZoomFactor: Binding<Double>
         ) {
             self.onCode = onCode
             self.isTorchAvailable = isTorchAvailable
             self.isTorchOn = isTorchOn
             self.statusMessage = statusMessage
+            self.currentZoomFactor = currentZoomFactor
         }
 
-        func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didScan code: String) {
-            onCode(code)
+        func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didScan result: ScannerCodeResult) {
+            onCode(result)
         }
 
         func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateTorchAvailability isAvailable: Bool, isOn: Bool) {
             isTorchAvailable.wrappedValue = isAvailable
             isTorchOn.wrappedValue = isOn
+        }
+
+        func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateZoomFactor zoomFactor: Double) {
+            currentZoomFactor.wrappedValue = zoomFactor
         }
 
         func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateStatus message: String?) {
@@ -117,8 +138,9 @@ private extension ScanFormatProfile {
 }
 
 protocol BarcodeCaptureViewControllerDelegate: AnyObject {
-    func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didScan code: String)
+    func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didScan result: ScannerCodeResult)
     func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateTorchAvailability isAvailable: Bool, isOn: Bool)
+    func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateZoomFactor zoomFactor: Double)
     func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateStatus message: String?)
 }
 
@@ -130,6 +152,13 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             updateScanSymbologies()
         }
     }
+    var defaultZoomFactor: Double = 1.0 {
+        didSet {
+            guard oldValue != defaultZoomFactor else { return }
+            applyZoomFactor(defaultZoomFactor)
+        }
+    }
+    var scanArea: ScannerScanArea = .fullFrame
 
     private let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "com.antoniobeslic.Blip.camera")
@@ -143,6 +172,8 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private var isProcessingFrame = false
     private var didScan = false
     private var desiredTorchOn = false
+    private var currentZoomFactor: Double = 1.0
+    private var pinchStartZoomFactor: Double = 1.0
 
     static func defaultVideoDevice() -> AVCaptureDevice? {
         AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
@@ -153,6 +184,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         super.viewDidLoad()
         view.backgroundColor = .black
         configurePreviewLayer()
+        configurePinchGesture()
         configureVision()
         requestCameraAccessAndConfigure()
     }
@@ -196,12 +228,34 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         }
     }
 
+    func applyZoomFactor(_ requestedZoomFactor: Double) {
+        sessionQueue.async { [weak self] in
+            self?.setZoomFactorOnSessionQueue(requestedZoomFactor)
+        }
+    }
+
     private func configurePreviewLayer() {
         let previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer.videoGravity = .resizeAspectFill
         previewLayer.frame = view.bounds
         view.layer.addSublayer(previewLayer)
         self.previewLayer = previewLayer
+    }
+
+    private func configurePinchGesture() {
+        let recognizer = UIPinchGestureRecognizer(target: self, action: #selector(handlePinchGesture(_:)))
+        view.addGestureRecognizer(recognizer)
+    }
+
+    @objc private func handlePinchGesture(_ recognizer: UIPinchGestureRecognizer) {
+        switch recognizer.state {
+        case .began:
+            pinchStartZoomFactor = currentZoomFactor
+        case .changed:
+            applyZoomFactor(pinchStartZoomFactor * recognizer.scale)
+        default:
+            break
+        }
     }
 
     private func configureVision() {
@@ -283,10 +337,38 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 self.isConfigured = true
                 self.updateStatus(nil)
                 self.publishTorchState()
+                self.setZoomFactorOnSessionQueue(self.defaultZoomFactor)
                 self.startScanning()
             } catch {
                 self.updateStatus(NSLocalizedString("Camera failed to start", comment: "Camera failed to start status"))
             }
+        }
+    }
+
+    private func setZoomFactorOnSessionQueue(_ requestedZoomFactor: Double) {
+        guard let device = videoDevice else {
+            publishZoomFactor(currentZoomFactor)
+            return
+        }
+
+        let maxZoomFactor = max(1.0, Double(device.activeFormat.videoMaxZoomFactor))
+        let clampedZoomFactor = min(max(requestedZoomFactor, 1.0), maxZoomFactor)
+
+        do {
+            try device.lockForConfiguration()
+            device.videoZoomFactor = CGFloat(clampedZoomFactor)
+            device.unlockForConfiguration()
+            currentZoomFactor = clampedZoomFactor
+            publishZoomFactor(clampedZoomFactor)
+        } catch {
+            publishZoomFactor(currentZoomFactor)
+        }
+    }
+
+    private func publishZoomFactor(_ zoomFactor: Double) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.delegate?.barcodeCaptureViewController(self, didUpdateZoomFactor: zoomFactor)
         }
     }
 
@@ -359,19 +441,29 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         defer { isProcessingFrame = false }
 
         guard error == nil, !didScan else { return }
+        let activeRegion = scanArea.normalizedVisionRegion
         let observation = request.results?
             .compactMap { $0 as? VNBarcodeObservation }
             .first { observation in
                 guard let value = observation.payloadStringValue else { return false }
-                return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+                guard let activeRegion else { return true }
+
+                let center = CGPoint(x: observation.boundingBox.midX, y: observation.boundingBox.midY)
+                return activeRegion.contains(center)
             }
 
         guard let code = observation?.payloadStringValue else { return }
         didScan = true
+        let result = ScannerCodeResult(
+            value: code,
+            codeFormat: observation?.symbology.rawValue,
+            isManualEntry: false
+        )
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.delegate?.barcodeCaptureViewController(self, didScan: code)
+            self.delegate?.barcodeCaptureViewController(self, didScan: result)
         }
     }
 }
