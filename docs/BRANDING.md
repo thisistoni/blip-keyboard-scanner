@@ -34,6 +34,10 @@ Blip should feel like a reliable company utility rather than a consumer novelty 
 
 ## Generated Icon Concepts
 
+Selected app icon source:
+
+![Selected Blip app icon](../Branding/IconConcepts/blip-selected-icon-source.png)
+
 Generated concept sheet:
 
 ![Blip icon concepts](../Branding/IconConcepts/blip-icon-concepts-sheet.png)
@@ -44,8 +48,11 @@ Individual 1024x1024 candidates:
 - [Concept 2: stylized scan mark](../Branding/IconConcepts/blip-icon-concept-2.png)
 - [Concept 3: barcode to cursor](../Branding/IconConcepts/blip-icon-concept-3.png)
 - [Concept 4: barcode/QR bridge](../Branding/IconConcepts/blip-icon-concept-4.png)
+- [Standalone top-right draft](../Branding/IconConcepts/blip-icon-top-right-1024.png)
 
-Current recommendation: use Concept 1 or Concept 3 as the production direction. Concept 1 explains the product fastest. Concept 3 is cleaner at small icon size.
+Current selected direction: blue gradient background, white scan frame, `b` mark, QR glyph, and keyboard motif. The Xcode app icon is generated from this full-square source in `App/Assets.xcassets/AppIcon.appiconset`.
+
+Earlier recommendation: Concept 1 explains the product fastest. Concept 3 is cleaner at small icon size.
 
 ## Generation Prompt
 
