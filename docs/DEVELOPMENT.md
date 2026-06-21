@@ -74,19 +74,3 @@ Validate strings files with:
 ```sh
 plutil -lint App/en.lproj/Localizable.strings App/de.lproj/Localizable.strings
 ```
-
-## App Store Screenshots
-
-Install Fastlane dependencies:
-
-```sh
-bundle install --path vendor/bundle
-```
-
-Check screenshot folders:
-
-```sh
-FASTLANE_SKIP_UPDATE_CHECK=1 bundle exec fastlane ios screenshot_status
-```
-
-Place real iPhone workflow screenshots in `Marketing/AppStore/raw/manual/iphone`. Use the Fastlane capture lane only after adding a dedicated screenshot UI-test scheme for simulator-safe app screens.

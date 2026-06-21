@@ -40,7 +40,6 @@ KeyboardExtension/    Custom keyboard extension
 Shared/               Shared settings, scan session, and app-group state
 Branding/             Product naming and app icon source
 docs/                 Architecture, development, and test notes
-Marketing/AppStore/   Raw screenshots, App Store copy, and final exports
 project.yml           XcodeGen project definition
 ```
 
@@ -86,8 +85,6 @@ xcodebuild -project Blip.xcodeproj \
 More setup notes live in [Development](docs/DEVELOPMENT.md).
 
 Third-party asset credits are tracked in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
-
-App Store screenshot planning lives in [Marketing/AppStore](Marketing/AppStore/README.md). Fastlane screenshot helper lanes live in [fastlane](fastlane/README.md).
 
 ## Validation
 
