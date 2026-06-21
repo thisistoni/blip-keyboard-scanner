@@ -214,3 +214,9 @@
 "Use this when iOS Settings does not seem to match what Blip detects." = "Nutze das, wenn die iOS-Einstellungen nicht zu dem passen, was Blip erkennt.";
 "Why Full Access is needed" = "Warum voller Zugriff nötig ist";
 "You can turn history off, choose how long it is kept, delete one item, or clear everything." = "Du kannst den Verlauf deaktivieren, die Aufbewahrungsdauer wählen, einzelne Einträge löschen oder alles löschen.";
+"Blip Sound" = "Blip-Sound";
+"Custom Return URL" = "Eigene Rückkehr-URL";
+"Default Flashlight" = "Standard-Taschenlampe";
+"Enabled Layouts" = "Aktivierte Layouts";
+"Keyboard Language" = "Tastatursprache";
+"Opening Layout" = "Startlayout";

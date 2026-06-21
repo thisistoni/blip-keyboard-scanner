@@ -37,7 +37,7 @@ struct CompanyProfilesView: View {
                 ProfileIncludedRow(title: "Opening layout", systemImage: "rectangle.and.pencil.and.ellipsis")
                 ProfileIncludedRow(title: "Scan suffix", systemImage: "return")
                 ProfileIncludedRow(title: "Scan formats", systemImage: "barcode.viewfinder")
-                ProfileIncludedRow(title: "Return target", systemImage: "arrowshape.turn.up.backward")
+                ProfileIncludedRow(title: "Return Target", systemImage: "arrowshape.turn.up.backward")
                 ProfileIncludedRow(title: "Sound, flashlight, zoom, and scan area", systemImage: "camera.viewfinder")
             }
         }

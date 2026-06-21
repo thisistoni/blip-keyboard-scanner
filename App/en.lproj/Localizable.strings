@@ -214,3 +214,9 @@
 "Use this when iOS Settings does not seem to match what Blip detects." = "Use this when iOS Settings does not seem to match what Blip detects.";
 "Why Full Access is needed" = "Why Full Access is needed";
 "You can turn history off, choose how long it is kept, delete one item, or clear everything." = "You can turn history off, choose how long it is kept, delete one item, or clear everything.";
+"Blip Sound" = "Blip Sound";
+"Custom Return URL" = "Custom Return URL";
+"Default Flashlight" = "Default Flashlight";
+"Enabled Layouts" = "Enabled Layouts";
+"Keyboard Language" = "Keyboard Language";
+"Opening Layout" = "Opening Layout";
