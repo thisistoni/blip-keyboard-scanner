@@ -1,6 +1,6 @@
 # Changelog
 
-## Current State
+## Unreleased
 
 - Blip branding applied to app name, keyboard display name, Xcode project, targets, schemes, URL scheme, bundle identifiers, and app group.
 - Optional Blip sound feedback when a scan succeeds.
@@ -13,4 +13,4 @@
 - Flashlight support in the scanner.
 - Setup flow with keyboard detection, settings shortcut, and diagnostics.
 - English and German app localization.
-- Selected app icon source and product branding notes.
+- Blip app icon source and brand guidelines.

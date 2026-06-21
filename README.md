@@ -4,7 +4,7 @@ Blip is an iOS keyboard scanner for company workflows. It adds a custom keyboard
 
 ![Blip app icon](Branding/AppIcon/blip-icon-source.png)
 
-## Current Capabilities
+## Features
 
 - Custom iOS keyboard extension with a familiar keyboard-style UI.
 - English and German keyboard language options.
@@ -97,22 +97,6 @@ The important workflow must be tested on a physical iPhone:
 - insert exactly once into the original field
 
 See [Test Plan](docs/TEST_PLAN.md).
-
-## Branding
-
-Current preferred product name:
-
-**Blip: Barcode QR Keyboard**
-
-Short display name:
-
-**Blip**
-
-Positioning:
-
-**Scan into any field.**
-
-See [Branding](docs/BRANDING.md) for product naming and visual direction.
 
 ## Known Platform Constraints
 

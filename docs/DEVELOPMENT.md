@@ -17,7 +17,7 @@ brew install xcodegen
 open Blip.xcodeproj
 ```
 
-The checked-in Xcode project is the current working project. Regenerate only when changing `project.yml`:
+The checked-in Xcode project is authoritative. Regenerate only when changing `project.yml`:
 
 ```sh
 xcodegen generate

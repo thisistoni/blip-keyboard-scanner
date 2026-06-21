@@ -1,20 +1,12 @@
-# Branding
+# Blip Brand
 
-## Product Name
+## Naming
 
-Recommended App Store title:
+- App Store title: **Blip: Barcode QR Keyboard**
+- Display name: **Blip**
+- Tagline: **Scan into any field.**
 
-**Blip: Barcode QR Keyboard**
-
-Short home-screen name:
-
-**Blip**
-
-Positioning line:
-
-**Scan into any field.**
-
-## Brand Direction
+## Tone
 
 Blip should feel like a reliable company utility rather than a consumer novelty app:
 
@@ -24,7 +16,7 @@ Blip should feel like a reliable company utility rather than a consumer novelty 
 - Clean enough for enterprise rollout
 - Friendly enough that non-technical employees understand it
 
-## Visual Direction
+## Visual System
 
 - Deep graphite / near-black base
 - Electric cyan or blue scan accent
@@ -34,8 +26,8 @@ Blip should feel like a reliable company utility rather than a consumer novelty 
 
 ## App Icon
 
-Selected app icon source:
+Source asset:
 
-![Selected Blip app icon](../Branding/AppIcon/blip-icon-source.png)
+![Blip app icon](../Branding/AppIcon/blip-icon-source.png)
 
-The selected direction uses a blue gradient background, white scan frame, `b` mark, QR glyph, and keyboard motif. The Xcode app icon is generated from this full-square source in `App/Assets.xcassets/AppIcon.appiconset`.
+The app icon uses a blue gradient background, white scan frame, `b` mark, QR glyph, and keyboard motif. The Xcode app icon is generated from this full-square source in `App/Assets.xcassets/AppIcon.appiconset`.
