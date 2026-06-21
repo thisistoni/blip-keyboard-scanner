@@ -164,6 +164,7 @@
 "Included Settings" = "Enthaltene Einstellungen";
 "Install or configure Mail to send feedback from Blip." = "Installiere oder konfiguriere Mail, um Feedback aus Blip zu senden.";
 "Install or configure Mail, or copy the scan and send it with another email app." = "Installiere oder konfiguriere Mail, oder kopiere den Scan und sende ihn mit einer anderen E-Mail-App.";
+"Inserted by keyboard" = "Über Tastatur eingefügt";
 "iOS Keyboard Entries" = "iOS-Tastatureinträge";
 "iOS keeps keyboards and apps separate. Full Access lets the Blip keyboard extension and scanner app share the scan result through the app group." = "iOS trennt Tastaturen und Apps. Voller Zugriff erlaubt der Blip-Tastaturerweiterung und der Scanner-App, das Scanergebnis über die App-Gruppe zu teilen.";
 "Keep History" = "Verlauf behalten";
@@ -177,6 +178,7 @@
 "Keyboard language" = "Tastatursprache";
 "Matched keyboard" = "Erkannte Tastatur";
 "Maximum default zoom for tiny or distant codes." = "Maximaler Standardzoom für sehr kleine oder entfernte Codes.";
+"More" = "Mehr";
 "No cloud sync" = "Keine Cloud-Synchronisierung";
 "No matching scans" = "Keine passenden Scans";
 "No scan history" = "Kein Scanverlauf";
@@ -207,6 +209,7 @@
 "This removes local scan history from this device." = "Dadurch wird der lokale Scanverlauf von diesem Gerät entfernt.";
 "Try a different search term." = "Versuche einen anderen Suchbegriff.";
 "Unknown" = "Unbekannt";
+"Unknown format" = "Unbekanntes Format";
 "Use the normal camera view." = "Normale Kameraansicht verwenden.";
 "Use this when iOS Settings does not seem to match what Blip detects." = "Nutze das, wenn die iOS-Einstellungen nicht zu dem passen, was Blip erkennt.";
 "Why Full Access is needed" = "Warum voller Zugriff nötig ist";

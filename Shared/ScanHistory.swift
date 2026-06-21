@@ -27,7 +27,7 @@ enum ScanInsertionStatus: String, Codable, CaseIterable, Identifiable {
         case .notQueued:
             NSLocalizedString("Not queued", comment: "History insertion status not queued")
         case .queuedForKeyboardInsertion:
-            NSLocalizedString("Queued for keyboard insertion", comment: "History insertion status queued")
+            NSLocalizedString("Inserted by keyboard", comment: "History insertion status inserted by keyboard")
         }
     }
 }
@@ -62,6 +62,43 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
     var returnTarget: ReturnTarget? {
         guard let returnTargetRawValue else { return nil }
         return ReturnTarget(rawValue: returnTargetRawValue)
+    }
+
+    var displayCodeFormat: String {
+        guard let codeFormat, !codeFormat.isEmpty else {
+            return NSLocalizedString("Unknown format", comment: "Unknown scan history code format")
+        }
+
+        let normalized = codeFormat
+            .replacingOccurrences(of: "VNBarcodeSymbology", with: "")
+            .replacingOccurrences(of: "Symbology", with: "")
+
+        switch normalized.lowercased() {
+        case "aztec":
+            return "Aztec"
+        case "code39":
+            return "Code 39"
+        case "code128":
+            return "Code 128"
+        case "datamatrix":
+            return "Data Matrix"
+        case "ean8":
+            return "EAN-8"
+        case "ean13":
+            return "EAN-13"
+        case "i2of5":
+            return "ITF"
+        case "itf14":
+            return "ITF-14"
+        case "pdf417":
+            return "PDF417"
+        case "qr":
+            return "QR"
+        case "upce":
+            return "UPC-E"
+        default:
+            return normalized
+        }
     }
 }
 
@@ -161,10 +198,12 @@ enum ScanHistoryStore {
     static func delete(_ item: ScanHistoryItem) {
         let filtered = rawItems().filter { $0.id != item.id }
         save(filtered)
+        refreshLastScanAfterHistoryChange(filtered)
     }
 
     static func clear() {
         save([])
+        SharedKeyboardState.lastScannedCode = ""
     }
 
     private static func rawItems() -> [ScanHistoryItem] {
@@ -178,5 +217,16 @@ enum ScanHistoryStore {
     private static func save(_ items: [ScanHistoryItem]) {
         guard let data = try? encoder.encode(items) else { return }
         SharedKeyboardState.defaults?.set(data, forKey: SharedKeyboardState.Keys.scanHistoryItems)
+    }
+
+    private static func refreshLastScanAfterHistoryChange(_ remainingItems: [ScanHistoryItem]) {
+        guard !SharedKeyboardState.lastScannedCode.isEmpty else { return }
+
+        let sortedItems = remainingItems.sorted { $0.scannedAt > $1.scannedAt }
+        if let latestItem = sortedItems.first {
+            SharedKeyboardState.lastScannedCode = latestItem.value
+        } else {
+            SharedKeyboardState.lastScannedCode = ""
+        }
     }
 }

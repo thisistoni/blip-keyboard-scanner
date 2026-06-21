@@ -136,67 +136,85 @@ private struct HistoryRow: View {
     let onReport: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
                 Text(item.value)
-                    .font(.body.monospaced())
-                    .lineLimit(2)
+                    .font(.title3.monospaced())
+                    .lineLimit(3)
                     .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer(minLength: 12)
-
-                Text(item.codeFormat ?? "Unknown")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(.tertiarySystemGroupedBackground), in: Capsule())
-            }
-
-            HStack(spacing: 8) {
-                Label(Self.dateFormatter.string(from: item.scannedAt), systemImage: "calendar")
-                Label(item.source.title, systemImage: item.source == .keyboard ? "keyboard" : "app")
-
-                if let returnTarget = item.returnTarget {
-                    Label(returnTarget.title, systemImage: "arrowshape.turn.up.backward")
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-
-            if item.insertionStatus == .queuedForKeyboardInsertion {
-                Label(item.insertionStatus.title, systemImage: "text.insert")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack {
                 Button {
                     onCopy()
                 } label: {
-                    Label(isCopied ? "Copied" : "Copy", systemImage: isCopied ? "checkmark" : "doc.on.doc")
+                    Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                        .font(.body.weight(.semibold))
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderless)
+                .accessibilityLabel(isCopied ? "Copied" : "Copy")
 
-                Button {
-                    onReport()
+                Menu {
+                    Button {
+                        onReport()
+                    } label: {
+                        Label("Report Issue", systemImage: "envelope")
+                    }
                 } label: {
-                    Label("Report Issue", systemImage: "envelope")
+                    Image(systemName: "ellipsis.circle")
+                        .font(.body.weight(.semibold))
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderless)
+                .accessibilityLabel("More")
             }
-            .font(.caption.weight(.semibold))
+
+            Text(metadataLine)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
+            if isCopied {
+                Text("Copied")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.blue)
+            }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
         .onTapGesture(perform: onCopy)
     }
 
-    private static let dateFormatter: DateFormatter = {
+    private var metadataLine: String {
+        var parts = [
+            HistoryDateFormatter.string(from: item.scannedAt),
+            item.displayCodeFormat,
+            item.source.title,
+        ]
+
+        if let returnTarget = item.returnTarget {
+            parts.append(returnTarget.title)
+        }
+
+        return parts.joined(separator: " • ")
+    }
+}
+
+private enum HistoryDateFormatter {
+    static func string(from date: Date) -> String {
+        formatter.string(from: date)
+    }
+
+    private static let formatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
+
+        if Bundle.main.preferredLocalizations.first == "de" {
+            formatter.locale = Locale(identifier: "de_DE")
+            formatter.dateFormat = "dd.MM.yyyy, HH:mm"
+        } else {
+            formatter.locale = .autoupdatingCurrent
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .short
+        }
+
         return formatter
     }()
 }

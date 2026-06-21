@@ -346,8 +346,34 @@ enum ScannerScanArea: String, CaseIterable, Identifiable {
         case .fullFrame:
             nil
         case .centeredBox:
-            CGRect(x: 0.15, y: 0.34, width: 0.70, height: 0.32)
+            ScannerScanAreaGuide.normalizedRect
         }
+    }
+}
+
+enum ScannerScanAreaGuide {
+    static let widthRatio: CGFloat = 0.70
+    static let heightRatio: CGFloat = 0.32
+    static let cornerRadius: CGFloat = 18
+    static let normalizedRect = CGRect(
+        x: (1 - widthRatio) / 2,
+        y: (1 - heightRatio) / 2,
+        width: widthRatio,
+        height: heightRatio
+    )
+
+    static func rect(in bounds: CGRect) -> CGRect {
+        let guideSize = CGSize(
+            width: bounds.width * widthRatio,
+            height: bounds.height * heightRatio
+        )
+
+        return CGRect(
+            x: bounds.midX - guideSize.width / 2,
+            y: bounds.midY - guideSize.height / 2,
+            width: guideSize.width,
+            height: guideSize.height
+        )
     }
 }
 

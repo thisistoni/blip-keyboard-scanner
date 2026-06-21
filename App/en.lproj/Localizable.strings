@@ -164,6 +164,7 @@
 "Included Settings" = "Included Settings";
 "Install or configure Mail to send feedback from Blip." = "Install or configure Mail to send feedback from Blip.";
 "Install or configure Mail, or copy the scan and send it with another email app." = "Install or configure Mail, or copy the scan and send it with another email app.";
+"Inserted by keyboard" = "Inserted by keyboard";
 "iOS Keyboard Entries" = "iOS Keyboard Entries";
 "iOS keeps keyboards and apps separate. Full Access lets the Blip keyboard extension and scanner app share the scan result through the app group." = "iOS keeps keyboards and apps separate. Full Access lets the Blip keyboard extension and scanner app share the scan result through the app group.";
 "Keep History" = "Keep History";
@@ -177,6 +178,7 @@
 "Keyboard language" = "Keyboard language";
 "Matched keyboard" = "Matched keyboard";
 "Maximum default zoom for tiny or distant codes." = "Maximum default zoom for tiny or distant codes.";
+"More" = "More";
 "No cloud sync" = "No cloud sync";
 "No matching scans" = "No matching scans";
 "No scan history" = "No scan history";
@@ -207,6 +209,7 @@
 "This removes local scan history from this device." = "This removes local scan history from this device.";
 "Try a different search term." = "Try a different search term.";
 "Unknown" = "Unknown";
+"Unknown format" = "Unknown format";
 "Use the normal camera view." = "Use the normal camera view.";
 "Use this when iOS Settings does not seem to match what Blip detects." = "Use this when iOS Settings does not seem to match what Blip detects.";
 "Why Full Access is needed" = "Why Full Access is needed";

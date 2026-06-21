@@ -158,7 +158,12 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             applyZoomFactor(defaultZoomFactor)
         }
     }
-    var scanArea: ScannerScanArea = .fullFrame
+    var scanArea: ScannerScanArea = .fullFrame {
+        didSet {
+            guard oldValue != scanArea else { return }
+            updateScanAreaRegion()
+        }
+    }
 
     private let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "com.antoniobeslic.Blip.camera")
@@ -174,6 +179,10 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private var desiredTorchOn = false
     private var currentZoomFactor: Double = 1.0
     private var pinchStartZoomFactor: Double = 1.0
+    private let scanAreaLock = NSLock()
+    private var activeLayerScanRect: CGRect?
+    private var activePreviewBounds: CGRect = .zero
+    private var latestOrientedFrameSize: CGSize = .zero
 
     static func defaultVideoDevice() -> AVCaptureDevice? {
         AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
@@ -192,6 +201,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         previewLayer?.frame = view.bounds
+        updateScanAreaRegion()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -264,10 +274,34 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         }
         barcodeRequest = request
         updateScanSymbologies()
+        updateScanAreaRegion()
     }
 
     private func updateScanSymbologies() {
         barcodeRequest?.symbologies = scanFormatProfile.visionSymbologies
+    }
+
+    private func updateScanAreaRegion() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+
+            let layerScanRect: CGRect?
+            let previewBounds = self.previewLayer?.bounds ?? .zero
+            if self.scanArea == .centeredBox, let previewLayer = self.previewLayer {
+                layerScanRect = ScannerScanAreaGuide.rect(in: previewLayer.bounds)
+            } else {
+                layerScanRect = nil
+            }
+
+            self.scanAreaLock.lock()
+            self.activeLayerScanRect = layerScanRect
+            self.activePreviewBounds = previewBounds
+            self.scanAreaLock.unlock()
+
+            self.visionQueue.async { [weak self] in
+                self?.barcodeRequest?.regionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
+            }
+        }
     }
 
     private func requestCameraAccessAndConfigure() {
@@ -428,6 +462,10 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         guard !didScan, !isProcessingFrame, let barcodeRequest else { return }
 
         isProcessingFrame = true
+        latestOrientedFrameSize = Self.orientedImageSize(
+            for: sampleBuffer,
+            previewBounds: currentActivePreviewBounds()
+        )
         let handler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .right, options: [:])
 
         do {
@@ -441,16 +479,15 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         defer { isProcessingFrame = false }
 
         guard error == nil, !didScan else { return }
-        let activeRegion = scanArea.normalizedVisionRegion
         let observation = request.results?
             .compactMap { $0 as? VNBarcodeObservation }
             .first { observation in
                 guard let value = observation.payloadStringValue else { return false }
                 guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-                guard let activeRegion else { return true }
-
-                let center = CGPoint(x: observation.boundingBox.midX, y: observation.boundingBox.midY)
-                return activeRegion.contains(center)
+                return self.isObservationInsideActiveScanArea(
+                    observation,
+                    orientedImageSize: self.latestOrientedFrameSize
+                )
             }
 
         guard let code = observation?.payloadStringValue else { return }
@@ -466,4 +503,109 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             self.delegate?.barcodeCaptureViewController(self, didScan: result)
         }
     }
+
+    private func isObservationInsideActiveScanArea(
+        _ observation: VNBarcodeObservation,
+        orientedImageSize: CGSize
+    ) -> Bool {
+        guard let activeLayerScanRect = currentActiveLayerScanRect(),
+              orientedImageSize.width > 0,
+              orientedImageSize.height > 0 else {
+            return true
+        }
+
+        let observationLayerRect = Self.layerRect(
+            fromVisionBoundingBox: observation.boundingBox,
+            orientedImageSize: orientedImageSize,
+            previewBounds: currentActivePreviewBounds()
+        )
+        let observationCenter = CGPoint(
+            x: observationLayerRect.midX,
+            y: observationLayerRect.midY
+        )
+
+        guard activeLayerScanRect.contains(observationCenter) else { return false }
+
+        let overlap = activeLayerScanRect.intersection(observationLayerRect)
+        guard !overlap.isNull, !overlap.isEmpty else { return false }
+
+        let observationArea = max(observationLayerRect.width * observationLayerRect.height, 0.0001)
+        let overlapArea = overlap.width * overlap.height
+        return overlapArea / observationArea >= 0.65
+    }
+
+    private func currentActiveLayerScanRect() -> CGRect? {
+        scanAreaLock.lock()
+        defer { scanAreaLock.unlock() }
+        return activeLayerScanRect
+    }
+
+    private func currentActivePreviewBounds() -> CGRect {
+        scanAreaLock.lock()
+        defer { scanAreaLock.unlock() }
+        return activePreviewBounds
+    }
+
+    private static func orientedImageSize(for sampleBuffer: CMSampleBuffer, previewBounds: CGRect) -> CGSize {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            return .zero
+        }
+
+        let rawSize = CGSize(
+            width: CGFloat(CVPixelBufferGetWidth(pixelBuffer)),
+            height: CGFloat(CVPixelBufferGetHeight(pixelBuffer))
+        )
+        let rotatedSize = CGSize(width: rawSize.height, height: rawSize.width)
+
+        guard previewBounds.width > 0, previewBounds.height > 0, rawSize.height > 0 else {
+            return rotatedSize
+        }
+
+        let previewAspectRatio = previewBounds.width / previewBounds.height
+        let rawDelta = abs(rawSize.width / rawSize.height - previewAspectRatio)
+        let rotatedDelta = abs(rotatedSize.width / rotatedSize.height - previewAspectRatio)
+
+        return rawDelta <= rotatedDelta ? rawSize : rotatedSize
+    }
+
+    private static func layerRect(
+        fromVisionBoundingBox boundingBox: CGRect,
+        orientedImageSize: CGSize,
+        previewBounds: CGRect
+    ) -> CGRect {
+        guard orientedImageSize.width > 0,
+              orientedImageSize.height > 0,
+              previewBounds.width > 0,
+              previewBounds.height > 0 else {
+            return .zero
+        }
+
+        let imageRect = CGRect(
+            x: boundingBox.minX * orientedImageSize.width,
+            y: (1 - boundingBox.maxY) * orientedImageSize.height,
+            width: boundingBox.width * orientedImageSize.width,
+            height: boundingBox.height * orientedImageSize.height
+        )
+
+        let scale = max(
+            previewBounds.width / orientedImageSize.width,
+            previewBounds.height / orientedImageSize.height
+        )
+        let displayedImageSize = CGSize(
+            width: orientedImageSize.width * scale,
+            height: orientedImageSize.height * scale
+        )
+        let imageOrigin = CGPoint(
+            x: previewBounds.minX + (previewBounds.width - displayedImageSize.width) / 2,
+            y: previewBounds.minY + (previewBounds.height - displayedImageSize.height) / 2
+        )
+
+        return CGRect(
+            x: imageOrigin.x + imageRect.minX * scale,
+            y: imageOrigin.y + imageRect.minY * scale,
+            width: imageRect.width * scale,
+            height: imageRect.height * scale
+        )
+    }
+
 }

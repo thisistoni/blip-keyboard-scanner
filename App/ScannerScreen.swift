@@ -402,39 +402,35 @@ private struct ScannerPresentation: View {
 private struct ScannerAreaGuideOverlay: View {
     var body: some View {
         GeometryReader { geometry in
-            let guideWidth = geometry.size.width * 0.70
-            let guideHeight = geometry.size.height * 0.32
-            let guideX = (geometry.size.width - guideWidth) / 2
-            let guideY = (geometry.size.height - guideHeight) / 2
-            let guideRect = CGRect(x: guideX, y: guideY, width: guideWidth, height: guideHeight)
+            let guideRect = ScannerScanAreaGuide.rect(
+                in: CGRect(origin: .zero, size: geometry.size)
+            )
 
             ZStack(alignment: .topLeading) {
-                Color.black.opacity(0.34)
-                    .frame(width: geometry.size.width, height: guideRect.minY)
+                ScannerAreaDimmingShape(
+                    guideRect: guideRect,
+                    cornerRadius: ScannerScanAreaGuide.cornerRadius
+                )
+                .fill(.black.opacity(0.42), style: FillStyle(eoFill: true))
 
-                Color.black.opacity(0.34)
-                    .frame(width: geometry.size.width, height: geometry.size.height - guideRect.maxY)
-                    .offset(y: guideRect.maxY)
-
-                Color.black.opacity(0.34)
-                    .frame(width: guideRect.minX, height: guideRect.height)
-                    .offset(y: guideRect.minY)
-
-                Color.black.opacity(0.34)
-                    .frame(width: geometry.size.width - guideRect.maxX, height: guideRect.height)
-                    .offset(x: guideRect.maxX, y: guideRect.minY)
-
-                RoundedRectangle(cornerRadius: 18)
-                    .strokeBorder(.white.opacity(0.92), lineWidth: 3)
+                RoundedRectangle(cornerRadius: ScannerScanAreaGuide.cornerRadius)
+                    .strokeBorder(.white.opacity(0.92), lineWidth: 2)
                     .frame(width: guideRect.width, height: guideRect.height)
                     .offset(x: guideRect.minX, y: guideRect.minY)
-
-                RoundedRectangle(cornerRadius: 18)
-                    .strokeBorder(.blue.opacity(0.85), lineWidth: 1)
-                    .frame(width: guideRect.width + 10, height: guideRect.height + 10)
-                    .offset(x: guideRect.minX - 5, y: guideRect.minY - 5)
             }
         }
+    }
+}
+
+private struct ScannerAreaDimmingShape: Shape {
+    let guideRect: CGRect
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addRect(rect)
+        path.addRoundedRect(in: guideRect, cornerSize: CGSize(width: cornerRadius, height: cornerRadius))
+        return path
     }
 }
 
