@@ -98,6 +98,10 @@ The important workflow must be tested on a physical iPhone:
 
 See [Test Plan](docs/TEST_PLAN.md).
 
+## App Store Preparation
+
+Submission copy, screenshot guidance, privacy answers, support/privacy page drafts, and review notes live in [App Store Submission Pack](AppStore/README.md).
+
 ## Known Platform Constraints
 
 - Camera access must happen in the containing app, not the keyboard extension.

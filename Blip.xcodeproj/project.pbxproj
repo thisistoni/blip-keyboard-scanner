@@ -25,8 +25,10 @@
 		AC272D255BBD9340650CBBCA /* ScanHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */; };
 		AF4C1479AB197174998705B2 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA2224923941FE359D09EB73 /* KeyboardViewController.swift */; };
 		BF2638979D1D4921030654F8 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 377B6F3B6C18EBA07618C583 /* Localizable.strings */; };
+		C002F8AE24097E721454CBEC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */; };
 		C7FC916F8A685C9A102F9524 /* BlipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C996AC636B03E56AE187B7 /* BlipApp.swift */; };
 		C8B533246884B21A3E3DC1EA /* BlipCompanyProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */; };
+		D0DE4492D022484817C7D82F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */; };
 		D92071A43A8542A555BDA2F5 /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CECF940A77E80308B06286 /* BarcodeScannerView.swift */; };
 		E54A46DB412041B7F6EE7942 /* SystemSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */; };
 		ED860D2D15741BE25855EFDA /* ScanHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */; };
@@ -81,6 +83,7 @@
 		C6FCE2FCF2F29D1426988ED7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D2D91AC1B5A59D4A14198976 /* Blip.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Blip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSettingsOpener.swift; sourceTree = "<group>"; };
+		EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		EDEA5B0A14FD586843C508DD /* KeyboardLayoutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayoutSettingsView.swift; sourceTree = "<group>"; };
 		EF1998ECC1E46ECFC99560FC /* CompanyProfilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyProfilesView.swift; sourceTree = "<group>"; };
 		EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistory.swift; sourceTree = "<group>"; };
@@ -110,6 +113,7 @@
 			children = (
 				83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */,
 				7636556798B59B570DF3FDEC /* KeyboardSettings.swift */,
+				EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */,
 				EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */,
 			);
 			path = Shared;
@@ -168,6 +172,7 @@
 			buildConfigurationList = 4EE449065301D05407DE8686 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */;
 			buildPhases = (
 				4B3548926874B12A90294B4F /* Sources */,
+				332C9285D806B9ECDAB1888A /* Resources */,
 			);
 			buildRules = (
 			);
@@ -241,12 +246,21 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		332C9285D806B9ECDAB1888A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C002F8AE24097E721454CBEC /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		56D69C1BAC5ECEC44750D4E6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				AAA60C90D4EC9D200F3E16E4 /* Assets.xcassets in Resources */,
 				BF2638979D1D4921030654F8 /* Localizable.strings in Resources */,
+				D0DE4492D022484817C7D82F /* PrivacyInfo.xcprivacy in Resources */,
 				016F2660FD3B3C42CFB3B88B /* blip.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

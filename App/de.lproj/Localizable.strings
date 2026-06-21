@@ -176,6 +176,7 @@
 "Keyboard Setup Status" = "Tastaturstatus";
 "Keyboard Status" = "Tastaturstatus";
 "Keyboard language" = "Tastatursprache";
+"Legal & Support" = "Rechtliches & Support";
 "Matched keyboard" = "Erkannte Tastatur";
 "Maximum default zoom for tiny or distant codes." = "Maximaler Standardzoom für sehr kleine oder entfernte Codes.";
 "More" = "Mehr";
@@ -184,10 +185,12 @@
 "No scan history" = "Kein Scanverlauf";
 "Not queued" = "Nicht vorgemerkt";
 "Only scan codes inside the centered guide box." = "Nur Codes innerhalb des zentrierten Rahmens scannen.";
+"Open the public privacy policy and support page for Blip." = "Öffne die öffentliche Datenschutzerklärung und Support-Seite für Blip.";
 "Opening layout" = "Startlayout";
 "Prepare Export" = "Export vorbereiten";
 "Preview Profile" = "Profil prüfen";
 "Privacy & Trust" = "Datenschutz & Vertrauen";
+"Privacy Policy" = "Datenschutzerklärung";
 "Profile version %d is not supported." = "Profilversion %d wird nicht unterstützt.";
 "Profiles contain Blip configuration only. Scan history is never included." = "Profile enthalten nur die Blip-Konfiguration. Scanverlauf ist nie enthalten.";
 "Queued for keyboard insertion" = "Für Tastatureinfügung vorgemerkt";
@@ -201,6 +204,7 @@
 "Scans stay on this device" = "Scans bleiben auf diesem Gerät";
 "Search scans" = "Scans suchen";
 "Send Feedback" = "Feedback senden";
+"Support Page" = "Support-Seite";
 "Sound, flashlight, zoom, and scan area" = "Sound, Taschenlampe, Zoom und Scanbereich";
 "Successful real scans will appear here." = "Erfolgreiche echte Scans erscheinen hier.";
 "The profile contains an invalid value for %@." = "Das Profil enthält einen ungültigen Wert für %@.";

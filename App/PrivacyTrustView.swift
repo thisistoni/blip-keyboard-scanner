@@ -40,11 +40,23 @@ struct PrivacyTrustView: View {
                     systemImage: "envelope"
                 )
 
+                Link(destination: SupportEmail.privacyPolicyURL) {
+                    Label("Privacy Policy", systemImage: "hand.raised")
+                }
+
+                Link(destination: SupportEmail.supportURL) {
+                    Label("Support Page", systemImage: "questionmark.circle")
+                }
+
                 Button {
                     sendFeedback()
                 } label: {
                     Label("Send Feedback", systemImage: "paperplane")
                 }
+            } header: {
+                Text("Legal & Support")
+            } footer: {
+                Text("Open the public privacy policy and support page for Blip.")
             }
         }
         .navigationTitle("Privacy & Trust")

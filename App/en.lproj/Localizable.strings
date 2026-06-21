@@ -176,6 +176,7 @@
 "Keyboard Setup Status" = "Keyboard Setup Status";
 "Keyboard Status" = "Keyboard Status";
 "Keyboard language" = "Keyboard language";
+"Legal & Support" = "Legal & Support";
 "Matched keyboard" = "Matched keyboard";
 "Maximum default zoom for tiny or distant codes." = "Maximum default zoom for tiny or distant codes.";
 "More" = "More";
@@ -184,10 +185,12 @@
 "No scan history" = "No scan history";
 "Not queued" = "Not queued";
 "Only scan codes inside the centered guide box." = "Only scan codes inside the centered guide box.";
+"Open the public privacy policy and support page for Blip." = "Open the public privacy policy and support page for Blip.";
 "Opening layout" = "Opening layout";
 "Prepare Export" = "Prepare Export";
 "Preview Profile" = "Preview Profile";
 "Privacy & Trust" = "Privacy & Trust";
+"Privacy Policy" = "Privacy Policy";
 "Profile version %d is not supported." = "Profile version %d is not supported.";
 "Profiles contain Blip configuration only. Scan history is never included." = "Profiles contain Blip configuration only. Scan history is never included.";
 "Queued for keyboard insertion" = "Queued for keyboard insertion";
@@ -201,6 +204,7 @@
 "Scans stay on this device" = "Scans stay on this device";
 "Search scans" = "Search scans";
 "Send Feedback" = "Send Feedback";
+"Support Page" = "Support Page";
 "Sound, flashlight, zoom, and scan area" = "Sound, flashlight, zoom, and scan area";
 "Successful real scans will appear here." = "Successful real scans will appear here.";
 "The profile contains an invalid value for %@." = "The profile contains an invalid value for %@.";
