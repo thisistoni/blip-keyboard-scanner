@@ -96,6 +96,7 @@ struct ScannerScreen: View {
             .fullScreenCover(item: $activeSession) { session in
                 ScannerPresentation(
                     session: session,
+                    playScanSound: playScanSound,
                     flashlightModeRawValue: $scannerFlashlightModeRawValue
                 ) { code in
                     handleScannedCode(code, for: session)
@@ -132,7 +133,9 @@ struct ScannerScreen: View {
 
         SharedKeyboardState.queuePendingInsertion(cleanedCode, requestIdentifier: session.id)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        let returnDelay: TimeInterval = playScanSound ? 0.45 : 0.2
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + returnDelay) {
             SourceAppReturnController.openReturnTarget(
                 session.returnTarget,
                 customURLString: session.customReturnURL
@@ -237,6 +240,7 @@ private struct ScannerSession: Identifiable, Equatable {
 
 private struct ScannerPresentation: View {
     let session: ScannerSession
+    let playScanSound: Bool
     @Binding var flashlightModeRawValue: String
     let onCode: (String) -> Void
     let onCancel: () -> Void
@@ -271,6 +275,9 @@ private struct ScannerPresentation: View {
             }
             .navigationTitle(session.title)
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                ScanSoundPlayer.shared.prepareIfEnabled(playScanSound)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel", action: onCancel)

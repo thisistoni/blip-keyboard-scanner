@@ -14,6 +14,7 @@ The current Xcode project and target names still use the internal prototype name
 - Scanner built with AVFoundation and Vision.
 - Scan-format profiles for common barcodes, barcodes plus QR, or all supported formats.
 - Flashlight toggle and default flashlight preference.
+- Optional Blip scan sound.
 - Configurable return targets: Safari, Chrome, Edge, Firefox, Brave, or custom URL scheme.
 - App Group handoff so the scanner app can queue a result for the keyboard to insert once.
 - Configurable scan suffix: none, tab, enter, or space.
@@ -84,6 +85,8 @@ xcodebuild -project BarcodeKeyboard.xcodeproj \
 ```
 
 More setup notes live in [Development](docs/DEVELOPMENT.md).
+
+Third-party asset credits are tracked in [Third-Party Notices](THIRD_PARTY_NOTICES.md).
 
 ## Validation
 

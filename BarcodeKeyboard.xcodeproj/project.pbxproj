@@ -20,7 +20,7 @@
 		A1B2C3D4E5F60718293A4B5D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B60 /* Localizable.strings */; };
 		B1A2C3D4E5F60718293A4C02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */; };
 		B1A2C3D4E5F60718293A4C04 /* ScanSoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */; };
-		B1A2C3D4E5F60718293A4C06 /* blip.wav in Resources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C05 /* blip.wav */; };
+		B1A2C3D4E5F60718293A4C06 /* blip.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C05 /* blip.mp3 */; };
 		B6C03F8633BABBB0D1D63440 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E0584D3879CDB8BAEED6E /* KeyboardViewController.swift */; };
 		F2C64EFEC9FDB77C45B74211 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DFB3275CA66D6D6AF81643 /* AppRootView.swift */; };
 		F9713DB52D326CC79C81F3B8 /* SourceAppReturnController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */; };
@@ -67,7 +67,7 @@
 		AD61044CDC70254AEC8CAAEB /* BlipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlipApp.swift; sourceTree = "<group>"; };
 		B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSoundPlayer.swift; sourceTree = "<group>"; };
-		B1A2C3D4E5F60718293A4C05 /* blip.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Sounds/blip.wav; sourceTree = "<group>"; };
+		B1A2C3D4E5F60718293A4C05 /* blip.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Sounds/blip.mp3; sourceTree = "<group>"; };
 		BD656434C814A84F42EE3532 /* BarcodeKeyboard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BarcodeKeyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4670FF2B5E459DF4EC5B5DA /* BarcodeKeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BarcodeKeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DC795F10DE030B49C24FDC06 /* BarcodeKeyboardExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BarcodeKeyboardExtension.entitlements; sourceTree = "<group>"; };
@@ -116,7 +116,7 @@
 				B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */,
 				F277A502CF5429FBD303B365 /* ScannerScreen.swift */,
 				09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */,
-				B1A2C3D4E5F60718293A4C05 /* blip.wav */,
+				B1A2C3D4E5F60718293A4C05 /* blip.mp3 */,
 				3C8DD8A142B2B0C77B3DF44C /* SystemSettingsOpener.swift */,
 			);
 			path = App;
@@ -221,7 +221,7 @@
 			files = (
 				B1A2C3D4E5F60718293A4C02 /* Assets.xcassets in Resources */,
 				A1B2C3D4E5F60718293A4B5C /* Localizable.strings in Resources */,
-				B1A2C3D4E5F60718293A4C06 /* blip.wav in Resources */,
+				B1A2C3D4E5F60718293A4C06 /* blip.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
