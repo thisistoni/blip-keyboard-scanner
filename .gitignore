@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Xcode user state
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.xcuserdatad/
+xcuserdata/
+
+# Build output
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+Package.resolved
+
+# Local tooling
+.xcodebuildmcp/
+
+# Secrets and machine-local config
+*.p8
+*.mobileprovision
+*.cer
+*.p12
+*.key
+*.xcconfig.local

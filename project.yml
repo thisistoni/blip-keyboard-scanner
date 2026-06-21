@@ -1,0 +1,59 @@
+name: BarcodeKeyboard
+options:
+  bundleIdPrefix: com.antoniobeslic
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 3TRF6L2MC2
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "NO"
+targets:
+  BarcodeKeyboard:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.BarcodeKeyboard
+        CODE_SIGN_ENTITLEMENTS: App/BarcodeKeyboard.entitlements
+        INFOPLIST_FILE: App/Info.plist
+    dependencies:
+      - target: BarcodeKeyboardExtension
+        embed: true
+  BarcodeKeyboardExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - KeyboardExtension
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.BarcodeKeyboard.KeyboardExtension
+        CODE_SIGN_ENTITLEMENTS: KeyboardExtension/BarcodeKeyboardExtension.entitlements
+        INFOPLIST_FILE: KeyboardExtension/Info.plist
+        APPLICATION_EXTENSION_API_ONLY: "YES"
+schemes:
+  BarcodeKeyboard:
+    build:
+      targets:
+        BarcodeKeyboard: all
+        BarcodeKeyboardExtension: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  BarcodeKeyboardExtension:
+    build:
+      targets:
+        BarcodeKeyboardExtension: all
+    run:
+      config: Debug
