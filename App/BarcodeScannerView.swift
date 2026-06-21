@@ -145,6 +145,8 @@ protocol BarcodeCaptureViewControllerDelegate: AnyObject {
 }
 
 final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
+    private static let fullVisionRegion = CGRect(x: 0, y: 0, width: 1, height: 1)
+
     weak var delegate: BarcodeCaptureViewControllerDelegate?
     var scanFormatProfile: ScanFormatProfile = .allSupported {
         didSet {
@@ -183,6 +185,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private var activeLayerScanRect: CGRect?
     private var activePreviewBounds: CGRect = .zero
     private var latestOrientedFrameSize: CGSize = .zero
+    private var latestVisionRegionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
 
     static func defaultVideoDevice() -> AVCaptureDevice? {
         AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
@@ -272,6 +275,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         let request = VNDetectBarcodesRequest { [weak self] request, error in
             self?.handleBarcodeRequest(request, error: error)
         }
+        request.revision = VNDetectBarcodesRequestRevision3
         barcodeRequest = request
         updateScanSymbologies()
         updateScanAreaRegion()
@@ -299,7 +303,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             self.scanAreaLock.unlock()
 
             self.visionQueue.async { [weak self] in
-                self?.barcodeRequest?.regionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
+                self?.barcodeRequest?.regionOfInterest = Self.fullVisionRegion
             }
         }
     }
@@ -462,10 +466,20 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         guard !didScan, !isProcessingFrame, let barcodeRequest else { return }
 
         isProcessingFrame = true
+        let previewBounds = currentActivePreviewBounds()
         latestOrientedFrameSize = Self.orientedImageSize(
             for: sampleBuffer,
-            previewBounds: currentActivePreviewBounds()
+            previewBounds: previewBounds
         )
+        latestVisionRegionOfInterest = currentActiveLayerScanRect().flatMap { layerScanRect in
+            Self.visionRegionOfInterest(
+                fromLayerRect: layerScanRect,
+                orientedImageSize: latestOrientedFrameSize,
+                previewBounds: previewBounds
+            )
+        } ?? Self.fullVisionRegion
+        barcodeRequest.regionOfInterest = latestVisionRegionOfInterest
+
         let handler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .right, options: [:])
 
         do {
@@ -486,7 +500,8 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
                 return self.isObservationInsideActiveScanArea(
                     observation,
-                    orientedImageSize: self.latestOrientedFrameSize
+                    orientedImageSize: self.latestOrientedFrameSize,
+                    regionOfInterest: self.latestVisionRegionOfInterest
                 )
             }
 
@@ -506,7 +521,8 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
 
     private func isObservationInsideActiveScanArea(
         _ observation: VNBarcodeObservation,
-        orientedImageSize: CGSize
+        orientedImageSize: CGSize,
+        regionOfInterest: CGRect
     ) -> Bool {
         guard let activeLayerScanRect = currentActiveLayerScanRect(),
               orientedImageSize.width > 0,
@@ -514,8 +530,12 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             return true
         }
 
+        let fullImageBoundingBox = Self.fullImageBoundingBox(
+            fromRegionRelativeBoundingBox: observation.boundingBox,
+            regionOfInterest: regionOfInterest
+        )
         let observationLayerRect = Self.layerRect(
-            fromVisionBoundingBox: observation.boundingBox,
+            fromVisionBoundingBox: fullImageBoundingBox,
             orientedImageSize: orientedImageSize,
             previewBounds: currentActivePreviewBounds()
         )
@@ -605,6 +625,88 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             y: imageOrigin.y + imageRect.minY * scale,
             width: imageRect.width * scale,
             height: imageRect.height * scale
+        )
+    }
+
+    private static func visionRegionOfInterest(
+        fromLayerRect layerRect: CGRect,
+        orientedImageSize: CGSize,
+        previewBounds: CGRect
+    ) -> CGRect? {
+        guard orientedImageSize.width > 0,
+              orientedImageSize.height > 0,
+              previewBounds.width > 0,
+              previewBounds.height > 0 else {
+            return nil
+        }
+
+        let scale = max(
+            previewBounds.width / orientedImageSize.width,
+            previewBounds.height / orientedImageSize.height
+        )
+        let displayedImageSize = CGSize(
+            width: orientedImageSize.width * scale,
+            height: orientedImageSize.height * scale
+        )
+        let imageOrigin = CGPoint(
+            x: previewBounds.minX + (previewBounds.width - displayedImageSize.width) / 2,
+            y: previewBounds.minY + (previewBounds.height - displayedImageSize.height) / 2
+        )
+        let displayedImageRect = CGRect(origin: imageOrigin, size: displayedImageSize)
+        let clippedLayerRect = layerRect.intersection(displayedImageRect)
+
+        guard !clippedLayerRect.isNull, !clippedLayerRect.isEmpty else {
+            return nil
+        }
+
+        let imageRect = CGRect(
+            x: (clippedLayerRect.minX - imageOrigin.x) / scale,
+            y: (clippedLayerRect.minY - imageOrigin.y) / scale,
+            width: clippedLayerRect.width / scale,
+            height: clippedLayerRect.height / scale
+        )
+        let imageBounds = CGRect(origin: .zero, size: orientedImageSize)
+        let clippedImageRect = imageRect.intersection(imageBounds)
+
+        guard !clippedImageRect.isNull, !clippedImageRect.isEmpty else {
+            return nil
+        }
+
+        return clampedUnitRect(
+            CGRect(
+                x: clippedImageRect.minX / orientedImageSize.width,
+                y: 1 - (clippedImageRect.maxY / orientedImageSize.height),
+                width: clippedImageRect.width / orientedImageSize.width,
+                height: clippedImageRect.height / orientedImageSize.height
+            )
+        )
+    }
+
+    private static func fullImageBoundingBox(
+        fromRegionRelativeBoundingBox boundingBox: CGRect,
+        regionOfInterest: CGRect
+    ) -> CGRect {
+        clampedUnitRect(
+            CGRect(
+                x: regionOfInterest.minX + boundingBox.minX * regionOfInterest.width,
+                y: regionOfInterest.minY + boundingBox.minY * regionOfInterest.height,
+                width: boundingBox.width * regionOfInterest.width,
+                height: boundingBox.height * regionOfInterest.height
+            )
+        )
+    }
+
+    private static func clampedUnitRect(_ rect: CGRect) -> CGRect {
+        let minX = min(max(rect.minX, 0), 1)
+        let minY = min(max(rect.minY, 0), 1)
+        let maxX = min(max(rect.maxX, 0), 1)
+        let maxY = min(max(rect.maxY, 0), 1)
+
+        return CGRect(
+            x: minX,
+            y: minY,
+            width: max(maxX - minX, 0),
+            height: max(maxY - minY, 0)
         )
     }
 
