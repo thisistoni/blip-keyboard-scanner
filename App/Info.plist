@@ -6,6 +6,8 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Blip</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -20,9 +22,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.antoniobeslic.BarcodeKeyboard.scan</string>
+			<string>com.antoniobeslic.Blip.scan</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>blip</string>
 				<string>barcodekeyboard</string>
 			</array>
 		</dict>
@@ -42,7 +45,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Barcode Wedge uses the camera to scan barcodes and insert the scanned value from the custom keyboard.</string>
+	<string>Blip uses the camera to scan barcodes and QR codes and insert the scanned value from the custom keyboard.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

@@ -388,7 +388,7 @@ struct KeyboardScanRequest: Equatable, Identifiable {
     }
 
     init?(url: URL) {
-        guard url.scheme == "barcodekeyboard", url.host == "scan" else { return nil }
+        guard ["blip", "barcodekeyboard"].contains(url.scheme), url.host == "scan" else { return nil }
 
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         let requestID = items.first { $0.name == "id" }?.value
@@ -400,22 +400,22 @@ struct KeyboardScanRequest: Equatable, Identifiable {
 
     var url: URL {
         var components = URLComponents()
-        components.scheme = "barcodekeyboard"
+        components.scheme = "blip"
         components.host = "scan"
         components.queryItems = [
             URLQueryItem(name: "source", value: source),
             URLQueryItem(name: "id", value: id),
         ]
 
-        return components.url ?? URL(string: "barcodekeyboard://scan?source=\(source)&id=\(id)")!
+        return components.url ?? URL(string: "blip://scan?source=\(source)&id=\(id)")!
     }
 }
 
 enum SharedKeyboardState {
-    static let appGroupIdentifier = "group.com.antoniobeslic.BarcodeKeyboard"
-    static let containingAppBundleIdentifier = "com.antoniobeslic.BarcodeKeyboard"
-    static let keyboardExtensionBundleIdentifier = "com.antoniobeslic.BarcodeKeyboard.KeyboardExtension"
-    static let keyboardDisplayName = "Barcode Wedge"
+    static let appGroupIdentifier = "group.com.antoniobeslic.Blip"
+    static let containingAppBundleIdentifier = "com.antoniobeslic.Blip"
+    static let keyboardExtensionBundleIdentifier = "com.antoniobeslic.Blip.KeyboardExtension"
+    static let keyboardDisplayName = "Blip"
 
     enum Keys {
         static let selectedLayout = "selectedLayout"
@@ -437,6 +437,7 @@ enum SharedKeyboardState {
         static let verifiedSetupHasFullAccess = "verifiedSetupHasFullAccess"
         static let scannerFlashlightMode = "scannerFlashlightMode"
         static let scanFormatProfile = "scanFormatProfile"
+        static let playScanSound = "playScanSound"
         static let returnTarget = "returnTarget"
         static let customReturnURL = "customReturnURL"
     }
@@ -481,9 +482,10 @@ enum SharedKeyboardState {
             keyboardExtensionBundleIdentifier,
             containingAppBundleIdentifier,
             keyboardDisplayName,
-            "BarcodeKeyboard",
-            "BarcodeKeyboardExtension",
-            "Barcode Keyboard",
+            "Blip",
+            "BlipKeyboard",
+            "BlipKeyboardExtension",
+            "Blip Keyboard",
         ].map(normalizedKeyboardIdentifier)
 
         let matchedKeyboard = keyboards.first { keyboard in
@@ -699,6 +701,21 @@ enum SharedKeyboardState {
         }
         set {
             defaults?.set(newValue, forKey: Keys.customReturnURL)
+        }
+    }
+
+    static var playScanSound: Bool {
+        get {
+            guard let defaults,
+                  defaults.object(forKey: Keys.playScanSound) != nil
+            else {
+                return true
+            }
+
+            return defaults.bool(forKey: Keys.playScanSound)
+        }
+        set {
+            defaults?.set(newValue, forKey: Keys.playScanSound)
         }
     }
 

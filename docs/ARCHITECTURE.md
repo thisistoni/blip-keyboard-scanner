@@ -14,7 +14,7 @@ Blip is built as a containing iOS app plus a custom keyboard extension.
 ```mermaid
 flowchart LR
     A["Host app text field"] --> B["Blip keyboard"]
-    B --> C["barcodekeyboard://scan"]
+    B --> C["blip://scan"]
     C --> D["Containing app scanner"]
     D --> E["App Group pending scan"]
     E --> F["Return target app"]
@@ -28,7 +28,7 @@ The keyboard extension cannot access the camera. It opens the containing app, th
 
 Both targets use:
 
-- `group.com.antoniobeslic.BarcodeKeyboard`
+- `group.com.antoniobeslic.Blip`
 
 This stores keyboard layout settings, scanner settings, last scan, pending scan text, and handoff identifiers.
 
@@ -36,10 +36,10 @@ This stores keyboard layout settings, scanner settings, last scan, pending scan 
 
 Current prototype identifiers:
 
-- App: `com.antoniobeslic.BarcodeKeyboard`
-- Keyboard extension: `com.antoniobeslic.BarcodeKeyboard.KeyboardExtension`
+- App: `com.antoniobeslic.Blip`
+- Keyboard extension: `com.antoniobeslic.Blip.KeyboardExtension`
 
-The public product name can be changed later without changing these ids immediately. Keep bundle id changes deliberate because they affect installed keyboards and provisioning.
+Keep future bundle id changes deliberate because they affect installed keyboards and provisioning.
 
 ## Platform Constraints
 

@@ -12,6 +12,9 @@ struct ScannerScreen: View {
     @AppStorage(SharedKeyboardState.Keys.scanFormatProfile, store: SharedKeyboardState.appStorageDefaults)
     private var scanFormatProfileRawValue = SharedKeyboardState.scanFormatProfile.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
+    private var playScanSound = SharedKeyboardState.playScanSound
+
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
@@ -121,6 +124,7 @@ struct ScannerScreen: View {
         let cleanedCode = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanedCode.isEmpty else { return }
 
+        ScanSoundPlayer.shared.playIfEnabled(playScanSound)
         lastScannedCode = cleanedCode
         activeSession = nil
 
@@ -157,14 +161,14 @@ private struct ScannerWorkflowGuideView: View {
         VStack(alignment: .leading, spacing: 12) {
             ScannerWorkflowGuideRow(
                 systemImage: "keyboard",
-                title: "Use the Barcode Wedge keyboard",
-                message: "In Safari or another app, tap a text field and switch to Barcode Wedge with the bottom-left keyboard button."
+                title: "Use the Blip keyboard",
+                message: "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button."
             )
 
             ScannerWorkflowGuideRow(
                 systemImage: "barcode.viewfinder",
                 title: "Scan from the keyboard",
-                message: "Tap Scan, scan the barcode or QR code, and Barcode Wedge returns to the original app."
+                message: "Tap Scan, scan the barcode or QR code, and Blip returns to the original app."
             )
 
             ScannerWorkflowGuideRow(

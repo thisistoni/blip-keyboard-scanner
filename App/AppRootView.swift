@@ -92,7 +92,7 @@ private struct SetupFlowView: View {
                 .padding(.bottom, 150)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Barcode Wedge")
+            .navigationTitle("Blip")
             .navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 8) {
@@ -113,7 +113,7 @@ private struct SetupFlowView: View {
                     }
                     .buttonStyle(.bordered)
 
-                    Text("Settings opens at Apps > BarcodeKeyboard. Tap Keyboards, enable Barcode Wedge, then enable Allow Full Access.")
+                    Text("Settings opens at Apps > Blip. Tap Keyboards, enable Blip, then enable Allow Full Access.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -132,7 +132,7 @@ private struct SetupFlowView: View {
                 .font(.system(size: 42, weight: .semibold))
                 .foregroundStyle(.blue)
 
-            Text("Setup Barcode Wedge")
+            Text("Setup Blip")
                 .font(.largeTitle.weight(.bold))
 
             Text("Enable the keyboard once in Settings. Full Access is needed so scan results can move from the scanner app back into the keyboard.")
@@ -153,8 +153,8 @@ private struct SetupFlowView: View {
             Divider().padding(.leading, 44)
 
             SetupStatusRow(
-                title: "Enable Barcode Wedge",
-                detail: "Turn on the Barcode Wedge keyboard.",
+                title: "Enable Blip",
+                detail: "Turn on the Blip keyboard.",
                 systemImage: "checkmark.circle",
                 isComplete: status.isKeyboardEnabled
             )
@@ -163,7 +163,7 @@ private struct SetupFlowView: View {
 
             SetupStatusRow(
                 title: "Allow Full Access",
-                detail: "Open the Barcode Wedge keyboard row and enable Allow Full Access.",
+                detail: "Open the Blip keyboard row and enable Allow Full Access.",
                 systemImage: "arrow.left.arrow.right",
                 isComplete: false
             )
@@ -176,7 +176,7 @@ private struct SetupFlowView: View {
         VStack(alignment: .leading, spacing: 12) {
             SetupNoticeView(
                 title: "Still seeing setup?",
-                message: "After enabling Barcode Wedge and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Barcode Wedge so it can refresh the keyboard state.",
+                message: "After enabling Blip and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Blip so it can refresh the keyboard state.",
                 systemImage: "arrow.clockwise.circle"
             )
 

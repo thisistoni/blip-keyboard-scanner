@@ -2,6 +2,8 @@
 
 ## Current Prototype
 
+- Blip app branding applied to installed app name, keyboard display name, URL scheme, bundle identifiers, and app group.
+- Optional Blip sound feedback when a scan succeeds.
 - Custom iOS keyboard extension with configurable English/German layouts.
 - Optional scan-only keyboard mode and configurable layout cycling.
 - Containing app scanner using AVFoundation and Vision.

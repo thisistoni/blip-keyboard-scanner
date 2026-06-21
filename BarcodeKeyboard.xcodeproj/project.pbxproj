@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		06B428A6F7C7FEF225736818 /* BarcodeKeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C4670FF2B5E459DF4EC5B5DA /* BarcodeKeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		131E626A6F7C6E8357158D97 /* BarcodeKeyboardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD61044CDC70254AEC8CAAEB /* BarcodeKeyboardApp.swift */; };
+		131E626A6F7C6E8357158D97 /* BlipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD61044CDC70254AEC8CAAEB /* BlipApp.swift */; };
 		15A6A48FDA36639AADB8C130 /* KeyboardLayoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B48B9CF372BEC29D856C0A9 /* KeyboardLayoutEngine.swift */; };
 		245967CEE5B56E33563EFA4D /* ScannerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F277A502CF5429FBD303B365 /* ScannerScreen.swift */; };
 		3336CF28340D2D3110CB8666 /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55386136654FB6E969CB8E26 /* BarcodeScannerView.swift */; };
@@ -19,6 +19,8 @@
 		A1B2C3D4E5F60718293A4B5C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B60 /* Localizable.strings */; };
 		A1B2C3D4E5F60718293A4B5D /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B60 /* Localizable.strings */; };
 		B1A2C3D4E5F60718293A4C02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */; };
+		B1A2C3D4E5F60718293A4C04 /* ScanSoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */; };
+		B1A2C3D4E5F60718293A4C06 /* blip.wav in Resources */ = {isa = PBXBuildFile; fileRef = B1A2C3D4E5F60718293A4C05 /* blip.wav */; };
 		B6C03F8633BABBB0D1D63440 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117E0584D3879CDB8BAEED6E /* KeyboardViewController.swift */; };
 		F2C64EFEC9FDB77C45B74211 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13DFB3275CA66D6D6AF81643 /* AppRootView.swift */; };
 		F9713DB52D326CC79C81F3B8 /* SourceAppReturnController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */; };
@@ -62,8 +64,10 @@
 		76450C6C0A74F5CC092CA9EE /* KeyboardLayoutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayoutSettingsView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5F /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
-		AD61044CDC70254AEC8CAAEB /* BarcodeKeyboardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeKeyboardApp.swift; sourceTree = "<group>"; };
+		AD61044CDC70254AEC8CAAEB /* BlipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlipApp.swift; sourceTree = "<group>"; };
 		B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSoundPlayer.swift; sourceTree = "<group>"; };
+		B1A2C3D4E5F60718293A4C05 /* blip.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Sounds/blip.wav; sourceTree = "<group>"; };
 		BD656434C814A84F42EE3532 /* BarcodeKeyboard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BarcodeKeyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4670FF2B5E459DF4EC5B5DA /* BarcodeKeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BarcodeKeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DC795F10DE030B49C24FDC06 /* BarcodeKeyboardExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BarcodeKeyboardExtension.entitlements; sourceTree = "<group>"; };
@@ -104,13 +108,15 @@
 				13DFB3275CA66D6D6AF81643 /* AppRootView.swift */,
 				B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */,
 				04C8899AE23953A1D137C68A /* BarcodeKeyboard.entitlements */,
-				AD61044CDC70254AEC8CAAEB /* BarcodeKeyboardApp.swift */,
+				AD61044CDC70254AEC8CAAEB /* BlipApp.swift */,
 				55386136654FB6E969CB8E26 /* BarcodeScannerView.swift */,
 				15CA2F5669ACD05C786DDF53 /* Info.plist */,
 				76450C6C0A74F5CC092CA9EE /* KeyboardLayoutSettingsView.swift */,
 				A1B2C3D4E5F60718293A4B60 /* Localizable.strings */,
+				B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */,
 				F277A502CF5429FBD303B365 /* ScannerScreen.swift */,
 				09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */,
+				B1A2C3D4E5F60718293A4C05 /* blip.wav */,
 				3C8DD8A142B2B0C77B3DF44C /* SystemSettingsOpener.swift */,
 			);
 			path = App;
@@ -215,6 +221,7 @@
 			files = (
 				B1A2C3D4E5F60718293A4C02 /* Assets.xcassets in Resources */,
 				A1B2C3D4E5F60718293A4B5C /* Localizable.strings in Resources */,
+				B1A2C3D4E5F60718293A4C06 /* blip.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,10 +251,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				F2C64EFEC9FDB77C45B74211 /* AppRootView.swift in Sources */,
-				131E626A6F7C6E8357158D97 /* BarcodeKeyboardApp.swift in Sources */,
+				131E626A6F7C6E8357158D97 /* BlipApp.swift in Sources */,
 				3336CF28340D2D3110CB8666 /* BarcodeScannerView.swift in Sources */,
 				753B12E6AD2150E186DBEF07 /* KeyboardLayoutSettingsView.swift in Sources */,
 				3775384FE52D6301853DD00A /* KeyboardSettings.swift in Sources */,
+				B1A2C3D4E5F60718293A4C04 /* ScanSoundPlayer.swift in Sources */,
 				245967CEE5B56E33563EFA4D /* ScannerScreen.swift in Sources */,
 				F9713DB52D326CC79C81F3B8 /* SourceAppReturnController.swift in Sources */,
 				811EECFB7698187F046C1FF0 /* SystemSettingsOpener.swift in Sources */,
@@ -288,7 +296,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.BarcodeKeyboard;
+				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -371,7 +379,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.BarcodeKeyboard.KeyboardExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip.KeyboardExtension;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -388,7 +396,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.BarcodeKeyboard.KeyboardExtension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip.KeyboardExtension;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -464,7 +472,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.BarcodeKeyboard;
+				PRODUCT_BUNDLE_IDENTIFIER = com.antoniobeslic.Blip;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

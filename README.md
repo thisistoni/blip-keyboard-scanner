@@ -2,7 +2,7 @@
 
 Blip is a prototype iOS keyboard wedge for company workflows. It adds a custom keyboard with a scan button, opens a scanner when employees need to scan a barcode or QR code, then inserts the result back into the original text field.
 
-The current Xcode targets still use the internal prototype name `BarcodeKeyboard` so the working bundle identifiers and signing setup stay stable.
+The current Xcode project and target names still use the internal prototype name `BarcodeKeyboard`, but the installed app, keyboard display name, bundle identifiers, URL scheme, and app group now use Blip branding.
 
 ![Blip icon concepts](Branding/IconConcepts/blip-icon-concepts-sheet.png)
 
@@ -25,7 +25,7 @@ The current Xcode targets still use the internal prototype name `BarcodeKeyboard
 iOS keyboard extensions cannot access the camera directly, so Blip uses a containing app for scanning:
 
 1. The user taps `Scan` on the custom keyboard.
-2. The keyboard opens `barcodekeyboard://scan`.
+2. The keyboard opens `blip://scan`.
 3. The containing app scans the barcode or QR code.
 4. The scan result is saved in the shared App Group with a request id.
 5. Blip returns to the configured target app.
@@ -50,7 +50,7 @@ project.yml          XcodeGen project definition
 2. Open the Blip app.
 3. Tap `Open Keyboard Settings`.
 4. In iOS Settings, tap `Keyboards`.
-5. Enable the Blip / Barcode Wedge keyboard.
+5. Enable the Blip keyboard.
 6. Enable `Allow Full Access`.
 7. Return to Blip and tap `Check Again`.
 8. If iOS still does not refresh the keyboard state, fully close and reopen Blip.

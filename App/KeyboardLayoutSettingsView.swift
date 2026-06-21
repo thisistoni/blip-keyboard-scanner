@@ -21,6 +21,9 @@ struct KeyboardLayoutSettingsView: View {
     @AppStorage(SharedKeyboardState.Keys.scanFormatProfile, store: SharedKeyboardState.appStorageDefaults)
     private var scanFormatProfileRawValue = SharedKeyboardState.scanFormatProfile.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
+    private var playScanSound = SharedKeyboardState.playScanSound
+
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
@@ -139,7 +142,7 @@ struct KeyboardLayoutSettingsView: View {
                 } header: {
                     Text("Return Target")
                 } footer: {
-                    Text("After a keyboard-launched scan, Barcode Wedge opens this app so the keyboard can resume and insert the scan. Use the test button to verify each target on your iPhone.")
+                    Text("After a keyboard-launched scan, Blip opens this app so the keyboard can resume and insert the scan. Use the test button to verify each target on your iPhone.")
                 }
 
                 Section {
@@ -184,6 +187,7 @@ struct KeyboardLayoutSettingsView: View {
 
                 Section {
                     Toggle("Flashlight by default", isOn: flashlightEnabledByDefault)
+                    Toggle("Blip sound on scan", isOn: $playScanSound)
 
                     Picker("Scan Formats", selection: scanFormatProfile) {
                         ForEach(ScanFormatProfile.allCases) { profile in
@@ -197,7 +201,7 @@ struct KeyboardLayoutSettingsView: View {
                 } header: {
                     Text("Scanner")
                 } footer: {
-                    Text("QR code contents are inserted as plain text. Barcode Wedge does not open links automatically.")
+                    Text("QR code contents are inserted as plain text. Blip does not open links automatically.")
                 }
 
                 Section {

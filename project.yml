@@ -19,7 +19,7 @@ targets:
       - Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.BarcodeKeyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.Blip
         CODE_SIGN_ENTITLEMENTS: App/BarcodeKeyboard.entitlements
         INFOPLIST_FILE: App/Info.plist
     dependencies:
@@ -33,7 +33,7 @@ targets:
       - Shared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.BarcodeKeyboard.KeyboardExtension
+        PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.Blip.KeyboardExtension
         CODE_SIGN_ENTITLEMENTS: KeyboardExtension/BarcodeKeyboardExtension.entitlements
         INFOPLIST_FILE: KeyboardExtension/Info.plist
         APPLICATION_EXTENSION_API_ONLY: "YES"

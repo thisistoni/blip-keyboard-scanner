@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct BarcodeKeyboardApp: App {
+struct BlipApp: App {
     var body: some Scene {
         WindowGroup {
             AppRootView()

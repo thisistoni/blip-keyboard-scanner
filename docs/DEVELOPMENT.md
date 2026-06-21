@@ -55,12 +55,12 @@ xcrun devicectl device install app \
 
 Both targets need the same App Group capability:
 
-- `group.com.antoniobeslic.BarcodeKeyboard`
+- `group.com.antoniobeslic.Blip`
 
 Targets:
 
-- `BarcodeKeyboard`
-- `BarcodeKeyboardExtension`
+- App bundle id: `com.antoniobeslic.Blip`
+- Keyboard extension bundle id: `com.antoniobeslic.Blip.KeyboardExtension`
 
 ## Localization
 

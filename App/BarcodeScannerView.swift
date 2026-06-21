@@ -132,8 +132,8 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     }
 
     private let session = AVCaptureSession()
-    private let sessionQueue = DispatchQueue(label: "com.antoniobeslic.BarcodeKeyboard.camera")
-    private let visionQueue = DispatchQueue(label: "com.antoniobeslic.BarcodeKeyboard.vision")
+    private let sessionQueue = DispatchQueue(label: "com.antoniobeslic.Blip.camera")
+    private let visionQueue = DispatchQueue(label: "com.antoniobeslic.Blip.vision")
     private let videoOutput = AVCaptureVideoDataOutput()
 
     private var previewLayer: AVCaptureVideoPreviewLayer?
