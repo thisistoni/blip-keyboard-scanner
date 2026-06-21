@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 
 enum SupportEmail {
-    static let supportAddress = "support@blip.app"
+    static let supportAddress = "blip@antoniobeslic.com"
     static let privacyPolicyURL = URL(string: "https://thisistoni.github.io/blip-keyboard-scanner/privacy.html")!
     static let supportURL = URL(string: "https://thisistoni.github.io/blip-keyboard-scanner/support.html")!
 

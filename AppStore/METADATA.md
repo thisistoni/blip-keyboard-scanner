@@ -108,4 +108,4 @@ Initial release.
 
 ### App Review Contact
 
-Use the Apple Developer account holder contact details unless you create a dedicated Blip support mailbox first.
+Use the Apple Developer account holder contact details and `blip@antoniobeslic.com` as the public Blip support mailbox.

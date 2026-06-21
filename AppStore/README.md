@@ -12,14 +12,17 @@ This folder contains the copy and operational notes needed to submit Blip to App
 
 ## Blocking Inputs Before Submit
 
-- Confirm the final public support email or support form. The app currently uses `support@blip.app`.
-- Publish `docs/privacy.html` and `docs/support.html` at public URLs.
+- Verify the public GitHub Pages URLs below are live.
 - Capture iPhone and iPad screenshots in English and German.
 - Create the app record in App Store Connect using bundle ID `com.antoniobeslic.Blip`.
 
-Suggested URLs if GitHub Pages is enabled for this repo:
+GitHub Pages is enabled from `main` + `/docs`:
 
 - Privacy Policy: `https://thisistoni.github.io/blip-keyboard-scanner/privacy.html`
 - Support URL: `https://thisistoni.github.io/blip-keyboard-scanner/support.html`
 
-Because the GitHub repository is currently private, verify that the Pages URLs are public before entering them in App Store Connect.
+Support email:
+
+- `blip@antoniobeslic.com`
+
+Verify that the Pages URLs are public before entering them in App Store Connect.
