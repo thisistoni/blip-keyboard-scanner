@@ -211,12 +211,12 @@ final class KeyboardViewController: UIInputViewController {
 
         let identifier = SharedKeyboardState.pendingScanIdentifier
         let activeIdentifier = SharedKeyboardState.activeScanRequestIdentifier
-        let code = SharedKeyboardState.pendingScannedCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        let code = SharedKeyboardState.pendingScannedCode
 
         guard !identifier.isEmpty,
               activeIdentifier.isEmpty || identifier == activeIdentifier,
               identifier != SharedKeyboardState.consumedScanIdentifier,
-              !code.isEmpty
+              !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else {
             return
         }

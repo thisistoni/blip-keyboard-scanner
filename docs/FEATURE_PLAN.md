@@ -172,6 +172,6 @@ These are hard constraints, not implementation tasks:
 - [ ] Verify pinch zoom works without camera freeze.
 - [ ] Verify scan-area overlay appears correctly.
 - [ ] Verify scan-area filtering ignores detections outside the box.
-- [ ] Verify existing settings still persist via App Group.
+- [x] Verify existing settings still persist via App Group.
 - [x] Run plist and localization lint.
 - [x] Commit and push after verification.
