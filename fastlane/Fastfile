@@ -1,0 +1,59 @@
+ENV["FASTLANE_HIDE_CHANGELOG"] = "1"
+ENV["FASTLANE_SKIP_UPDATE_CHECK"] = "1"
+
+default_platform(:ios)
+opt_out_usage
+skip_docs
+
+REPO_ROOT = File.expand_path("..", __dir__)
+
+def repo_path(*parts)
+  File.join(REPO_ROOT, *parts)
+end
+
+platform :ios do
+  desc "Show the App Store screenshot folders and next capture steps"
+  lane :screenshot_status do
+    folders = [
+      "Marketing/AppStore/raw/manual/iphone",
+      "Marketing/AppStore/raw/manual/ipad",
+      "Marketing/AppStore/raw/fastlane",
+      "Marketing/AppStore/framed",
+      "Marketing/AppStore/final/iphone-6.9",
+      "Marketing/AppStore/final/ipad-13"
+    ]
+
+    folders.each do |folder|
+      absolute = repo_path(folder)
+      count = Dir.exist?(absolute) ? Dir.children(absolute).count { |name| name.match?(/\.(png|jpe?g)\z/i) } : 0
+      UI.message("#{folder}: #{count} image(s)")
+    end
+
+    UI.message("Manual iPhone shots are required for the live camera, Safari, custom keyboard, and scan handoff flow.")
+    UI.message("Use AppScreens for the final polished App Store layouts in Marketing/AppStore/final.")
+  end
+
+  desc "Frame raw screenshots for review; final App Store artwork should still be exported from AppScreens"
+  lane :frame_raw_screenshots do
+    frame_screenshots(
+      path: repo_path("Marketing/AppStore/raw"),
+      white: true
+    )
+  end
+
+  desc "Capture simulator-only app screenshots after adding the BlipScreenshots UI-test scheme"
+  lane :capture_app_screenshots do
+    scheme_path = repo_path("Blip.xcodeproj", "xcshareddata", "xcschemes", "BlipScreenshots.xcscheme")
+    UI.user_error!("Add the BlipScreenshots UI-test scheme before running this lane.") unless File.exist?(scheme_path)
+
+    capture_ios_screenshots(
+      project: repo_path("Blip.xcodeproj"),
+      scheme: "BlipScreenshots",
+      output_directory: repo_path("Marketing/AppStore/raw/fastlane"),
+      clear_previous_screenshots: true,
+      override_status_bar: true,
+      skip_open_summary: true,
+      languages: ["en-US", "de-DE"]
+    )
+  end
+end
