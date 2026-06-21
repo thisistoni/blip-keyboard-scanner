@@ -26,7 +26,6 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>blip</string>
-				<string>barcodekeyboard</string>
 			</array>
 		</dict>
 	</array>

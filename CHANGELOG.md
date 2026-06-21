@@ -1,8 +1,8 @@
 # Changelog
 
-## Current Prototype
+## Current State
 
-- Blip app branding applied to installed app name, keyboard display name, URL scheme, bundle identifiers, and app group.
+- Blip branding applied to app name, keyboard display name, Xcode project, targets, schemes, URL scheme, bundle identifiers, and app group.
 - Optional Blip sound feedback when a scan succeeds.
 - Custom iOS keyboard extension with configurable English/German layouts.
 - Optional scan-only keyboard mode and configurable layout cycling.
@@ -13,4 +13,4 @@
 - Flashlight support in the scanner.
 - Setup flow with keyboard detection, settings shortcut, and diagnostics.
 - English and German app localization.
-- Branding exploration for the working title `Blip: Barcode QR Keyboard`.
+- Selected app icon source and product branding notes.

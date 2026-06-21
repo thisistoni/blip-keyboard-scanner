@@ -7,4 +7,4 @@
 - Creator: `u_f1ee7vf7na`
 - Pixabay page title: `blip`
 - License summary: https://pixabay.com/service/license-summary/
-- Notes: Pixabay lists the sound as free for use under the Pixabay Content License. The license summary says attribution is not required, but credit is appreciated.
+- Notes: Pixabay lists the sound as free for use under the Pixabay Content License. The license summary says attribution is not required, but credit is appreciated. The bundled file was volume-adjusted for in-app playback.

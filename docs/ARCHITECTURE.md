@@ -7,7 +7,7 @@ Blip is built as a containing iOS app plus a custom keyboard extension.
 - `App/`: SwiftUI containing app, setup flow, scanner UI, settings, and return-target handling.
 - `KeyboardExtension/`: custom keyboard extension that renders the keyboard and inserts text through `textDocumentProxy`.
 - `Shared/`: app-group-backed settings and scan handoff state used by both targets.
-- `Branding/`: generated icon concepts and brand notes.
+- `Branding/`: product naming, visual direction, and app icon source.
 
 ## Scan Handoff
 
@@ -34,7 +34,7 @@ This stores keyboard layout settings, scanner settings, last scan, pending scan 
 
 ## Bundle Identifiers
 
-Current prototype identifiers:
+Current identifiers:
 
 - App: `com.antoniobeslic.Blip`
 - Keyboard extension: `com.antoniobeslic.Blip.KeyboardExtension`

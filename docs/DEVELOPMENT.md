@@ -5,7 +5,7 @@
 - macOS with Xcode installed
 - iOS Simulator installed through Xcode
 - Apple Developer account for physical-device testing
-- XcodeGen, if regenerating `BarcodeKeyboard.xcodeproj` from `project.yml`
+- XcodeGen, if regenerating `Blip.xcodeproj` from `project.yml`
 
 ```sh
 brew install xcodegen
@@ -14,7 +14,7 @@ brew install xcodegen
 ## Open The Project
 
 ```sh
-open BarcodeKeyboard.xcodeproj
+open Blip.xcodeproj
 ```
 
 The checked-in Xcode project is the current working project. Regenerate only when changing `project.yml`:
@@ -28,8 +28,8 @@ xcodegen generate
 Simulator:
 
 ```sh
-xcodebuild -project BarcodeKeyboard.xcodeproj \
-  -scheme BarcodeKeyboard \
+xcodebuild -project Blip.xcodeproj \
+  -scheme Blip \
   -destination 'generic/platform=iOS Simulator' \
   build
 ```
@@ -37,8 +37,8 @@ xcodebuild -project BarcodeKeyboard.xcodeproj \
 Physical iPhone:
 
 ```sh
-xcodebuild -project BarcodeKeyboard.xcodeproj \
-  -scheme BarcodeKeyboard \
+xcodebuild -project Blip.xcodeproj \
+  -scheme Blip \
   -destination 'id=<DEVICE_ID>' \
   build
 ```
@@ -48,7 +48,7 @@ xcodebuild -project BarcodeKeyboard.xcodeproj \
 ```sh
 xcrun devicectl device install app \
   --device <DEVICE_ID> \
-  ~/Library/Developer/Xcode/DerivedData/BarcodeKeyboard-*/Build/Products/Debug-iphoneos/BarcodeKeyboard.app
+  ~/Library/Developer/Xcode/DerivedData/Blip-*/Build/Products/Debug-iphoneos/Blip.app
 ```
 
 ## Signing

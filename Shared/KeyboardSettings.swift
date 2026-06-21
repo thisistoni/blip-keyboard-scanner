@@ -388,7 +388,7 @@ struct KeyboardScanRequest: Equatable, Identifiable {
     }
 
     init?(url: URL) {
-        guard ["blip", "barcodekeyboard"].contains(url.scheme), url.host == "scan" else { return nil }
+        guard url.scheme == "blip", url.host == "scan" else { return nil }
 
         let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         let requestID = items.first { $0.name == "id" }?.value

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		06B428A6F7C7FEF225736818 /* BarcodeKeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C4670FF2B5E459DF4EC5B5DA /* BarcodeKeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		06B428A6F7C7FEF225736818 /* BlipKeyboardExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		131E626A6F7C6E8357158D97 /* BlipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD61044CDC70254AEC8CAAEB /* BlipApp.swift */; };
 		15A6A48FDA36639AADB8C130 /* KeyboardLayoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B48B9CF372BEC29D856C0A9 /* KeyboardLayoutEngine.swift */; };
 		245967CEE5B56E33563EFA4D /* ScannerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F277A502CF5429FBD303B365 /* ScannerScreen.swift */; };
@@ -32,7 +32,7 @@
 			containerPortal = A83AC22E140E86DC369EC0A9 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 64C77595CC1329A55EB0B256;
-			remoteInfo = BarcodeKeyboardExtension;
+			remoteInfo = BlipKeyboardExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -43,7 +43,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				06B428A6F7C7FEF225736818 /* BarcodeKeyboardExtension.appex in Embed Foundation Extensions */,
+				06B428A6F7C7FEF225736818 /* BlipKeyboardExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -51,7 +51,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		04C8899AE23953A1D137C68A /* BarcodeKeyboard.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BarcodeKeyboard.entitlements; sourceTree = "<group>"; };
+		04C8899AE23953A1D137C68A /* Blip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Blip.entitlements; sourceTree = "<group>"; };
 		09DDE711FF81BDE4A9DF5BF3 /* SourceAppReturnController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceAppReturnController.swift; sourceTree = "<group>"; };
 		117E0584D3879CDB8BAEED6E /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		13DFB3275CA66D6D6AF81643 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
@@ -68,9 +68,9 @@
 		B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B1A2C3D4E5F60718293A4C03 /* ScanSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSoundPlayer.swift; sourceTree = "<group>"; };
 		B1A2C3D4E5F60718293A4C05 /* blip.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Sounds/blip.mp3; sourceTree = "<group>"; };
-		BD656434C814A84F42EE3532 /* BarcodeKeyboard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BarcodeKeyboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4670FF2B5E459DF4EC5B5DA /* BarcodeKeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BarcodeKeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		DC795F10DE030B49C24FDC06 /* BarcodeKeyboardExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BarcodeKeyboardExtension.entitlements; sourceTree = "<group>"; };
+		BD656434C814A84F42EE3532 /* Blip.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Blip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BlipKeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		DC795F10DE030B49C24FDC06 /* BlipKeyboardExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlipKeyboardExtension.entitlements; sourceTree = "<group>"; };
 		F277A502CF5429FBD303B365 /* ScannerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -96,8 +96,8 @@
 		7EEECDE29DE1DEC1626D75E9 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				BD656434C814A84F42EE3532 /* BarcodeKeyboard.app */,
-				C4670FF2B5E459DF4EC5B5DA /* BarcodeKeyboardExtension.appex */,
+				BD656434C814A84F42EE3532 /* Blip.app */,
+				C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -107,7 +107,7 @@
 			children = (
 				13DFB3275CA66D6D6AF81643 /* AppRootView.swift */,
 				B1A2C3D4E5F60718293A4C01 /* Assets.xcassets */,
-				04C8899AE23953A1D137C68A /* BarcodeKeyboard.entitlements */,
+				04C8899AE23953A1D137C68A /* Blip.entitlements */,
 				AD61044CDC70254AEC8CAAEB /* BlipApp.swift */,
 				55386136654FB6E969CB8E26 /* BarcodeScannerView.swift */,
 				15CA2F5669ACD05C786DDF53 /* Info.plist */,
@@ -125,7 +125,7 @@
 		F7EBCABD56AFE8360D5E251C /* KeyboardExtension */ = {
 			isa = PBXGroup;
 			children = (
-				DC795F10DE030B49C24FDC06 /* BarcodeKeyboardExtension.entitlements */,
+				DC795F10DE030B49C24FDC06 /* BlipKeyboardExtension.entitlements */,
 				7332A72AF8BA81CB69B02DAC /* Info.plist */,
 				4B48B9CF372BEC29D856C0A9 /* KeyboardLayoutEngine.swift */,
 				117E0584D3879CDB8BAEED6E /* KeyboardViewController.swift */,
@@ -136,9 +136,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		58F9FBF98206738272445A88 /* BarcodeKeyboard */ = {
+		58F9FBF98206738272445A88 /* Blip */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 75586EDEDB65C49A56C57FD4 /* Build configuration list for PBXNativeTarget "BarcodeKeyboard" */;
+			buildConfigurationList = 75586EDEDB65C49A56C57FD4 /* Build configuration list for PBXNativeTarget "Blip" */;
 			buildPhases = (
 				97D5A74C3EFEEFA1D3D71C95 /* Sources */,
 				A1B2C3D4E5F60718293A4B61 /* Resources */,
@@ -149,16 +149,16 @@
 			dependencies = (
 				EB8075E902212BDB44F01196 /* PBXTargetDependency */,
 			);
-			name = BarcodeKeyboard;
+			name = Blip;
 			packageProductDependencies = (
 			);
-			productName = BarcodeKeyboard;
-			productReference = BD656434C814A84F42EE3532 /* BarcodeKeyboard.app */;
+			productName = Blip;
+			productReference = BD656434C814A84F42EE3532 /* Blip.app */;
 			productType = "com.apple.product-type.application";
 		};
-		64C77595CC1329A55EB0B256 /* BarcodeKeyboardExtension */ = {
+		64C77595CC1329A55EB0B256 /* BlipKeyboardExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6211FA73471C50F78C79E9E0 /* Build configuration list for PBXNativeTarget "BarcodeKeyboardExtension" */;
+			buildConfigurationList = 6211FA73471C50F78C79E9E0 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */;
 			buildPhases = (
 				698734B50F43C454AE05AF6F /* Sources */,
 				A1B2C3D4E5F60718293A4B62 /* Resources */,
@@ -167,11 +167,11 @@
 			);
 			dependencies = (
 			);
-			name = BarcodeKeyboardExtension;
+			name = BlipKeyboardExtension;
 			packageProductDependencies = (
 			);
-			productName = BarcodeKeyboardExtension;
-			productReference = C4670FF2B5E459DF4EC5B5DA /* BarcodeKeyboardExtension.appex */;
+			productName = BlipKeyboardExtension;
+			productReference = C4670FF2B5E459DF4EC5B5DA /* BlipKeyboardExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -193,7 +193,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 0DF62E4E573FB74E8286D3AF /* Build configuration list for PBXProject "BarcodeKeyboard" */;
+			buildConfigurationList = 0DF62E4E573FB74E8286D3AF /* Build configuration list for PBXProject "Blip" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -208,8 +208,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				58F9FBF98206738272445A88 /* BarcodeKeyboard */,
-				64C77595CC1329A55EB0B256 /* BarcodeKeyboardExtension */,
+				58F9FBF98206738272445A88 /* Blip */,
+				64C77595CC1329A55EB0B256 /* BlipKeyboardExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -267,7 +267,7 @@
 /* Begin PBXTargetDependency section */
 		EB8075E902212BDB44F01196 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 64C77595CC1329A55EB0B256 /* BarcodeKeyboardExtension */;
+			target = 64C77595CC1329A55EB0B256 /* BlipKeyboardExtension */;
 			targetProxy = B49B80DD367B21279DE7215A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -289,7 +289,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = App/BarcodeKeyboard.entitlements;
+				CODE_SIGN_ENTITLEMENTS = App/Blip.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -372,7 +372,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = KeyboardExtension/BarcodeKeyboardExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = KeyboardExtension/BlipKeyboardExtension.entitlements;
 				INFOPLIST_FILE = KeyboardExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -389,7 +389,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = YES;
-				CODE_SIGN_ENTITLEMENTS = KeyboardExtension/BarcodeKeyboardExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = KeyboardExtension/BlipKeyboardExtension.entitlements;
 				INFOPLIST_FILE = KeyboardExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -465,7 +465,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = App/BarcodeKeyboard.entitlements;
+				CODE_SIGN_ENTITLEMENTS = App/Blip.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -481,7 +481,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		0DF62E4E573FB74E8286D3AF /* Build configuration list for PBXProject "BarcodeKeyboard" */ = {
+		0DF62E4E573FB74E8286D3AF /* Build configuration list for PBXProject "Blip" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				6E8CE3CE23ED5130A5030E4B /* Debug */,
@@ -490,7 +490,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		6211FA73471C50F78C79E9E0 /* Build configuration list for PBXNativeTarget "BarcodeKeyboardExtension" */ = {
+		6211FA73471C50F78C79E9E0 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7CC136DECC805596CB6AFDF4 /* Debug */,
@@ -499,7 +499,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		75586EDEDB65C49A56C57FD4 /* Build configuration list for PBXNativeTarget "BarcodeKeyboard" */ = {
+		75586EDEDB65C49A56C57FD4 /* Build configuration list for PBXNativeTarget "Blip" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				22CE1EBFB481513586A2F0DB /* Debug */,

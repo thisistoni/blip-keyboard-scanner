@@ -1,10 +1,6 @@
 # Blip: Barcode QR Keyboard
 
-Blip is a prototype iOS keyboard wedge for company workflows. It adds a custom keyboard with a scan button, opens a scanner when employees need to scan a barcode or QR code, then inserts the result back into the original text field.
-
-The current Xcode project and target names still use the internal prototype name `BarcodeKeyboard`, but the installed app, keyboard display name, bundle identifiers, URL scheme, and app group now use Blip branding.
-
-![Blip icon concepts](Branding/IconConcepts/blip-icon-concepts-sheet.png)
+Blip is an iOS keyboard scanner for company workflows. It adds a custom keyboard with a scan button, opens an in-app barcode or QR scanner, then inserts the result back into the original text field.
 
 ## Current Capabilities
 
@@ -37,12 +33,12 @@ See [Architecture](docs/ARCHITECTURE.md) for more detail.
 ## Repository Layout
 
 ```text
-App/                 Containing SwiftUI app, scanner, setup, and settings
-KeyboardExtension/   Custom keyboard extension
-Shared/              Shared settings, scan session, and app-group state
-Branding/            Blip naming and icon exploration
-docs/                Architecture, development, and test notes
-project.yml          XcodeGen project definition
+App/                  Containing SwiftUI app, scanner, setup, and settings
+KeyboardExtension/    Custom keyboard extension
+Shared/               Shared settings, scan session, and app-group state
+Branding/             Product naming and app icon source
+docs/                 Architecture, development, and test notes
+project.yml           XcodeGen project definition
 ```
 
 ## First-Time Device Setup
@@ -63,14 +59,14 @@ For best employee experience, remove unused keyboards from iOS Keyboard settings
 Open the checked-in project:
 
 ```sh
-open BarcodeKeyboard.xcodeproj
+open Blip.xcodeproj
 ```
 
 Build for simulator:
 
 ```sh
-xcodebuild -project BarcodeKeyboard.xcodeproj \
-  -scheme BarcodeKeyboard \
+xcodebuild -project Blip.xcodeproj \
+  -scheme Blip \
   -destination 'generic/platform=iOS Simulator' \
   build
 ```
@@ -78,8 +74,8 @@ xcodebuild -project BarcodeKeyboard.xcodeproj \
 Build for a physical iPhone:
 
 ```sh
-xcodebuild -project BarcodeKeyboard.xcodeproj \
-  -scheme BarcodeKeyboard \
+xcodebuild -project Blip.xcodeproj \
+  -scheme Blip \
   -destination 'id=<DEVICE_ID>' \
   build
 ```
@@ -114,7 +110,7 @@ Positioning:
 
 **Scan into any field.**
 
-See [Branding](docs/BRANDING.md) for icon concepts and direction.
+See [Branding](docs/BRANDING.md) for product naming and visual direction.
 
 ## Known Platform Constraints
 

@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "58F9FBF98206738272445A88"
-               BuildableName = "BarcodeKeyboard.app"
-               BlueprintName = "BarcodeKeyboard"
-               ReferencedContainer = "container:BarcodeKeyboard.xcodeproj">
+               BuildableName = "Blip.app"
+               BlueprintName = "Blip"
+               ReferencedContainer = "container:Blip.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -30,9 +30,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "64C77595CC1329A55EB0B256"
-               BuildableName = "BarcodeKeyboardExtension.appex"
-               BlueprintName = "BarcodeKeyboardExtension"
-               ReferencedContainer = "container:BarcodeKeyboard.xcodeproj">
+               BuildableName = "BlipKeyboardExtension.appex"
+               BlueprintName = "BlipKeyboardExtension"
+               ReferencedContainer = "container:Blip.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,9 +47,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "58F9FBF98206738272445A88"
-            BuildableName = "BarcodeKeyboard.app"
-            BlueprintName = "BarcodeKeyboard"
-            ReferencedContainer = "container:BarcodeKeyboard.xcodeproj">
+            BuildableName = "Blip.app"
+            BlueprintName = "Blip"
+            ReferencedContainer = "container:Blip.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -70,9 +70,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "58F9FBF98206738272445A88"
-            BuildableName = "BarcodeKeyboard.app"
-            BlueprintName = "BarcodeKeyboard"
-            ReferencedContainer = "container:BarcodeKeyboard.xcodeproj">
+            BuildableName = "Blip.app"
+            BlueprintName = "Blip"
+            ReferencedContainer = "container:Blip.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -89,9 +89,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "58F9FBF98206738272445A88"
-            BuildableName = "BarcodeKeyboard.app"
-            BlueprintName = "BarcodeKeyboard"
-            ReferencedContainer = "container:BarcodeKeyboard.xcodeproj">
+            BuildableName = "Blip.app"
+            BlueprintName = "Blip"
+            ReferencedContainer = "container:Blip.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>

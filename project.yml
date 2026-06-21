@@ -1,4 +1,4 @@
-name: BarcodeKeyboard
+name: Blip
 options:
   bundleIdPrefix: com.antoniobeslic
   deploymentTarget:
@@ -11,7 +11,7 @@ settings:
     IPHONEOS_DEPLOYMENT_TARGET: "16.0"
     ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "NO"
 targets:
-  BarcodeKeyboard:
+  Blip:
     type: application
     platform: iOS
     sources:
@@ -20,12 +20,12 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.Blip
-        CODE_SIGN_ENTITLEMENTS: App/BarcodeKeyboard.entitlements
+        CODE_SIGN_ENTITLEMENTS: App/Blip.entitlements
         INFOPLIST_FILE: App/Info.plist
     dependencies:
-      - target: BarcodeKeyboardExtension
+      - target: BlipKeyboardExtension
         embed: true
-  BarcodeKeyboardExtension:
+  BlipKeyboardExtension:
     type: app-extension
     platform: iOS
     sources:
@@ -34,15 +34,15 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.antoniobeslic.Blip.KeyboardExtension
-        CODE_SIGN_ENTITLEMENTS: KeyboardExtension/BarcodeKeyboardExtension.entitlements
+        CODE_SIGN_ENTITLEMENTS: KeyboardExtension/BlipKeyboardExtension.entitlements
         INFOPLIST_FILE: KeyboardExtension/Info.plist
         APPLICATION_EXTENSION_API_ONLY: "YES"
 schemes:
-  BarcodeKeyboard:
+  Blip:
     build:
       targets:
-        BarcodeKeyboard: all
-        BarcodeKeyboardExtension: all
+        Blip: all
+        BlipKeyboardExtension: all
     run:
       config: Debug
     profile:
@@ -51,9 +51,9 @@ schemes:
       config: Debug
     archive:
       config: Release
-  BarcodeKeyboardExtension:
+  BlipKeyboardExtension:
     build:
       targets:
-        BarcodeKeyboardExtension: all
+        BlipKeyboardExtension: all
     run:
       config: Debug
