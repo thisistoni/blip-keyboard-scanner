@@ -11,7 +11,6 @@
 "Camera unavailable" = "Kamera nicht verfügbar";
 "Cancel" = "Abbrechen";
 "Chrome" = "Chrome";
-"Clear Last Scan" = "Letzten Scan löschen";
 "Custom" = "Benutzerdefiniert";
 "Delete" = "Löschen";
 "Detected %@" = "%@ erkannt";
@@ -38,7 +37,6 @@
 "Large Numbers" = "Große Zahlen";
 "Large number pad for fast quantity and article entry." = "Große Zahlentastatur für schnelle Mengen- und Artikelnummerneingabe.";
 "Large number pad keyboard." = "Große Zahlentastatur.";
-"Last Scan" = "Letzter Scan";
 "Letters" = "Buchstaben";
 "Manual test code" = "Manueller Testcode";
 "Matched entry" = "Gefundener Eintrag";
@@ -83,7 +81,7 @@
 "Space" = "Leerzeichen";
 "Standard" = "Standard";
 "Standard letters with the selected language." = "Normale Buchstabentastatur mit der ausgewählten Sprache.";
-"Start Scanner" = "Scanner starten";
+"Test Scanner" = "Scanner testen";
 "Start a scan here, or tap Scan from the keyboard inside another app." = "Starte hier einen Scan oder tippe in einer anderen App auf Scan in der Tastatur.";
 "Starts with a large number pad for scan-heavy workflows." = "Startet mit einer großen Zahlentastatur für scanlastige Abläufe.";
 "Starts with the normal letter keyboard." = "Startet mit der normalen Buchstabentastatur.";
@@ -136,7 +134,7 @@
 "Blip does not sync scan history to a server or cloud account." = "Blip synchronisiert den Scanverlauf nicht mit einem Server oder Cloud-Konto.";
 "Blip stores scan history locally in the app group shared by the app and keyboard extension." = "Blip speichert den Scanverlauf lokal in der App-Gruppe, die App und Tastaturerweiterung gemeinsam nutzen.";
 "Centered Box" = "Zentrierter Rahmen";
-"Choose the keyboard language and which layouts employees can cycle through. Turn every layout off to show only the Scan button." = "Wähle die Tastatursprache und welche Layouts Mitarbeiter durchschalten können. Deaktiviere alle Layouts, um nur den Scan-Button anzuzeigen.";
+"Choose the keyboard language and which layouts you can cycle through. Turn every layout off to show only the Scan button." = "Wähle die Tastatursprache und die Layouts, zwischen denen du wechseln möchtest. Deaktiviere alle Layouts, um nur den Scan-Button anzuzeigen.";
 "Clear History" = "Verlauf löschen";
 "Clear all scan history?" = "Gesamten Scanverlauf löschen?";
 "Company Profile" = "Firmenprofil";

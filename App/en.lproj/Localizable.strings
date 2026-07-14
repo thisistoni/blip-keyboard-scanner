@@ -11,7 +11,6 @@
 "Camera unavailable" = "Camera unavailable";
 "Cancel" = "Cancel";
 "Chrome" = "Chrome";
-"Clear Last Scan" = "Clear Last Scan";
 "Custom" = "Custom";
 "Delete" = "Delete";
 "Detected %@" = "Detected %@";
@@ -38,7 +37,6 @@
 "Large Numbers" = "Large Numbers";
 "Large number pad for fast quantity and article entry." = "Large number pad for fast quantity and article entry.";
 "Large number pad keyboard." = "Large number pad keyboard.";
-"Last Scan" = "Last Scan";
 "Letters" = "Letters";
 "Manual test code" = "Manual test code";
 "Matched entry" = "Matched entry";
@@ -83,7 +81,7 @@
 "Space" = "Space";
 "Standard" = "Standard";
 "Standard letters with the selected language." = "Standard letters with the selected language.";
-"Start Scanner" = "Start Scanner";
+"Test Scanner" = "Test Scanner";
 "Start a scan here, or tap Scan from the keyboard inside another app." = "Start a scan here, or tap Scan from the keyboard inside another app.";
 "Starts with a large number pad for scan-heavy workflows." = "Starts with a large number pad for scan-heavy workflows.";
 "Starts with the normal letter keyboard." = "Starts with the normal letter keyboard.";
@@ -136,7 +134,7 @@
 "Blip does not sync scan history to a server or cloud account." = "Blip does not sync scan history to a server or cloud account.";
 "Blip stores scan history locally in the app group shared by the app and keyboard extension." = "Blip stores scan history locally in the app group shared by the app and keyboard extension.";
 "Centered Box" = "Centered Box";
-"Choose the keyboard language and which layouts employees can cycle through. Turn every layout off to show only the Scan button." = "Choose the keyboard language and which layouts employees can cycle through. Turn every layout off to show only the Scan button.";
+"Choose the keyboard language and which layouts you can cycle through. Turn every layout off to show only the Scan button." = "Choose the keyboard language and which layouts you can cycle through. Turn every layout off to show only the Scan button.";
 "Clear History" = "Clear History";
 "Clear all scan history?" = "Clear all scan history?";
 "Company Profile" = "Company Profile";

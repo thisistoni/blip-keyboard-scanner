@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct HistoryView: View {
+    private let screenshotItems: [ScanHistoryItem]?
+
     @AppStorage(SharedKeyboardState.Keys.scanHistoryRetention, store: SharedKeyboardState.appStorageDefaults)
     private var retentionRawValue = SharedKeyboardState.scanHistoryRetention.rawValue
 
@@ -10,6 +12,10 @@ struct HistoryView: View {
     @State private var showingClearConfirmation = false
     @State private var showingMailError = false
     @State private var copiedItemID: ScanHistoryItem.ID?
+
+    init(screenshotItems: [ScanHistoryItem]? = nil) {
+        self.screenshotItems = screenshotItems
+    }
 
     private var retention: ScanHistoryRetention {
         ScanHistoryRetention(rawValue: retentionRawValue) ?? .thirtyDays
@@ -99,7 +105,11 @@ struct HistoryView: View {
     }
 
     private func refresh() {
-        items = ScanHistoryStore.applyRetention()
+        if let screenshotItems {
+            items = screenshotItems.sorted { $0.scannedAt > $1.scannedAt }
+        } else {
+            items = ScanHistoryStore.applyRetention()
+        }
     }
 
     private func copy(_ item: ScanHistoryItem) {

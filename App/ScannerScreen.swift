@@ -1,7 +1,12 @@
 import SwiftUI
+#if DEBUG
+import CoreImage.CIFilterBuiltins
+import UIKit
+#endif
 
 struct ScannerScreen: View {
     let externalLaunchRequest: KeyboardScanRequest?
+    let automaticallyPresentScanner: Bool
 
     @AppStorage(SharedKeyboardState.Keys.lastScannedCode, store: SharedKeyboardState.appStorageDefaults)
     private var lastScannedCode = ""
@@ -29,6 +34,15 @@ struct ScannerScreen: View {
 
     @State private var activeSession: ScannerSession?
     @State private var handledLaunchRequestID: String?
+    @State private var didAutomaticallyPresentScanner = false
+
+    init(
+        externalLaunchRequest: KeyboardScanRequest?,
+        automaticallyPresentScanner: Bool = false
+    ) {
+        self.externalLaunchRequest = externalLaunchRequest
+        self.automaticallyPresentScanner = automaticallyPresentScanner
+    }
 
     private var returnTarget: ReturnTarget {
         ReturnTarget(rawValue: returnTargetRawValue) ?? .safari
@@ -50,26 +64,6 @@ struct ScannerScreen: View {
         NavigationStack {
             List {
                 Section {
-                    if lastScannedCode.isEmpty {
-                        EmptyStateView(
-                            title: "No scan yet",
-                            systemImage: "barcode.viewfinder",
-                            message: "Start a scan here, or tap Scan from the keyboard inside another app."
-                        )
-                    } else {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Last Scan")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(lastScannedCode)
-                                .font(.title3.monospaced())
-                                .textSelection(.enabled)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-
-                Section {
                     ScannerWorkflowGuideView()
                 } header: {
                     Text("How It Works")
@@ -85,24 +79,16 @@ struct ScannerScreen: View {
                             customReturnURL: customReturnURL
                         )
                     } label: {
-                        Label("Start Scanner", systemImage: "barcode.viewfinder")
+                        Label("Test Scanner", systemImage: "barcode.viewfinder")
                     }
 
                     LabeledContent("Keyboard return target", value: returnTarget.title)
-                }
-
-                Section {
-                    Button(role: .destructive) {
-                        lastScannedCode = ""
-                    } label: {
-                        Label("Clear Last Scan", systemImage: "trash")
-                    }
-                    .disabled(lastScannedCode.isEmpty)
                 }
             }
             .navigationTitle("Scan")
             .onAppear {
                 handleExternalLaunchRequest()
+                presentScannerForScreenshotIfNeeded()
             }
             .onChange(of: externalLaunchRequest) { request in
                 handleExternalLaunchRequest(request)
@@ -121,6 +107,18 @@ struct ScannerScreen: View {
                 }
             }
         }
+    }
+
+    private func presentScannerForScreenshotIfNeeded() {
+        guard automaticallyPresentScanner, !didAutomaticallyPresentScanner else { return }
+        didAutomaticallyPresentScanner = true
+        activeSession = ScannerSession(
+            id: "app-store-screenshot",
+            source: .app,
+            scanFormatProfile: scanFormatProfile,
+            returnTarget: returnTarget,
+            customReturnURL: customReturnURL
+        )
     }
 
     private func handleExternalLaunchRequest(_ request: KeyboardScanRequest? = nil) {
@@ -294,27 +292,20 @@ private struct ScannerPresentation: View {
         ScannerFlashlightMode(rawValue: flashlightModeRawValue) ?? .off
     }
 
+    private var scannerFeedIsAvailable: Bool {
+#if DEBUG
+        ScreenshotAutomation.usesSimulatedCamera || BarcodeScannerView.isScannerAvailable
+#else
+        BarcodeScannerView.isScannerAvailable
+#endif
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
-                if BarcodeScannerView.isScannerAvailable {
-                    BarcodeScannerView(
-                        scanFormatProfile: session.scanFormatProfile,
-                        flashlightMode: flashlightMode,
-                        defaultZoomFactor: defaultZoomLevel.factor,
-                        scanArea: scanArea,
-                        isTorchAvailable: $isTorchAvailable,
-                        isTorchOn: $isTorchOn,
-                        statusMessage: $scannerStatusMessage,
-                        currentZoomFactor: $currentZoomFactor,
-                        onCode: handleCode
-                    )
-                    .ignoresSafeArea()
-                } else {
-                    ManualScanFallback(onCode: handleCode)
-                }
+                cameraFeed
 
-                if scanArea == .centeredBox, BarcodeScannerView.isScannerAvailable {
+                if scanArea == .centeredBox, scannerFeedIsAvailable {
                     ScannerAreaGuideOverlay()
                         .ignoresSafeArea()
                         .allowsHitTesting(false)
@@ -326,6 +317,14 @@ private struct ScannerPresentation: View {
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 ScanSoundPlayer.shared.prepareIfEnabled(playScanSound)
+#if DEBUG
+                if ScreenshotAutomation.usesSimulatedCamera {
+                    isTorchAvailable = true
+                    isTorchOn = flashlightMode == .on
+                    currentZoomFactor = defaultZoomLevel.factor
+                    scannerStatusMessage = nil
+                }
+#endif
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -347,6 +346,40 @@ private struct ScannerPresentation: View {
                     .disabled(!isTorchAvailable || scannedCode != nil)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private var cameraFeed: some View {
+#if DEBUG
+        if ScreenshotAutomation.usesSimulatedCamera {
+            SimulatedCameraFeed()
+                .ignoresSafeArea()
+        } else {
+            physicalCameraFeed
+        }
+#else
+        physicalCameraFeed
+#endif
+    }
+
+    @ViewBuilder
+    private var physicalCameraFeed: some View {
+        if BarcodeScannerView.isScannerAvailable {
+            BarcodeScannerView(
+                scanFormatProfile: session.scanFormatProfile,
+                flashlightMode: flashlightMode,
+                defaultZoomFactor: defaultZoomLevel.factor,
+                scanArea: scanArea,
+                isTorchAvailable: $isTorchAvailable,
+                isTorchOn: $isTorchOn,
+                statusMessage: $scannerStatusMessage,
+                currentZoomFactor: $currentZoomFactor,
+                onCode: handleCode
+            )
+            .ignoresSafeArea()
+        } else {
+            ManualScanFallback(onCode: handleCode)
         }
     }
 
@@ -380,7 +413,7 @@ private struct ScannerPresentation: View {
 
             Spacer()
 
-            if BarcodeScannerView.isScannerAvailable {
+            if scannerFeedIsAvailable {
                 ZoomIndicator(value: currentZoomFactor)
                     .padding(.bottom, 18)
             }
@@ -398,6 +431,49 @@ private struct ScannerPresentation: View {
         }
     }
 }
+
+#if DEBUG
+private struct SimulatedCameraFeed: View {
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Image("DemoWarehouse")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
+
+                VStack(spacing: 7) {
+                    Image(uiImage: Self.barcodeImage)
+                        .resizable()
+                        .interpolation(.none)
+                        .frame(width: min(geometry.size.width * 0.55, 390), height: 86)
+
+                    Text("4 012345 678901")
+                        .font(.system(size: 16, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.black)
+                }
+                .offset(y: geometry.size.height * 0.015)
+            }
+        }
+        .background(.black)
+        .accessibilityHidden(true)
+    }
+
+    private static let barcodeImage: UIImage = {
+        let filter = CIFilter.code128BarcodeGenerator()
+        filter.message = Data("4012345678901".utf8)
+        filter.quietSpace = 10
+
+        guard let outputImage = filter.outputImage else { return UIImage() }
+        let context = CIContext(options: [.useSoftwareRenderer: true])
+        guard let cgImage = context.createCGImage(outputImage, from: outputImage.extent) else {
+            return UIImage()
+        }
+        return UIImage(cgImage: cgImage)
+    }()
+}
+#endif
 
 private struct ScannerAreaGuideOverlay: View {
     var body: some View {

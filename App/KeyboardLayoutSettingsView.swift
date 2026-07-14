@@ -174,7 +174,7 @@ struct KeyboardLayoutSettingsView: View {
                 } header: {
                     Text("Keyboard")
                 } footer: {
-                    Text("Choose the keyboard language and which layouts employees can cycle through. Turn every layout off to show only the Scan button.")
+                    Text("Choose the keyboard language and which layouts you can cycle through. Turn every layout off to show only the Scan button.")
                 }
 
                 Section {

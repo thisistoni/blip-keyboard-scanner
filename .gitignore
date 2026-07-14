@@ -21,6 +21,7 @@ Package.resolved
 
 # Local tooling
 .xcodebuildmcp/
+fastlane/report.xml
 
 # Secrets and machine-local config
 *.p8

@@ -1,0 +1,158 @@
+default_platform(:ios)
+
+require "fileutils"
+require "json"
+require "shellwords"
+
+SCREENSHOT_SCENES = %w[
+  scan
+  scanner
+  history
+  settings
+  profiles
+  privacy
+].freeze
+
+SCREENSHOT_LANGUAGES = {
+  "en-US" => "en",
+  "de-DE" => "de"
+}.freeze
+
+SCREENSHOT_DEVICES = {
+  "iphone" => "iPhone 17 Pro Max",
+  "ipad" => "iPad Pro 13-inch (M5)"
+}.freeze
+
+def command_output(command)
+  Actions.sh(command, log: false).strip
+end
+
+def simulator_udid(family, name)
+  override = ENV["BLIP_SCREENSHOT_#{family.upcase}_UDID"]
+  return override unless override.to_s.empty?
+
+  devices = JSON.parse(command_output("xcrun simctl list devices available --json")).fetch("devices")
+  match = devices.values.flatten.reverse.find { |device| device["name"] == name && device["isAvailable"] }
+  UI.user_error!("No available simulator named #{name}. Set BLIP_SCREENSHOT_#{family.upcase}_UDID to override it.") unless match
+  match.fetch("udid")
+end
+
+def run_simctl(*arguments, log: true)
+  command = (["xcrun", "simctl"] + arguments).map { |part| Shellwords.escape(part.to_s) }.join(" ")
+  Actions.sh(command, log: log)
+end
+
+def prepare_simulator(udid)
+  # Screenshot generation is intentionally single-simulator to avoid memory
+  # pressure on developer machines. Always stop every simulator before booting
+  # the one device used for the next family.
+  run_simctl("shutdown", "all", log: false)
+  run_simctl("boot", udid, log: false)
+  run_simctl("bootstatus", udid, "-b")
+  run_simctl("ui", udid, "appearance", "light")
+  run_simctl("status_bar", udid, "clear", log: false)
+  run_simctl("status_bar", udid, "override", "--time", "9:41", "--batteryState", "charged", "--batteryLevel", "100", "--wifiBars", "3", "--cellularBars", "4", log: false)
+end
+
+def capture_scene(udid:, family:, locale:, language:, scene:, output_root:)
+  destination = File.join(output_root, locale, family, format("%02d-%s.png", SCREENSHOT_SCENES.index(scene) + 1, scene))
+  FileUtils.mkdir_p(File.dirname(destination))
+  if File.exist?(destination) && ENV["BLIP_SCREENSHOT_FORCE"] != "1"
+    UI.message("Keeping existing #{locale}/#{family}/#{File.basename(destination)}")
+    return
+  end
+
+  run_simctl("terminate", udid, "com.antoniobeslic.Blip", log: false) rescue nil
+  run_simctl(
+    "launch",
+    udid,
+    "com.antoniobeslic.Blip",
+    "--app-store-screenshot",
+    scene,
+    "--screenshot-language",
+    language,
+    "-AppleLanguages",
+    "(#{language})",
+    "-AppleLocale",
+    locale.tr("-", "_"),
+    log: false
+  )
+  # SpringBoard may still be animating after simctl returns a PID, especially on
+  # a freshly booted iPad. Give the debug screenshot route time to render its
+  # image asset and settle before capturing the native display buffer.
+  # A freshly installed app can need around six seconds before its first scene
+  # is composited on current simulator runtimes. Capturing earlier produces a
+  # valid PNG of the launch background instead of the app UI.
+  sleep(8.0)
+  run_simctl("io", udid, "screenshot", "--type=png", destination)
+  UI.success("Captured #{locale}/#{family}/#{File.basename(destination)}")
+end
+
+platform :ios do
+  desc "Generate every English and German App Store screenshot for iPhone and iPad"
+  lane :screenshots do
+    repo_root = File.expand_path("..", __dir__)
+    output_root = File.join(repo_root, "AppStore", "Screenshots", "final")
+    derived_data = File.join(repo_root, "fastlane", "DerivedData")
+
+    if ENV["BLIP_SCREENSHOT_CLEAN"] == "1"
+      # The keyboard-in-Safari images are captures of the real extension and
+      # require a host-app activation step. Preserve those approved sources
+      # while regenerating every app-owned scene.
+      preserved_keyboard_images = Dir.glob(File.join(output_root, "*", "iphone", "00-keyboard.png")).to_h do |path|
+        [path.sub(output_root, ""), File.binread(path)]
+      end
+      FileUtils.rm_rf(output_root)
+      preserved_keyboard_images.each do |relative_path, data|
+        restored_path = File.join(output_root, relative_path)
+        FileUtils.mkdir_p(File.dirname(restored_path))
+        File.binwrite(restored_path, data)
+      end
+    end
+    FileUtils.mkdir_p(output_root)
+
+    app_path = File.join(derived_data, "Build", "Products", "Debug-iphonesimulator", "Blip.app")
+    unless ENV["BLIP_SCREENSHOT_SKIP_BUILD"] == "1"
+      sh(
+        "xcodebuild",
+        "-project", File.join(repo_root, "Blip.xcodeproj"),
+        "-scheme", "Blip",
+        "-configuration", "Debug",
+        "-destination", "generic/platform=iOS Simulator",
+        "-derivedDataPath", derived_data,
+        "build"
+      )
+      UI.user_error!("Built app not found at #{app_path}") unless File.directory?(app_path)
+    end
+
+    SCREENSHOT_DEVICES.each do |family, device_name|
+      udid = simulator_udid(family, device_name)
+      prepare_simulator(udid)
+      run_simctl("install", udid, app_path) unless ENV["BLIP_SCREENSHOT_SKIP_INSTALL"] == "1"
+
+      SCREENSHOT_LANGUAGES.each do |locale, language|
+        SCREENSHOT_SCENES.each do |scene|
+          capture_scene(
+            udid: udid,
+            family: family,
+            locale: locale,
+            language: language,
+            scene: scene,
+            output_root: output_root
+          )
+        end
+      end
+
+      run_simctl("shutdown", udid, log: false) unless ENV["BLIP_SCREENSHOT_KEEP_BOOTED"] == "1"
+    end
+
+    sh("xcrun", "swift", File.join(repo_root, "scripts", "make_screenshot_previews.swift"))
+    sh("xcrun", "swift", File.join(repo_root, "scripts", "compose_app_store_screenshots.swift"))
+    sh(
+      "xcrun", "swift",
+      File.join(repo_root, "scripts", "make_screenshot_previews.swift"),
+      "composed", "composed-previews"
+    )
+    UI.success("Generated #{SCREENSHOT_SCENES.length * SCREENSHOT_LANGUAGES.length * SCREENSHOT_DEVICES.length} screenshots in #{output_root}")
+  end
+end

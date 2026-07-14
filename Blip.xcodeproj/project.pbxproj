@@ -26,6 +26,7 @@
 		AF4C1479AB197174998705B2 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA2224923941FE359D09EB73 /* KeyboardViewController.swift */; };
 		BF2638979D1D4921030654F8 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 377B6F3B6C18EBA07618C583 /* Localizable.strings */; };
 		C002F8AE24097E721454CBEC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */; };
+		C0BAA57C2050BA0757CDB477 /* ScreenshotAutomation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7241231B1CE579787A193D21 /* ScreenshotAutomation.swift */; };
 		C7FC916F8A685C9A102F9524 /* BlipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C996AC636B03E56AE187B7 /* BlipApp.swift */; };
 		C8B533246884B21A3E3DC1EA /* BlipCompanyProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */; };
 		D0DE4492D022484817C7D82F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */; };
@@ -71,6 +72,7 @@
 		61A0999AC9A0EB7CB50EDC6F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		64C996AC636B03E56AE187B7 /* BlipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlipApp.swift; sourceTree = "<group>"; };
 		6F6828F175B2EA6283AE2569 /* BlipKeyboardExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BlipKeyboardExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7241231B1CE579787A193D21 /* ScreenshotAutomation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotAutomation.swift; sourceTree = "<group>"; };
 		7636556798B59B570DF3FDEC /* KeyboardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSettings.swift; sourceTree = "<group>"; };
 		7B0CA1B63DBE419AAB686754 /* Blip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Blip.entitlements; sourceTree = "<group>"; };
 		81CECF940A77E80308B06286 /* BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
@@ -134,6 +136,7 @@
 				271839042EB437631C2FC4D5 /* PrivacyTrustView.swift */,
 				BD8752A0ED9DD4F722F13A8C /* ScannerScreen.swift */,
 				A13418EDC64D955E03A48729 /* ScanSoundPlayer.swift */,
+				7241231B1CE579787A193D21 /* ScreenshotAutomation.swift */,
 				AC5308A53DBB6DC61E056339 /* SourceAppReturnController.swift */,
 				0F4AAFBA4E577FB1CC1547E2 /* SupportEmail.swift */,
 				E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */,
@@ -284,6 +287,7 @@
 				ED860D2D15741BE25855EFDA /* ScanHistory.swift in Sources */,
 				9F8D52AEDD42C5D3C08FD6FE /* ScanSoundPlayer.swift in Sources */,
 				1B753FA075BE9F01F963A6C8 /* ScannerScreen.swift in Sources */,
+				C0BAA57C2050BA0757CDB477 /* ScreenshotAutomation.swift in Sources */,
 				81D48C0E1E7375F69D833F3B /* SourceAppReturnController.swift in Sources */,
 				FD047880801250BBA16B80FE /* SupportEmail.swift in Sources */,
 				E54A46DB412041B7F6EE7942 /* SystemSettingsOpener.swift in Sources */,
