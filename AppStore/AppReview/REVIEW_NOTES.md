@@ -12,6 +12,12 @@ The keyboard extension cannot access the camera directly, so scanning happens in
 6. Scan a demo barcode or QR code.
 7. Blip opens the configured return target and the keyboard inserts the scan result into the active text field.
 
+Return targets are opened exclusively through public URL-scheme handling with
+`UIApplication.open`. Blip does not use private APIs to open apps by bundle
+identifier. If a configured app cannot handle its URL scheme, the reviewer can
+use iOS's system Back-to-app control to return to the original text field; the
+queued scan remains available to the keyboard for insertion.
+
 Keyboard setup steps:
 
 1. Open Blip.

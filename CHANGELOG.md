@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replace private bundle-identifier app launching with public URL-scheme return handling.
 - Blip branding applied to app name, keyboard display name, Xcode project, targets, schemes, URL scheme, bundle identifiers, and app group.
 - Optional Blip sound feedback when a scan succeeds.
 - Custom iOS keyboard extension with configurable English/German layouts.

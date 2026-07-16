@@ -421,23 +421,6 @@ enum ReturnTarget: String, CaseIterable, Identifiable {
         }
     }
 
-    var bundleIdentifier: String? {
-        switch self {
-        case .safari:
-            "com.apple.mobilesafari"
-        case .chrome:
-            "com.google.chrome.ios"
-        case .edge:
-            "com.microsoft.msedge"
-        case .firefox:
-            "org.mozilla.ios.Firefox"
-        case .brave:
-            "com.brave.ios.browser"
-        case .custom:
-            nil
-        }
-    }
-
     func urlCandidates(customURLString: String) -> [URL] {
         switch self {
         case .safari:
