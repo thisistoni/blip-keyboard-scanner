@@ -36,10 +36,14 @@ struct KeyboardLayoutSettingsView: View {
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.autoInsertScans, store: SharedKeyboardState.appStorageDefaults)
+    private var autoInsertScans = true
+
     @AppStorage(SharedKeyboardState.Keys.customReturnURL, store: SharedKeyboardState.appStorageDefaults)
     private var customReturnURL = ""
 
     @State private var showingMailError = false
+    @State private var showingSystemReturnHelp = false
 
     private var keyboardLanguage: Binding<KeyboardLanguage> {
         Binding {
@@ -109,6 +113,19 @@ struct KeyboardLayoutSettingsView: View {
             ReturnTarget(rawValue: returnTargetRawValue) ?? .safari
         } set: { newValue in
             returnTargetRawValue = newValue.rawValue
+        }
+    }
+
+    private var automaticReturnDescription: LocalizedStringKey {
+        switch returnTarget.wrappedValue {
+        case .chrome, .brave:
+            "Automatically returns to your open browser tab after scanning."
+        case .edge, .firefox:
+            "Automatically returns to the selected browser after scanning."
+        case .custom:
+            "Automatically opens your Custom Return URL after scanning."
+        case .safari:
+            ""
         }
     }
 
@@ -229,13 +246,20 @@ struct KeyboardLayoutSettingsView: View {
                 Section {
                     Picker("Return to", selection: returnTarget) {
                         ForEach(ReturnTarget.allCases) { target in
-                            Text(target.title).tag(target)
+                            Text(target == .safari
+                                 ? NSLocalizedString("Safari (manual)", comment: "Safari requires manual return")
+                                 : target.title)
+                                .tag(target)
                         }
                     }
 
-                    Text(returnTarget.wrappedValue.detail)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    if returnTarget.wrappedValue != .safari {
+                        Text(automaticReturnDescription)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        Toggle("Insert Scans Automatically", isOn: $autoInsertScans)
+                    }
 
                     if returnTarget.wrappedValue == .custom {
                         TextField("exampleapp://", text: $customReturnURL)
@@ -244,19 +268,22 @@ struct KeyboardLayoutSettingsView: View {
                             .keyboardType(.URL)
                     }
 
-                    Button {
-                        SourceAppReturnController.openReturnTarget(
-                            returnTarget.wrappedValue,
-                            customURLString: customReturnURL
-                        )
-                    } label: {
-                        Label("Test Return Target", systemImage: "arrow.up.forward.app")
+                    if returnTarget.wrappedValue == .custom {
+                        Button {
+                            SourceAppReturnController.openCustomReturnURL(customReturnURL)
+                        } label: {
+                            Label("Test Custom Return URL", systemImage: "arrow.up.forward.app")
+                        }
+                        .disabled(customReturnURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    } else if returnTarget.wrappedValue == .safari {
+                        Button {
+                            showingSystemReturnHelp = true
+                        } label: {
+                            Label("How to Return to Safari", systemImage: "arrow.backward.circle")
+                        }
                     }
-                    .disabled(returnTarget.wrappedValue == .custom && customReturnURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 } header: {
                     Text("Return Target")
-                } footer: {
-                    Text("After a keyboard-launched scan, Blip opens this app so the keyboard can resume and insert the scan. Use the test button to verify each target on your iPhone.")
                 }
 
                 Section {
@@ -325,6 +352,11 @@ struct KeyboardLayoutSettingsView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("Install or configure Mail to send feedback from Blip.")
+            }
+            .alert("Return to Safari", isPresented: $showingSystemReturnHelp) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Blip can't automatically return to your original Safari tab. Use iOS's previous-app control or swipe right on the Home indicator. In the original Safari field, tap Insert Last Scan on the Blip keyboard. For automatic return, choose another supported Return Target.")
             }
         }
     }

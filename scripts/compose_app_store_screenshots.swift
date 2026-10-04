@@ -90,7 +90,7 @@ let copy: [String: [String: SlideCopy]] = [
     "en-US": [
         "keyboard": SlideCopy(sourceName: "00-keyboard.png", outputName: "01-keyboard.png", headline: "Scan from any app", detail: "Type, scan, and keep working.", palette: brightBlue),
         "scanner": SlideCopy(sourceName: "02-scanner.png", outputName: "02-scanner.png", headline: "Point. Scan. Done.", detail: "Camera, flashlight, and zoom are ready.", palette: brightBlue),
-        "scan": SlideCopy(sourceName: "01-scan.png", outputName: "03-workflow.png", headline: "Back where you started", detail: "Blip returns to the original field.", palette: lightBlue),
+        "scan": SlideCopy(sourceName: "01-scan.png", outputName: "03-workflow.png", headline: "Back to Chrome", detail: "Insert automatically or with a tap.", palette: lightBlue),
         "history": SlideCopy(sourceName: "03-history.png", outputName: "04-history.png", headline: "Every scan close at hand", detail: "Stored locally and always searchable.", palette: cyan),
         "settings": SlideCopy(sourceName: "04-settings.png", outputName: "05-settings.png", headline: "Make Blip work your way", detail: "Language, layouts, scan formats, and more.", palette: lightBlue),
         "profiles": SlideCopy(sourceName: "05-profiles.png", outputName: "06-profiles.png", headline: "One setup for every device", detail: "Share a consistent company configuration.", palette: indigo),
@@ -99,7 +99,7 @@ let copy: [String: [String: SlideCopy]] = [
     "de-DE": [
         "keyboard": SlideCopy(sourceName: "00-keyboard.png", outputName: "01-keyboard.png", headline: "Scannen in jeder App", detail: "Tippen, scannen und direkt weiterarbeiten.", palette: brightBlue),
         "scanner": SlideCopy(sourceName: "02-scanner.png", outputName: "02-scanner.png", headline: "Zielen. Scannen. Fertig.", detail: "Kamera, Taschenlampe und Zoom sind bereit.", palette: brightBlue),
-        "scan": SlideCopy(sourceName: "01-scan.png", outputName: "03-workflow.png", headline: "Zurück, wo du gestartet bist", detail: "Blip kehrt zum ursprünglichen Feld zurück.", palette: lightBlue),
+        "scan": SlideCopy(sourceName: "01-scan.png", outputName: "03-workflow.png", headline: "Zurück zu Chrome", detail: "Automatisch oder per Tipp einfügen.", palette: lightBlue),
         "history": SlideCopy(sourceName: "03-history.png", outputName: "04-history.png", headline: "Jeder Scan griffbereit", detail: "Lokal gespeichert und jederzeit durchsuchbar.", palette: cyan),
         "settings": SlideCopy(sourceName: "04-settings.png", outputName: "05-settings.png", headline: "Blip passt sich dir an", detail: "Sprache, Layouts, Scan-Formate und mehr.", palette: lightBlue),
         "profiles": SlideCopy(sourceName: "05-profiles.png", outputName: "06-profiles.png", headline: "Ein Setup für jedes Gerät", detail: "Teile eine einheitliche Firmenkonfiguration.", palette: indigo),

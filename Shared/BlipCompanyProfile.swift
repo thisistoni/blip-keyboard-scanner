@@ -10,6 +10,7 @@ struct BlipCompanyProfile: Codable, Equatable {
     let enabledKeyboardLayouts: String
     let startupKeyboardLayout: String
     let scanSuffix: String
+    let autoInsertScans: Bool?
     let scanFormatProfile: String
     let returnTarget: String
     let customReturnURL: String
@@ -27,6 +28,7 @@ struct BlipCompanyProfile: Codable, Equatable {
             enabledKeyboardLayouts: SharedKeyboardState.enabledKeyboardLayoutSlotsRawValue,
             startupKeyboardLayout: SharedKeyboardState.startupKeyboardLayoutSlotRawValue,
             scanSuffix: SharedKeyboardState.insertSuffix.rawValue,
+            autoInsertScans: SharedKeyboardState.autoInsertScans,
             scanFormatProfile: SharedKeyboardState.scanFormatProfile.rawValue,
             returnTarget: SharedKeyboardState.returnTarget.rawValue,
             customReturnURL: SharedKeyboardState.customReturnURL,
@@ -95,6 +97,9 @@ struct BlipCompanyProfile: Codable, Equatable {
         SharedKeyboardState.enabledKeyboardLayoutSlots = KeyboardLayoutSlot.slots(from: enabledKeyboardLayouts) ?? KeyboardLayoutSlot.allCases
         SharedKeyboardState.startupKeyboardLayoutSlot = startupKeyboardLayout.isEmpty ? nil : KeyboardLayoutSlot(rawValue: startupKeyboardLayout)
         SharedKeyboardState.insertSuffix = InsertSuffix(rawValue: scanSuffix) ?? .none
+        if let autoInsertScans {
+            SharedKeyboardState.autoInsertScans = autoInsertScans
+        }
         SharedKeyboardState.scanFormatProfile = ScanFormatProfile(rawValue: scanFormatProfile) ?? .allSupported
         SharedKeyboardState.returnTarget = ReturnTarget(rawValue: returnTarget) ?? .safari
         SharedKeyboardState.customReturnURL = customReturnURL
@@ -111,6 +116,11 @@ struct BlipCompanyProfile: Codable, Equatable {
             change("Enabled Layouts", current.enabledKeyboardLayouts, enabledKeyboardLayouts, BlipCompanyProfile.formatLayouts),
             change("Opening Layout", current.startupKeyboardLayout, startupKeyboardLayout, BlipCompanyProfile.formatLayoutSlot),
             change("Scan Suffix", current.scanSuffix, scanSuffix) { InsertSuffix(rawValue: $0) },
+            BlipCompanyProfileChange(
+                title: NSLocalizedString("Insert Scans Automatically", comment: "Profile auto-insert setting"),
+                currentValue: (current.autoInsertScans ?? true) ? NSLocalizedString("On", comment: "Profile auto-insert on") : NSLocalizedString("Off", comment: "Profile auto-insert off"),
+                incomingValue: (autoInsertScans ?? current.autoInsertScans ?? true) ? NSLocalizedString("On", comment: "Profile auto-insert on") : NSLocalizedString("Off", comment: "Profile auto-insert off")
+            ),
             change("Scan Formats", current.scanFormatProfile, scanFormatProfile) { ScanFormatProfile(rawValue: $0) },
             change("Return Target", current.returnTarget, returnTarget) { ReturnTarget(rawValue: $0) },
             change("Custom Return URL", current.customReturnURL, customReturnURL) { $0.isEmpty ? NSLocalizedString("None", comment: "No custom URL profile value") : $0 },

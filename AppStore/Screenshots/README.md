@@ -35,3 +35,5 @@ The final folders use App Store Connect locale identifiers:
 - `en-US/ipad`
 - `de-DE/iphone`
 - `de-DE/ipad`
+
+To refresh only the Chrome return screenshot across these four sets, use `BLIP_SCREENSHOT_SCENES=scan BLIP_SCREENSHOT_FORCE=1 fastlane ios screenshots`. The `03-workflow.png` composition pairs the captured scan screen with captions that describe Chrome return and the automatic or manual insert choice.
