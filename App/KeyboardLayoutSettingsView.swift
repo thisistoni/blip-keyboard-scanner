@@ -44,7 +44,10 @@ struct KeyboardLayoutSettingsView: View {
     private var customReturnURL = ""
 
     @State private var showingMailError = false
+    @State private var showingStoreError = false
     @State private var showingSystemReturnHelp = false
+
+    private let appStoreReviewURL = URL(string: "https://apps.apple.com/app/id6782697501?action=write-review")!
 
     private var keyboardLanguage: Binding<KeyboardLanguage> {
         Binding {
@@ -317,6 +320,24 @@ struct KeyboardLayoutSettingsView: View {
 
                 Section {
                     NavigationLink {
+                        PrivacyTrustView()
+                    } label: {
+                        Label("Privacy & Trust", systemImage: "lock.shield")
+                    }
+
+                    Button {
+                        sendFeedback()
+                    } label: {
+                        Label("Send Feedback", systemImage: "paperplane")
+                    }
+                } header: {
+                    Text("Help & Feedback")
+                } footer: {
+                    Text("Feedback opens an email draft with app and device context. Nothing is sent unless you send it.")
+                }
+
+                Section {
+                    NavigationLink {
                         SetupDiagnosticsView(setupStatus: setupStatus)
                     } label: {
                         Label("Keyboard Setup Status", systemImage: setupStatus.isKeyboardEnabled ? "checkmark.circle" : "exclamationmark.circle")
@@ -328,19 +349,11 @@ struct KeyboardLayoutSettingsView: View {
                 }
 
                 Section {
-                    NavigationLink {
-                        PrivacyTrustView()
-                    } label: {
-                        Label("Privacy & Trust", systemImage: "lock.shield")
-                    }
-
                     Button {
-                        sendFeedback()
+                        rateBlip()
                     } label: {
-                        Label("Send Feedback", systemImage: "envelope")
+                        Label("Rate Blip", systemImage: "star.fill")
                     }
-                } header: {
-                    Text("Help & Feedback")
                 }
             }
             .navigationTitle("Settings")
@@ -348,12 +361,17 @@ struct KeyboardLayoutSettingsView: View {
                 _ = ScanHistoryStore.applyRetention()
             }
             .alert("Mail is not available", isPresented: $showingMailError) {
-                Button("Copy email address") {
-                    UIPasteboard.general.string = SupportEmail.supportAddress
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Install or configure Mail to send feedback from Blip.")
+            }
+            .alert("App Store is not available", isPresented: $showingStoreError) {
+                Button("Copy App Store link") {
+                    UIPasteboard.general.url = appStoreReviewURL
                 }
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Send feedback to \(SupportEmail.supportAddress) using your preferred email app.")
+                Text("Open the copied link to rate Blip in the App Store.")
             }
             .alert("Return to Safari", isPresented: $showingSystemReturnHelp) {
                 Button("OK", role: .cancel) {}
@@ -387,6 +405,15 @@ struct KeyboardLayoutSettingsView: View {
 
         SupportEmail.open(url) {
             showingMailError = true
+        }
+    }
+
+    private func rateBlip() {
+        UIApplication.shared.open(appStoreReviewURL) { didOpen in
+            guard !didOpen else { return }
+            DispatchQueue.main.async {
+                showingStoreError = true
+            }
         }
     }
 }

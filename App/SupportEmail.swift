@@ -7,24 +7,19 @@ enum SupportEmail {
     static let supportURL = URL(string: "https://thisistoni.github.io/blip-keyboard-scanner/support.html")!
 
     static func feedbackURL() -> URL? {
-        let prompt = NSLocalizedString("Tell us what worked or what could be better:", comment: "Editable feedback draft prompt")
-        let contextLabel = NSLocalizedString("Context:", comment: "Feedback draft context label")
-        return mailURL(
+        mailURL(
             subject: "Blip Feedback",
             body: """
-            \(prompt)
+            Hi Blip team,
 
 
-            \(contextLabel)
-            \(basicContext())
+            Feedback:
+
+
+            Context:
+            \(settingsContext())
             """
         )
-    }
-
-    private static func basicContext() -> String {
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
-        return "Blip \(appVersion) (\(buildNumber)) · iOS \(UIDevice.current.systemVersion) · \(UIDevice.current.model)"
     }
 
     static func scanIssueURL(for item: ScanHistoryItem) -> URL? {

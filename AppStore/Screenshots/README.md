@@ -47,4 +47,4 @@ BLIP_SCREENSHOT_COMPOSE_OUTPUT=redesign xcrun swift scripts/compose_app_store_sc
 xcrun swift scripts/make_screenshot_previews.swift redesign redesign-previews
 ```
 
-Review the four contact sheets in `AppStore/Screenshots/redesign-previews` and the full-size PNGs in `AppStore/Screenshots/redesign`. These are candidate assets; the existing `composed` folder remains the set used by the Fastlane lane. The captures in this preview predate the new bottom-of-Settings feedback row.
+Review the four contact sheets in `AppStore/Screenshots/redesign-previews` and the full-size PNGs in `AppStore/Screenshots/redesign`. These are candidate assets; the existing `composed` folder remains the set used by the Fastlane lane. The reused Settings captures predate the new bottom-of-Settings App Store rating row.

@@ -126,7 +126,7 @@ func layout(for family: String) -> FamilyLayout {
             iconSize: 90,
             headlineFontSize: 126,
             detailFontSize: 74,
-            headlineRect: CGRect(x: 86, y: 2260, width: 1148, height: 340),
+            headlineRect: CGRect(x: 86, y: 2120, width: 1148, height: 340),
             detailRect: CGRect(x: 86, y: 2130, width: 1148, height: 140)
         )
     }
@@ -141,7 +141,7 @@ func layout(for family: String) -> FamilyLayout {
         iconSize: 105,
         headlineFontSize: 132,
         detailFontSize: 84,
-        headlineRect: CGRect(x: 110, y: 2220, width: 1844, height: 300),
+        headlineRect: CGRect(x: 110, y: 2100, width: 1844, height: 300),
         detailRect: CGRect(x: 110, y: 2096, width: 1844, height: 126)
     )
 }
