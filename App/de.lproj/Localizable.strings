@@ -139,8 +139,10 @@
 "Clear all scan history?" = "Gesamten Scanverlauf löschen?";
 "Company Profile" = "Firmenprofil";
 "Company Profiles" = "Firmenprofile";
+"Context:" = "Kontext:";
 "Copied" = "Kopiert";
 "Copy" = "Kopieren";
+"Copy email address" = "E-Mail-Adresse kopieren";
 "Current: %@" = "Aktuell: %@";
 "Default Zoom" = "Standardzoom";
 "Do not store scan history." = "Scanverlauf nicht speichern.";
@@ -154,6 +156,8 @@
 "Full Frame" = "Gesamtes Bild";
 "Help & Feedback" = "Hilfe & Feedback";
 "History" = "Verlauf";
+"Send feedback to %@ using your preferred email app." = "Sende Feedback mit deiner bevorzugten E-Mail-App an %@.";
+"Tell us what worked or what could be better:" = "Was hat gut funktioniert, oder was können wir verbessern?";
 "History is off. Turn it on in Settings if you want Blip to keep local scan history." = "Der Verlauf ist deaktiviert. Aktiviere ihn in den Einstellungen, wenn Blip lokalen Scanverlauf speichern soll.";
 "History is optional" = "Verlauf ist optional";
 "History stays on this device. Feedback emails are only created when you choose to send them." = "Der Verlauf bleibt auf diesem Gerät. Feedback-E-Mails werden nur erstellt, wenn du sie senden möchtest.";

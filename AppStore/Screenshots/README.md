@@ -37,3 +37,14 @@ The final folders use App Store Connect locale identifiers:
 - `de-DE/ipad`
 
 To refresh only the Chrome return screenshot across these four sets, use `BLIP_SCREENSHOT_SCENES=scan BLIP_SCREENSHOT_FORCE=1 fastlane ios screenshots`. The `03-workflow.png` composition pairs the captured scan screen with captions that describe Chrome return and the automatic or manual insert choice.
+
+## Review the device-frame redesign
+
+The redesigned marketing set uses the existing real app captures inside drawn iPhone and iPad hardware frames. It has larger, single-line headlines and supporting copy. Generate it without changing the current `composed` assets or capturing new simulator images:
+
+```sh
+BLIP_SCREENSHOT_COMPOSE_OUTPUT=redesign xcrun swift scripts/compose_app_store_screenshots.swift
+xcrun swift scripts/make_screenshot_previews.swift redesign redesign-previews
+```
+
+Review the four contact sheets in `AppStore/Screenshots/redesign-previews` and the full-size PNGs in `AppStore/Screenshots/redesign`. These are candidate assets; the existing `composed` folder remains the set used by the Fastlane lane. The captures in this preview predate the new bottom-of-Settings feedback row.

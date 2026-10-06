@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct KeyboardLayoutSettingsView: View {
     let setupStatus: SetupVerificationStatus
@@ -316,24 +317,6 @@ struct KeyboardLayoutSettingsView: View {
 
                 Section {
                     NavigationLink {
-                        PrivacyTrustView()
-                    } label: {
-                        Label("Privacy & Trust", systemImage: "lock.shield")
-                    }
-
-                    Button {
-                        sendFeedback()
-                    } label: {
-                        Label("Send Feedback", systemImage: "paperplane")
-                    }
-                } header: {
-                    Text("Help & Feedback")
-                } footer: {
-                    Text("Feedback opens an email draft with app and device context. Nothing is sent unless you send it.")
-                }
-
-                Section {
-                    NavigationLink {
                         SetupDiagnosticsView(setupStatus: setupStatus)
                     } label: {
                         Label("Keyboard Setup Status", systemImage: setupStatus.isKeyboardEnabled ? "checkmark.circle" : "exclamationmark.circle")
@@ -343,15 +326,34 @@ struct KeyboardLayoutSettingsView: View {
                 } footer: {
                     Text("Use this when iOS Settings does not seem to match what Blip detects.")
                 }
+
+                Section {
+                    NavigationLink {
+                        PrivacyTrustView()
+                    } label: {
+                        Label("Privacy & Trust", systemImage: "lock.shield")
+                    }
+
+                    Button {
+                        sendFeedback()
+                    } label: {
+                        Label("Send Feedback", systemImage: "envelope")
+                    }
+                } header: {
+                    Text("Help & Feedback")
+                }
             }
             .navigationTitle("Settings")
             .onChange(of: historyRetentionRawValue) { _ in
                 _ = ScanHistoryStore.applyRetention()
             }
             .alert("Mail is not available", isPresented: $showingMailError) {
+                Button("Copy email address") {
+                    UIPasteboard.general.string = SupportEmail.supportAddress
+                }
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Install or configure Mail to send feedback from Blip.")
+                Text("Send feedback to \(SupportEmail.supportAddress) using your preferred email app.")
             }
             .alert("Return to Safari", isPresented: $showingSystemReturnHelp) {
                 Button("OK", role: .cancel) {}
