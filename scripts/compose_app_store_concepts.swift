@@ -251,12 +251,16 @@ let margin: CGFloat = 24
 let gap: CGFloat = 18
 let sheet = CGSize(width: margin * 2 + thumb.width * 3 + gap * 2, height: 24 + thumb.height + 58)
 let sheetCtx = context(sheet)
-sheetCtx.setFillColor(color(0xE7ECF0))
+sheetCtx.setFillColor(color(0xCED9E3))
 sheetCtx.fill(CGRect(origin: .zero, size: sheet))
 for (index, file) in ["01-hero.png", "02-scan.png", "03-use.png"].enumerated() {
     let item = try image(output.appendingPathComponent(file))
     let x = margin + CGFloat(index) * (thumb.width + gap)
-    sheetCtx.draw(item, in: CGRect(x: x, y: 42, width: thumb.width, height: thumb.height))
+    let frame = CGRect(x: x, y: 42, width: thumb.width, height: thumb.height)
+    sheetCtx.draw(item, in: frame)
+    sheetCtx.setStrokeColor(color(0x718499))
+    sheetCtx.setLineWidth(1.5)
+    sheetCtx.stroke(frame)
     text(["01 / HERO", "02 / SCAN", "03 / USE"][index], x: x, baseline: 17,
          width: thumb.width, size: 16, fontName: "AvenirNext-DemiBold", fill: ink, ctx: sheetCtx)
 }
