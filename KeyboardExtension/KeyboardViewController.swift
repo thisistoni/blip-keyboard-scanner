@@ -6,6 +6,8 @@ final class KeyboardViewController: UIInputViewController {
     private let rootStack = UIStackView()
     private var heightConstraint: NSLayoutConstraint?
     private var hostedToolbarControllers: [UIViewController] = []
+    private var inputModeSwitchButton: UIButton?
+    private var isRecoveryButtonVisible = false
     private var activeLayout = SharedKeyboardState.defaultKeyboardLayout
     private var isShifted = false
     private var pendingInsertionWorkItem: DispatchWorkItem?
@@ -45,6 +47,11 @@ final class KeyboardViewController: UIInputViewController {
         super.viewDidAppear(animated)
         insertionLogger.debug("Keyboard view appeared")
         schedulePendingScanInsertion()
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        inputModeSwitchButton?.isHidden = !needsInputModeSwitchKey
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -103,11 +110,16 @@ final class KeyboardViewController: UIInputViewController {
         toolbar.spacing = 6
         toolbar.heightAnchor.constraint(equalToConstant: 38).isActive = true
 
+        let switchButton = makeInputModeSwitchButton()
+        toolbar.addArrangedSubview(switchButton)
+        inputModeSwitchButton = switchButton
+
         let scanButton = makeScannerButton()
         toolbar.addArrangedSubview(scanButton)
 
-        if hasFullAccess, SharedKeyboardState.canAccessAppGroup,
-           !SharedKeyboardState.pendingScannedCode.isEmpty {
+        isRecoveryButtonVisible = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
+            !SharedKeyboardState.pendingScannedCode.isEmpty
+        if isRecoveryButtonVisible {
             let insertButton = UIButton(type: .system)
             insertButton.setTitle(NSLocalizedString("Insert Last Scan", comment: "Manually insert the last scanned code"), for: .normal)
             insertButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
@@ -116,11 +128,25 @@ final class KeyboardViewController: UIInputViewController {
             insertButton.addTarget(self, action: #selector(insertLastScanTapped), for: .touchUpInside)
             toolbar.addArrangedSubview(insertButton)
             insertButton.widthAnchor.constraint(equalTo: scanButton.widthAnchor).isActive = true
-        } else {
-            scanButton.widthAnchor.constraint(equalTo: toolbar.widthAnchor).isActive = true
         }
 
         return toolbar
+    }
+
+    private func makeInputModeSwitchButton() -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "globe"), for: .normal)
+        button.tintColor = .label
+        button.backgroundColor = .secondarySystemBackground
+        button.layer.cornerRadius = 6
+        button.accessibilityLabel = NSLocalizedString("Next keyboard", comment: "Switch to another installed keyboard")
+        button.isHidden = !needsInputModeSwitchKey
+        button.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+
+        let widthConstraint = button.widthAnchor.constraint(equalToConstant: 38)
+        widthConstraint.priority = UILayoutPriority(999)
+        widthConstraint.isActive = true
+        return button
     }
 
     private func clearHostedToolbarControllers() {
@@ -255,9 +281,7 @@ final class KeyboardViewController: UIInputViewController {
     private func refreshRecoveryButtonIfNeeded() {
         let shouldShow = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
             !SharedKeyboardState.pendingScannedCode.isEmpty
-        let isShowing = rootStack.arrangedSubviews.first
-            .flatMap { ($0 as? UIStackView)?.arrangedSubviews.count == 2 } ?? false
-        if shouldShow != isShowing { rebuildKeyboard() }
+        if shouldShow != isRecoveryButtonVisible { rebuildKeyboard() }
     }
 
     private func schedulePendingScanInsertion() {
