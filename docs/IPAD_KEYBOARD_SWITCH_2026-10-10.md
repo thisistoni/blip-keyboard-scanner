@@ -11,7 +11,7 @@ Baseline: commit `3b53dd8`, Blip 1.0.2 (5), Debug simulator build. Device: iPad 
 
 Cause: `KeyboardViewController` did not implement `needsInputModeSwitchKey` or `handleInputModeList(from:with:)`. The simulator's iPad requires a switch key supplied by the custom extension. A system-provided control outside the custom keyboard can mask this omission on some iPhones; it does not make the implementation complete.
 
-## Repair
+## Initial repair (`695b082`)
 
 - Add a globe to the toolbar, visible according to `needsInputModeSwitchKey` and refreshed during layout.
 - Send all touch events to Apple's `handleInputModeList(from:with:)`, supporting a tap and a held keyboard-selection menu.
@@ -39,6 +39,16 @@ The incremental `xcodebuild` Debug simulator build passed (exit 0). The updated 
 | Physical iPhone scan handoff and repeated scan/return cycles | Not tested in this task |
 
 Screenshots are in `docs/evidence/ANT-27/`: `ipad-baseline-no-switch.png`, `ipad-safari-before.png`, `ipad-safari-letters-after.png`, `ipad-safari-keyboard-list-after.png`, and `ipad-safari-landscape-after.png`.
+
+## Placement correction after user review
+
+The user requested the familiar native bottom-left position. The globe now appears at the far left of the bottom utility row, before Blip's layout key, and uses the same key styling as the surrounding controls. Scan returns to the full toolbar width. The existing UIKit tap/long-press handler is preserved.
+
+Scan-only mode has a separate bottom row for the globe when iOS requires one; the row and its extra height disappear when iOS supplies its own switch control. That fallback is implemented but has not received a dedicated simulator check.
+
+The final Debug simulator build passed with one build worker and indexing disabled. The updated app was installed into the same iPad A16 / iOS 26.5 simulator. Bottom-left placement was visually verified in landscape for letters, numbers, and large numbers. A long press opened Apple's keyboard list, a tap switched to Apple QWERTZ, and Apple's menu returned to Blip. The updated Blip keyboard was left open for user inspection.
+
+Latest placement evidence: `docs/evidence/ANT-27/ipad-bottom-left-landscape.png`. Earlier screenshots above document the initial toolbar placement and remain historical evidence. Physical iPad/iPhone and scan-flow checks remain open.
 
 ## Resource interruption
 
