@@ -227,7 +227,13 @@ private struct BlipPremiumKeyboard: View {
                     params.view
                 }
             },
-            buttonView: { $0.view },
+            buttonView: { params in
+                if let label = accessibilityLabel(for: params.item.action) {
+                    params.view.accessibilityLabel(label)
+                } else {
+                    params.view
+                }
+            },
             collapsedView: { _ in EmptyView() },
             emojiKeyboard: { _ in EmptyView() },
             toolbar: { _ in toolbar }
@@ -328,6 +334,23 @@ private struct BlipPremiumKeyboard: View {
         case .return:
             let type = context.returnKeyType ?? .return
             return .primary(type == .return ? .newLine : type)
+        }
+    }
+
+    private func accessibilityLabel(for action: KeyboardAction) -> String? {
+        let isGerman = context.locale.language.languageCode?.identifier == "de"
+        switch action {
+        case .custom(named: "blip.nextLayout"):
+            let title = SharedKeyboardState.nextKeyboardLayoutTitle(after: presentation.layout) ?? "ABC"
+            return isGerman ? "Zu \(title) wechseln" : "Switch to \(title)"
+        case .primary(let type):
+            if type == .newLine { return isGerman ? "Zeilenumbruch" : "New line" }
+            return type.standardButtonText(for: context.locale)
+        case .backspace: return isGerman ? "Löschen" : "Delete"
+        case .shift: return isGerman ? "Umschalttaste" : "Shift"
+        case .space: return isGerman ? "Leerzeichen" : "Space"
+        case .nextKeyboard: return isGerman ? "Nächste Tastatur" : "Next keyboard"
+        default: return nil
         }
     }
 }

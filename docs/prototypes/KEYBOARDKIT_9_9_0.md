@@ -13,7 +13,7 @@ Reference source: https://github.com/KeyboardKit/KeyboardKit/tree/9.9.0
 - KeyboardKit SwiftUI key rendering, native-style adaptive key colors, shadows, pressed states and touch areas. Opaque systemGray4 root background removed; the view renderer's background disabled so the system keyboard contour/backdrop can remain visible.
 - Existing Blip layout engine supplies EN QWERTY, own DE QWERTZ/umlaut layout, numbers/symbols, large numbers and scan-only. Row heights adapt to portrait/landscape; widths are proportional to each profile's existing key weights.
 - Native tap/hold globe when required by iOS, via KeyboardKit's UIKit input-mode switch overlay.
-- Contextual primary keys (Search, Go, Send, etc.); a return-arrow key for ordinary Return. The standard primary action still writes a newline through the real document proxy.
+- Contextual primary keys (Search, Go, Send, etc.); a return-arrow key for ordinary Return. Primary keys and layout/shift/delete/space/globe controls have human-readable EN/DE accessibility labels. The standard primary action still writes a newline through the real document proxy.
 - Input previews and sliding long-press accent/currency/punctuation callouts. Custom German accent choices include ä/ö/ü/ß without relying on Pro layouts.
 - Shift/caps lock, repeat Delete, spacebar cursor dragging, standard auto-capitalization and double-space sentence ending supported by the core handler.
 - Separate Key Clicks / Key Haptics controls in Blip Settings and shared app-group state. Haptics use one selection pulse on press, rather than a pulse on both press and release. Callout feedback uses the same guarded feedback service.
