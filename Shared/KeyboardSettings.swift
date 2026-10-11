@@ -1,6 +1,24 @@
 import CoreGraphics
 import Foundation
 
+enum KeyboardAppearance: String, CaseIterable, Identifiable {
+    case system
+    case blipBlue
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: NSLocalizedString("System", comment: "System keyboard appearance")
+        case .blipBlue: NSLocalizedString("Blip Blue", comment: "Blue keyboard appearance")
+        }
+    }
+
+    static func resolved(rawValue: String?) -> Self {
+        rawValue.flatMap(Self.init(rawValue:)) ?? .system
+    }
+}
+
 enum KeyboardLanguage: String, CaseIterable, Identifiable {
     case english
     case german
@@ -528,6 +546,7 @@ enum SharedKeyboardState {
         static let playScanSound = "playScanSound"
         static let keyboardClickSound = "keyboardClickSound"
         static let keyboardHaptics = "keyboardHaptics"
+        static let keyboardAppearance = "keyboardAppearance"
         static let returnTarget = "returnTarget"
         static let customReturnURL = "customReturnURL"
         static let scanHistoryItems = "scanHistoryItems"
@@ -550,6 +569,10 @@ enum SharedKeyboardState {
 
     static var keyboardHaptics: Bool {
         defaults?.object(forKey: Keys.keyboardHaptics) as? Bool ?? true
+    }
+
+    static var keyboardAppearance: KeyboardAppearance {
+        .resolved(rawValue: defaults?.string(forKey: Keys.keyboardAppearance))
     }
 
     static var canAccessAppGroup: Bool {

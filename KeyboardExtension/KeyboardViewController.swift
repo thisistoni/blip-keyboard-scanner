@@ -93,6 +93,7 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     private func refreshRecoveryButtonIfNeeded() {
+        presentation.appearance = SharedKeyboardState.keyboardAppearance
         presentation.canInsertScan = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
             !SharedKeyboardState.pendingScannedCode.isEmpty
     }
@@ -169,6 +170,7 @@ final class KeyboardViewController: KeyboardInputViewController {
 private final class BlipKeyboardPresentation: ObservableObject {
     @Published var layout = SharedKeyboardState.defaultKeyboardLayout
     @Published var canInsertScan = false
+    @Published var appearance = SharedKeyboardState.keyboardAppearance
 }
 
 private final class BlipInputView: UIInputView, UIInputViewAudioFeedback {
@@ -212,6 +214,11 @@ private struct BlipPremiumKeyboard: View {
     let insertScan: () -> Void
     @EnvironmentObject private var context: KeyboardContext
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
+
+    private var palette: BlipKeyboardPalette {
+        .init(isDark: context.colorScheme == .dark, increasedContrast: colorSchemeContrast == .increased)
+    }
 
     var body: some View {
         KeyboardView(
@@ -240,8 +247,28 @@ private struct BlipPremiumKeyboard: View {
         )
         .keyboardButtonStyle { params in
             var style = params.standardStyle(for: context)
+            if case .character(let text) = params.action,
+               text == text.lowercased(), text != text.uppercased() {
+                style.fontWeight = .regular
+            }
             if presentation.layout == .largeNumbers, params.action.isCharacterAction {
                 style.nativeFont = .system(size: 28, weight: .regular)
+            }
+            if presentation.appearance == .blipBlue, params.action != .none {
+                let accented: Bool
+                switch params.action {
+                case .primary: accented = true
+                case .shift: accented = context.keyboardCase.isUppercasedOrCapslocked
+                default: accented = false
+                }
+                if accented || params.isPressed {
+                    style.backgroundColor = params.isPressed ? palette.pressedSurface : palette.surface
+                    style.foregroundColor = accented ? palette.accent : (context.colorScheme == .dark ? .white : .black)
+                    if colorSchemeContrast == .increased {
+                        style.borderColor = palette.accent
+                        style.borderSize = 1
+                    }
+                }
             }
             return style
         }
@@ -274,7 +301,7 @@ private struct BlipPremiumKeyboard: View {
             }
         }
         .font(.system(size: 15, weight: .semibold))
-        .buttonStyle(BlipToolbarButtonStyle())
+        .buttonStyle(BlipToolbarButtonStyle(appearance: presentation.appearance, palette: palette))
         .padding(.horizontal, 6)
         .padding(.top, 4)
         .padding(.bottom, 6)
@@ -356,10 +383,40 @@ private struct BlipPremiumKeyboard: View {
 }
 
 private struct BlipToolbarButtonStyle: ButtonStyle {
+    var appearance: KeyboardAppearance
+    var palette: BlipKeyboardPalette
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(Color.primary)
-            .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
-            .opacity(configuration.isPressed ? 0.65 : 1)
+            .foregroundStyle(appearance == .blipBlue ? palette.accent : Color.primary)
+            .background(appearance == .blipBlue
+                ? (configuration.isPressed ? palette.pressedSurface : palette.surface)
+                : Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                if appearance == .blipBlue, palette.increasedContrast {
+                    RoundedRectangle(cornerRadius: 10).stroke(palette.accent, lineWidth: 1)
+                }
+            }
+            .opacity(appearance == .system && configuration.isPressed ? 0.65 : 1)
+    }
+}
+
+private struct BlipKeyboardPalette {
+    let isDark: Bool
+    let increasedContrast: Bool
+
+    var accent: Color {
+        isDark ? Color(red: 0.60, green: 0.78, blue: 1)
+            : Color(red: 0.08, green: 0.28, blue: 0.58)
+    }
+
+    var surface: Color {
+        isDark ? Color(red: 0.10, green: 0.17, blue: 0.27)
+            : Color(red: 0.88, green: 0.93, blue: 1)
+    }
+
+    var pressedSurface: Color {
+        isDark ? Color(red: 0.15, green: 0.25, blue: 0.38)
+            : Color(red: 0.76, green: 0.85, blue: 0.97)
     }
 }

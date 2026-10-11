@@ -49,6 +49,9 @@ struct KeyboardLayoutSettingsView: View {
     @AppStorage(SharedKeyboardState.Keys.keyboardHaptics, store: SharedKeyboardState.appStorageDefaults)
     private var keyboardHaptics = true
 
+    @AppStorage(SharedKeyboardState.Keys.keyboardAppearance, store: SharedKeyboardState.appStorageDefaults)
+    private var keyboardAppearanceRawValue = KeyboardAppearance.system.rawValue
+
     @State private var showingMailError = false
     @State private var showingStoreError = false
     @State private var showingSystemReturnHelp = false
@@ -60,6 +63,14 @@ struct KeyboardLayoutSettingsView: View {
             KeyboardLanguage(rawValue: keyboardLanguageRawValue) ?? .english
         } set: { newValue in
             keyboardLanguageRawValue = newValue.rawValue
+        }
+    }
+
+    private var keyboardAppearance: Binding<KeyboardAppearance> {
+        Binding {
+            .resolved(rawValue: keyboardAppearanceRawValue)
+        } set: { value in
+            keyboardAppearanceRawValue = value.rawValue
         }
     }
 
@@ -202,6 +213,16 @@ struct KeyboardLayoutSettingsView: View {
                     Text("Keyboard")
                 } footer: {
                     Text("Choose the keyboard language and which layouts you can cycle through. Turn every layout off to show only the Scan button.")
+                }
+
+                Section {
+                    Picker("Appearance", selection: keyboardAppearance) {
+                        ForEach(KeyboardAppearance.allCases) { appearance in
+                            Text(appearance.title).tag(appearance)
+                        }
+                    }
+                } header: {
+                    Text("Keyboard Appearance")
                 }
 
                 Section {

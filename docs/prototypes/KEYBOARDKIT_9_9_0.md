@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (7)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
+Development build **1.0.4 (8)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
 
 ## Dependency and license
 
@@ -11,6 +11,7 @@ Reference source: https://github.com/KeyboardKit/KeyboardKit/tree/9.9.0
 ## Implemented core capabilities
 
 - KeyboardKit SwiftUI key rendering, native-style adaptive key colors, shadows, pressed states and touch areas. Opaque systemGray4 root background removed; the view renderer's background disabled so the system keyboard contour/backdrop can remain visible.
+- Lowercase letters use regular weight instead of the core's light weight, retaining context-dependent font sizes. Optional System / Blip Blue appearance is in Blip → Settings → Keyboard Appearance → Appearance (DE: Tastaturdesign → Design). System is the default for absent/unknown preferences; this independent app-group preference does not modify company profiles, layout choices or gestures. Blue accents apply to Scan/Insert, active Shift, Return and pressed keys, with opaque light/dark tinted surfaces and extra outlines under Increase Contrast. No credits screen is added; full MIT notices remain bundled.
 - Existing Blip layout engine supplies EN QWERTY, own DE QWERTZ/umlaut layout, numbers/symbols, large numbers and scan-only. Row heights adapt to portrait/landscape; widths are proportional to each profile's existing key weights.
 - Native tap/hold globe when required by iOS, via KeyboardKit's UIKit input-mode switch overlay.
 - Contextual primary keys (Search, Go, Send, etc.); a return-arrow key for ordinary Return. Primary keys and layout/shift/delete/space/globe controls have human-readable EN/DE accessibility labels. The standard primary action still writes a newline through the real document proxy.
@@ -35,10 +36,12 @@ KeyboardKit 9.9.0 contains optional legacy status inspection and responder-chain
 
 ## Verification
 
-- Signed Debug build for paired iPhone 16 Pro Max passed with no compiler warnings after fixing the initial incorrect API method call.
+- Signed Debug build 8 for paired iPhone 16 Pro Max passed with no compiler warnings.
+- Blue foreground/surface contrast calculations passed at least 6.03:1 for all chosen light/dark idle/pressed combinations; this is a color-pair calculation, not a completed physical accessibility audit.
+- Full MIT notice in both build 8 bundles matches the source notice byte for byte. No visible credits/licensing screen was added.
 - `codesign --verify --deep --strict` passed; existing team, bundle IDs, and App Group retained.
 - Existing pending scan token regression checks passed.
-- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (7).
+- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (8).
 - Installed in place on the paired physical iPhone, preserving the application identifier and without uninstalling or clearing app-group preferences.
 - No simulator launched, new runtime downloaded, or parallel build started. One build worker; indexing disabled.
 - New phone visual/gesture/feedback and scan round-trip results are pending user testing. iPad, floating mode, orientation matrix and VoiceOver are also unverified. ANT-65 remains In Progress.
@@ -53,4 +56,4 @@ KeyboardKit 9.9.0 contains optional legacy status inspection and responder-chain
 
 ## First physical user feedback
 
-Antonio tested the installed prototype on his iPhone and reported: “wow feels much better than what we had”. This confirms a positive overall physical-device impression. It does not separately verify every gesture, Return context, sound/haptic toggle, silent mode, light/dark/orientation combination or scan round trip. Keep those specific acceptance checks open.
+Antonio tested build 7 on his iPhone and reported: “wow feels much better than what we had”; subsequent feedback also said it looks much better. This confirms a positive overall physical-device impression. It does not separately verify every gesture, Return context, sound/haptic toggle, silent mode, light/dark/orientation combination or scan round trip. Build 8's regular lettering and optional blue appearance require a new visual check. Keep those specific acceptance checks open.
