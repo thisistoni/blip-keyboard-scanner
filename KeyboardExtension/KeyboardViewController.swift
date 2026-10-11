@@ -6,6 +6,9 @@ final class KeyboardViewController: UIInputViewController {
     private let rootStack = UIStackView()
     private var heightConstraint: NSLayoutConstraint?
     private var hostedToolbarControllers: [UIViewController] = []
+    private var inputModeSwitchButton: UIButton?
+    private var inputModeSwitchRow: UIStackView?
+    private var isRecoveryButtonVisible = false
     private var activeLayout = SharedKeyboardState.defaultKeyboardLayout
     private var isShifted = false
     private var pendingInsertionWorkItem: DispatchWorkItem?
@@ -47,6 +50,13 @@ final class KeyboardViewController: UIInputViewController {
         schedulePendingScanInsertion()
     }
 
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        inputModeSwitchButton?.isHidden = !needsInputModeSwitchKey
+        inputModeSwitchRow?.isHidden = !needsInputModeSwitchKey
+        heightConstraint?.constant = keyboardHeight
+    }
+
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         pendingInsertionWorkItem?.cancel()
@@ -77,6 +87,8 @@ final class KeyboardViewController: UIInputViewController {
 
     private func rebuildKeyboard() {
         clearHostedToolbarControllers()
+        inputModeSwitchButton = nil
+        inputModeSwitchRow = nil
 
         rootStack.arrangedSubviews.forEach { view in
             rootStack.removeArrangedSubview(view)
@@ -86,14 +98,28 @@ final class KeyboardViewController: UIInputViewController {
         rootStack.addArrangedSubview(makeToolbar())
 
         let nextLayoutTitle = SharedKeyboardState.nextKeyboardLayoutTitle(after: activeLayout)
-        for row in KeyboardLayoutEngine.rows(for: activeLayout, nextLayoutTitle: nextLayoutTitle) {
-            rootStack.addArrangedSubview(makeRow(row))
+        let rows = KeyboardLayoutEngine.rows(for: activeLayout, nextLayoutTitle: nextLayoutTitle)
+        for (index, row) in rows.enumerated() {
+            rootStack.addArrangedSubview(makeRow(row, includesInputModeSwitch: index == rows.count - 1))
+        }
+        if rows.isEmpty {
+            let switchRow = makeRow(KeyboardRow([]), includesInputModeSwitch: true)
+            switchRow.addArrangedSubview(UIView())
+            switchRow.isHidden = !needsInputModeSwitchKey
+            inputModeSwitchRow = switchRow
+            rootStack.addArrangedSubview(switchRow)
         }
 
         heightConstraint?.isActive = false
-        heightConstraint = view.heightAnchor.constraint(equalToConstant: KeyboardLayoutEngine.height(for: activeLayout))
+        heightConstraint = view.heightAnchor.constraint(equalToConstant: keyboardHeight)
         heightConstraint?.priority = .defaultHigh
         heightConstraint?.isActive = true
+    }
+
+    private var keyboardHeight: CGFloat {
+        let baseHeight = KeyboardLayoutEngine.height(for: activeLayout)
+        guard activeLayout == .scanOnly, needsInputModeSwitchKey else { return baseHeight }
+        return baseHeight + KeyboardLayoutEngine.rowHeight(for: activeLayout) + rootStack.spacing
     }
 
     private func makeToolbar() -> UIView {
@@ -106,8 +132,9 @@ final class KeyboardViewController: UIInputViewController {
         let scanButton = makeScannerButton()
         toolbar.addArrangedSubview(scanButton)
 
-        if hasFullAccess, SharedKeyboardState.canAccessAppGroup,
-           !SharedKeyboardState.pendingScannedCode.isEmpty {
+        isRecoveryButtonVisible = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
+            !SharedKeyboardState.pendingScannedCode.isEmpty
+        if isRecoveryButtonVisible {
             let insertButton = UIButton(type: .system)
             insertButton.setTitle(NSLocalizedString("Insert Last Scan", comment: "Manually insert the last scanned code"), for: .normal)
             insertButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
@@ -116,11 +143,29 @@ final class KeyboardViewController: UIInputViewController {
             insertButton.addTarget(self, action: #selector(insertLastScanTapped), for: .touchUpInside)
             toolbar.addArrangedSubview(insertButton)
             insertButton.widthAnchor.constraint(equalTo: scanButton.widthAnchor).isActive = true
-        } else {
-            scanButton.widthAnchor.constraint(equalTo: toolbar.widthAnchor).isActive = true
         }
 
         return toolbar
+    }
+
+    private func makeInputModeSwitchButton() -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "globe"), for: .normal)
+        button.tintColor = .label
+        button.backgroundColor = .systemGray3
+        button.layer.cornerRadius = 5
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOpacity = traitCollection.userInterfaceStyle == .dark ? 0 : 0.18
+        button.layer.shadowRadius = 0
+        button.layer.shadowOffset = CGSize(width: 0, height: 1)
+        button.accessibilityLabel = NSLocalizedString("Next keyboard", comment: "Switch to another installed keyboard")
+        button.isHidden = !needsInputModeSwitchKey
+        button.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
+
+        let widthConstraint = button.widthAnchor.constraint(equalToConstant: 44)
+        widthConstraint.priority = UILayoutPriority(999)
+        widthConstraint.isActive = true
+        return button
     }
 
     private func clearHostedToolbarControllers() {
@@ -145,12 +190,14 @@ final class KeyboardViewController: UIInputViewController {
         return controller.view
     }
 
-    private func makeRow(_ keyboardRow: KeyboardRow) -> UIView {
+    private func makeRow(_ keyboardRow: KeyboardRow, includesInputModeSwitch: Bool = false) -> UIStackView {
         let row = UIStackView()
         row.axis = .horizontal
         row.spacing = 5
         row.distribution = .fill
-        row.heightAnchor.constraint(equalToConstant: KeyboardLayoutEngine.rowHeight(for: activeLayout)).isActive = true
+        let rowHeight = row.heightAnchor.constraint(equalToConstant: KeyboardLayoutEngine.rowHeight(for: activeLayout))
+        rowHeight.priority = keyboardRow.keys.isEmpty ? UILayoutPriority(999) : .required
+        rowHeight.isActive = true
         row.isLayoutMarginsRelativeArrangement = true
         row.directionalLayoutMargins = NSDirectionalEdgeInsets(
             top: 0,
@@ -158,6 +205,12 @@ final class KeyboardViewController: UIInputViewController {
             bottom: 0,
             trailing: keyboardRow.trailingInset
         )
+
+        if includesInputModeSwitch {
+            let switchButton = makeInputModeSwitchButton()
+            row.addArrangedSubview(switchButton)
+            inputModeSwitchButton = switchButton
+        }
 
         let buttons = keyboardRow.keys.map(makeKeyButton(for:))
 
@@ -255,9 +308,7 @@ final class KeyboardViewController: UIInputViewController {
     private func refreshRecoveryButtonIfNeeded() {
         let shouldShow = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
             !SharedKeyboardState.pendingScannedCode.isEmpty
-        let isShowing = rootStack.arrangedSubviews.first
-            .flatMap { ($0 as? UIStackView)?.arrangedSubviews.count == 2 } ?? false
-        if shouldShow != isShowing { rebuildKeyboard() }
+        if shouldShow != isRecoveryButtonVisible { rebuildKeyboard() }
     }
 
     private func schedulePendingScanInsertion() {
