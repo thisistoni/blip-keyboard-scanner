@@ -235,42 +235,27 @@ private struct BlipPremiumKeyboard: View {
                 }
             },
             buttonView: { params in
-                if let label = accessibilityLabel(for: params.item.action) {
-                    params.view.accessibilityLabel(label)
-                } else {
-                    params.view
+                Group {
+                    if let label = accessibilityLabel(for: params.item.action) {
+                        params.view.accessibilityLabel(label)
+                    } else {
+                        params.view
+                    }
                 }
+                .keyboardButtonGestureConfiguration(gestureConfiguration(for: params.item.action))
             },
             collapsedView: { _ in EmptyView() },
             emojiKeyboard: { _ in EmptyView() },
             toolbar: { _ in toolbar }
         )
-        .keyboardButtonStyle { params in
-            var style = params.standardStyle(for: context)
-            if case .character(let text) = params.action,
-               text == text.lowercased(), text != text.uppercased() {
-                style.fontWeight = .regular
+        .keyboardButtonStyle { buttonStyle($0) }
+        .keyboardCalloutStyle(calloutStyle)
+        .background {
+            if presentation.appearance == .blipBlue {
+                // Clip only the painted panel, leaving key callouts free to extend above it.
+                palette.canvas.clipShape(UnevenRoundedRectangle(
+                    topLeadingRadius: 12, topTrailingRadius: 12))
             }
-            if presentation.layout == .largeNumbers, params.action.isCharacterAction {
-                style.nativeFont = .system(size: 28, weight: .regular)
-            }
-            if presentation.appearance == .blipBlue, params.action != .none {
-                let accented: Bool
-                switch params.action {
-                case .primary: accented = true
-                case .shift: accented = context.keyboardCase.isUppercasedOrCapslocked
-                default: accented = false
-                }
-                if accented || params.isPressed {
-                    style.backgroundColor = params.isPressed ? palette.pressedSurface : palette.surface
-                    style.foregroundColor = accented ? palette.accent : (context.colorScheme == .dark ? .white : .black)
-                    if colorSchemeContrast == .increased {
-                        style.borderColor = palette.accent
-                        style.borderSize = 1
-                    }
-                }
-            }
-            return style
         }
         .keyboardCalloutActions { params in
             let custom = Callouts.Actions(characters: [
@@ -280,6 +265,77 @@ private struct BlipPremiumKeyboard: View {
             ])
             return custom.actions(for: params.action) ?? params.standardActions(for: context)
         }
+    }
+
+    private func gestureConfiguration(for action: KeyboardAction) -> GestureButtonConfiguration {
+        var config = GestureButtonConfiguration.standard
+        if case .character(let text) = action,
+           text.unicodeScalars.contains(where: CharacterSet.letters.contains) {
+            config.longPressDelay = 0.35
+        }
+        return config
+    }
+
+    private func buttonStyle(_ params: Keyboard.ButtonStyleBuilderParams) -> Keyboard.ButtonStyle {
+        var style = params.standardStyle(for: context)
+        if case .character(let text) = params.action,
+           text == text.lowercased(), text != text.uppercased() {
+            style.fontWeight = .regular
+        }
+        if presentation.layout == .largeNumbers, params.action.isCharacterAction {
+            style.nativeFont = .system(size: 28, weight: .regular)
+        }
+        guard !params.action.isSpacer else { return style }
+        let activeShift: Bool
+        if case .shift = params.action {
+            activeShift = context.keyboardCase.isUppercasedOrCapslocked
+        } else {
+            activeShift = false
+        }
+        let ordinary: Bool
+        switch params.action {
+        case .character, .space: ordinary = true
+        default: ordinary = false
+        }
+        if presentation.appearance == .blipBlue {
+            let emphasized = params.action.isPrimaryAction || activeShift
+            style.background = nil
+            style.backgroundColor = emphasized
+                ? (params.isPressed ? palette.emphasisPressed : palette.emphasis)
+                : (params.isPressed ? palette.pressedSurface : (ordinary ? palette.surface : palette.modifier))
+            style.foregroundColor = emphasized ? .white : palette.text
+            style.shadowColor = palette.shadow
+            style.pressedOverlayColor = .clear
+            style.borderColor = colorSchemeContrast == .increased ? palette.text : palette.outline
+            style.borderSize = colorSchemeContrast == .increased ? 1 : 0.5
+        } else if context.colorScheme == .dark {
+            // The package's alpha-white assets vary with the host backdrop. Use opaque grays.
+            if activeShift && !params.isPressed {
+                style.backgroundColor = .white
+                style.foregroundColor = .black
+            } else if !params.action.isPrimaryAction || params.action.isSystemAction {
+                style.backgroundColor = params.isPressed ? Color(white: 0.47)
+                    : (ordinary ? Color(white: 0.365) : Color(white: 0.255))
+                style.foregroundColor = .white
+            }
+        }
+        return style
+    }
+
+    private var calloutStyle: Callouts.CalloutStyle {
+        var style = Callouts.CalloutStyle.standard
+        style.inputItemFont = .init(.largeTitle, .regular)
+        style.backgroundColor = presentation.appearance == .blipBlue
+            ? palette.surface : (context.colorScheme == .dark ? Color(white: 0.365) : .white)
+        style.foregroundColor = presentation.appearance == .blipBlue
+            ? palette.text : (context.colorScheme == .dark ? .white : .black)
+        if presentation.appearance == .blipBlue {
+            style.selectedBackgroundColor = palette.emphasis
+            style.selectedForegroundColor = .white
+            style.borderColor = palette.outline
+            style.shadowColor = palette.shadow
+        }
+        return style
     }
 
     private var toolbar: some View {
@@ -388,13 +444,13 @@ private struct BlipToolbarButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(appearance == .blipBlue ? palette.accent : Color.primary)
+            .foregroundStyle(appearance == .blipBlue ? Color.white : Color.primary)
             .background(appearance == .blipBlue
-                ? (configuration.isPressed ? palette.pressedSurface : palette.surface)
+                ? (configuration.isPressed ? palette.emphasisPressed : palette.emphasis)
                 : Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
             .overlay {
                 if appearance == .blipBlue, palette.increasedContrast {
-                    RoundedRectangle(cornerRadius: 10).stroke(palette.accent, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10).stroke(palette.text, lineWidth: 1)
                 }
             }
             .opacity(appearance == .system && configuration.isPressed ? 0.65 : 1)
@@ -405,18 +461,20 @@ private struct BlipKeyboardPalette {
     let isDark: Bool
     let increasedContrast: Bool
 
-    var accent: Color {
-        isDark ? Color(red: 0.60, green: 0.78, blue: 1)
-            : Color(red: 0.08, green: 0.28, blue: 0.58)
-    }
+    // Opaque sRGB surfaces keep the complete theme stable over host-app backdrops.
+    var canvas: Color { isDark ? hex(0x101F3B) : hex(0xBCD2F2) }
+    var surface: Color { isDark ? hex(0x23466E) : hex(0xEEF5FF) }
+    var modifier: Color { isDark ? hex(0x193655) : hex(0xC8DDFA) }
+    var pressedSurface: Color { isDark ? hex(0x376594) : hex(0x90B7ED) }
+    var text: Color { isDark ? hex(0xF3F8FF) : hex(0x102A4C) }
+    var emphasis: Color { isDark ? hex(0x2E65AE) : hex(0x245AB5) }
+    var emphasisPressed: Color { hex(0x1B4385) }
+    var outline: Color { text.opacity(increasedContrast ? 1 : 0.18) }
+    var shadow: Color { hex(0x071B38).opacity(isDark ? 0.5 : 0.22) }
 
-    var surface: Color {
-        isDark ? Color(red: 0.10, green: 0.17, blue: 0.27)
-            : Color(red: 0.88, green: 0.93, blue: 1)
-    }
-
-    var pressedSurface: Color {
-        isDark ? Color(red: 0.15, green: 0.25, blue: 0.38)
-            : Color(red: 0.76, green: 0.85, blue: 0.97)
+    private func hex(_ value: UInt32) -> Color {
+        Color(.sRGB, red: Double((value >> 16) & 255) / 255,
+            green: Double((value >> 8) & 255) / 255,
+            blue: Double(value & 255) / 255, opacity: 1)
     }
 }
