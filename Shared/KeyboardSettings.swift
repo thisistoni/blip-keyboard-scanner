@@ -407,7 +407,7 @@ enum ReturnTarget: String, CaseIterable, Identifiable {
     var detail: String {
         switch self {
         case .safari:
-            NSLocalizedString("Return to Safari after a keyboard-launched scan.", comment: "Safari return target detail")
+            NSLocalizedString("Use iOS's previous-app control to return to Safari without opening a new tab.", comment: "Safari return target detail")
         case .chrome:
             NSLocalizedString("Return to Google Chrome after a keyboard-launched scan.", comment: "Chrome return target detail")
         case .edge:
@@ -421,35 +421,12 @@ enum ReturnTarget: String, CaseIterable, Identifiable {
         }
     }
 
-    func urlCandidates(customURLString: String) -> [URL] {
-        switch self {
-        case .safari:
-            return compactURLs([
-                "x-web-search://",
-                "x-safari-https://"
-            ])
-        case .chrome:
-            return compactURLs(["googlechrome://"])
-        case .edge:
-            return compactURLs(["microsoft-edge://"])
-        case .firefox:
-            return compactURLs(["firefox://"])
-        case .brave:
-            return compactURLs(["brave://"])
-        case .custom:
-            let trimmed = customURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return [] }
-
-            if trimmed.contains("://") {
-                return compactURLs([trimmed])
-            }
-
-            return compactURLs([trimmed + "://"])
-        }
+    var usesSystemPreviousAppReturn: Bool {
+        self == .safari
     }
 
-    private func compactURLs(_ strings: [String]) -> [URL] {
-        strings.compactMap(URL.init(string:))
+    func shouldAutomaticallyInsertScan(userEnabled: Bool) -> Bool {
+        self != .safari && userEnabled
     }
 }
 
@@ -463,6 +440,23 @@ struct KeyboardSetupSnapshot: Equatable {
             return NSLocalizedString("No AppleKeyboards entries visible to the app.", comment: "No keyboard diagnostics entries visible")
         }
         return rawKeyboards.joined(separator: "\n")
+    }
+}
+
+struct PendingScanInsertion: Equatable {
+    let identifier: String
+    let code: String
+
+    init?(identifier: String, activeIdentifier: String, consumedIdentifier: String, code: String, automaticInsertionEnabled: Bool = true) {
+        guard automaticInsertionEnabled,
+              !identifier.isEmpty,
+              activeIdentifier.isEmpty || activeIdentifier == identifier,
+              identifier != consumedIdentifier,
+              !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return nil }
+
+        self.identifier = identifier
+        self.code = code
     }
 }
 
@@ -516,9 +510,11 @@ enum SharedKeyboardState {
         static let enabledKeyboardLayoutSlots = "enabledKeyboardLayoutSlots"
         static let startupKeyboardLayoutSlot = "startupKeyboardLayoutSlot"
         static let insertSuffix = "insertSuffix"
+        static let autoInsertScans = "autoInsertScans"
         static let lastScannedCode = "lastScannedCode"
         static let pendingScannedCode = "pendingScannedCode"
         static let pendingScanIdentifier = "pendingScanIdentifier"
+        static let pendingScanAutoInsert = "pendingScanAutoInsert"
         static let consumedScanIdentifier = "consumedScanIdentifier"
         static let activeScanRequestIdentifier = "activeScanRequestIdentifier"
         static let keyboardWasActivated = "keyboardWasActivated"
@@ -746,6 +742,18 @@ enum SharedKeyboardState {
         }
     }
 
+    static var autoInsertScans: Bool {
+        get {
+            guard let defaults, defaults.object(forKey: Keys.autoInsertScans) != nil else {
+                return true
+            }
+            return defaults.bool(forKey: Keys.autoInsertScans)
+        }
+        set {
+            defaults?.set(newValue, forKey: Keys.autoInsertScans)
+        }
+    }
+
     static var lastScannedCode: String {
         get {
             defaults?.string(forKey: Keys.lastScannedCode) ?? ""
@@ -761,6 +769,19 @@ enum SharedKeyboardState {
 
     static var pendingScanIdentifier: String {
         defaults?.string(forKey: Keys.pendingScanIdentifier) ?? ""
+    }
+
+    static var pendingInsertion: PendingScanInsertion? {
+        PendingScanInsertion(
+            identifier: pendingScanIdentifier,
+            activeIdentifier: activeScanRequestIdentifier,
+            consumedIdentifier: consumedScanIdentifier,
+            code: pendingScannedCode,
+            automaticInsertionEnabled: autoInsertScans && (
+                defaults?.object(forKey: Keys.pendingScanAutoInsert) == nil ||
+                defaults?.bool(forKey: Keys.pendingScanAutoInsert) == true
+            )
+        )
     }
 
     static var activeScanRequestIdentifier: String {
@@ -865,13 +886,22 @@ enum SharedKeyboardState {
         }
     }
 
-    static func queuePendingInsertion(_ code: String, requestIdentifier: String? = nil) {
+    static func queuePendingInsertion(_ code: String, requestIdentifier: String? = nil, autoInsert: Bool = true) {
         guard !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let identifier = requestIdentifier?.isEmpty == false ? requestIdentifier! : UUID().uuidString
         defaults?.set(code, forKey: Keys.lastScannedCode)
         defaults?.set(code, forKey: Keys.pendingScannedCode)
+        defaults?.set(autoInsert, forKey: Keys.pendingScanAutoInsert)
         defaults?.set(identifier, forKey: Keys.pendingScanIdentifier)
+    }
+
+    static func markPendingInsertionAttempted(identifier: String) {
+        guard !identifier.isEmpty, pendingScanIdentifier == identifier else { return }
+        consumedScanIdentifier = identifier
+        if activeScanRequestIdentifier == identifier {
+            activeScanRequestIdentifier = ""
+        }
     }
 
     static func recordKeyboardRuntime(hasFullAccess: Bool) {

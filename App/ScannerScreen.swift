@@ -1,8 +1,11 @@
 import SwiftUI
+import os
 #if DEBUG
 import CoreImage.CIFilterBuiltins
 import UIKit
 #endif
+
+private let scanInsertionLogger = Logger(subsystem: "com.antoniobeslic.Blip", category: "ScanInsertion")
 
 struct ScannerScreen: View {
     let externalLaunchRequest: KeyboardScanRequest?
@@ -33,6 +36,7 @@ struct ScannerScreen: View {
     private var customReturnURL = ""
 
     @State private var activeSession: ScannerSession?
+    @State private var returnGuidance: KeyboardReturnGuidance?
     @State private var handledLaunchRequestID: String?
     @State private var didAutomaticallyPresentScanner = false
 
@@ -106,6 +110,11 @@ struct ScannerScreen: View {
                     handleScannerCancel(for: session)
                 }
             }
+            .fullScreenCover(item: $returnGuidance) { guidance in
+                KeyboardReturnGuidanceView(guidance: guidance) {
+                    returnGuidance = nil
+                }
+            }
         }
     }
 
@@ -126,6 +135,7 @@ struct ScannerScreen: View {
         guard let request, request.id != handledLaunchRequestID else { return }
 
         handledLaunchRequestID = request.id
+        returnGuidance = nil
         activeSession = ScannerSession(
             id: request.id,
             source: request.launchedFromKeyboard ? .keyboard : .app,
@@ -140,6 +150,7 @@ struct ScannerScreen: View {
 
         ScanSoundPlayer.shared.playIfEnabled(playScanSound)
         lastScannedCode = result.value
+        UIPasteboard.general.string = result.value
 
         if !result.isManualEntry {
             ScanHistoryStore.record(
@@ -157,15 +168,17 @@ struct ScannerScreen: View {
 
         guard session.source == .keyboard else { return }
 
-        SharedKeyboardState.queuePendingInsertion(result.value, requestIdentifier: session.id)
+        SharedKeyboardState.queuePendingInsertion(
+            result.value,
+            requestIdentifier: session.id,
+            autoInsert: session.returnTarget.shouldAutomaticallyInsertScan(userEnabled: SharedKeyboardState.autoInsertScans)
+        )
+        scanInsertionLogger.info("Scan queued for keyboard and copied to clipboard")
 
         let returnDelay: TimeInterval = playScanSound ? 0.45 : 0.2
 
         DispatchQueue.main.asyncAfter(deadline: .now() + returnDelay) {
-            SourceAppReturnController.openReturnTarget(
-                session.returnTarget,
-                customURLString: session.customReturnURL
-            )
+            finishKeyboardSession(session, hasPendingScan: true)
         }
     }
 
@@ -177,11 +190,33 @@ struct ScannerScreen: View {
         SharedKeyboardState.consumedScanIdentifier = session.id
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            SourceAppReturnController.openReturnTarget(
-                session.returnTarget,
-                customURLString: session.customReturnURL
-            )
+            finishKeyboardSession(session, hasPendingScan: false)
         }
+    }
+
+    private func finishKeyboardSession(_ session: ScannerSession, hasPendingScan: Bool) {
+        if session.returnTarget == .custom {
+            SourceAppReturnController.openCustomReturnURL(session.customReturnURL)
+            return
+        }
+
+        if session.returnTarget != .safari {
+            SourceAppReturnController.openBrowserReturnTarget(session.returnTarget) { didOpen in
+                guard !didOpen else { return }
+                Task { @MainActor in
+                    returnGuidance = KeyboardReturnGuidance(
+                        target: session.returnTarget,
+                        hasPendingScan: hasPendingScan
+                    )
+                }
+            }
+            return
+        }
+
+        returnGuidance = KeyboardReturnGuidance(
+            target: session.returnTarget,
+            hasPendingScan: hasPendingScan
+        )
     }
 }
 
@@ -197,13 +232,13 @@ private struct ScannerWorkflowGuideView: View {
             ScannerWorkflowGuideRow(
                 systemImage: "barcode.viewfinder",
                 title: "Scan from the keyboard",
-                message: "Tap Scan, scan the barcode or QR code, and Blip returns to the original app."
+                message: "Blip returns automatically to Chrome, Edge, Firefox, or Brave. Safari uses manual return and Insert Last Scan."
             )
 
             ScannerWorkflowGuideRow(
                 systemImage: "text.cursor",
                 title: "Inserted where you started",
-                message: "The barcode is inserted into the original text field with your configured suffix."
+                message: "Blip attempts to insert the scan and copies it for Paste if needed."
             )
 
             Divider()
@@ -215,6 +250,92 @@ private struct ScannerWorkflowGuideView: View {
             )
         }
         .padding(.vertical, 4)
+    }
+}
+
+private struct KeyboardReturnGuidance: Identifiable {
+    let id = UUID()
+    let target: ReturnTarget
+    let hasPendingScan: Bool
+}
+
+private struct KeyboardReturnGuidanceView: View {
+    let guidance: KeyboardReturnGuidance
+    let onClose: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Spacer()
+
+                Image(systemName: guidance.hasPendingScan ? "checkmark.circle.fill" : "xmark.circle")
+                    .font(.system(size: 68))
+                    .foregroundStyle(guidance.hasPendingScan ? .green : .secondary)
+
+                VStack(spacing: 8) {
+                    Text(guidance.hasPendingScan ? "Scan ready" : "Scanner closed")
+                        .font(.title.bold())
+
+                    if guidance.target == .safari {
+                        Text("Blip can't automatically return to your original Safari tab.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        Text(guidance.hasPendingScan ? "Your scan is queued for the Blip keyboard." : "No scan was queued.")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 18) {
+                    if guidance.target == .safari {
+                        Label("Return to your original Safari tab and text field with iOS's previous-app control.", systemImage: "arrow.backward.circle.fill")
+                    } else {
+                        Label {
+                            Text(
+                                String(
+                                    format: NSLocalizedString("Tap the previous-app control in the top-left to return to %@.", comment: "Previous app return instruction"),
+                                    guidance.target.title
+                                )
+                            )
+                        } icon: {
+                            Image(systemName: "arrow.backward.circle.fill")
+                        }
+                    }
+
+                    Divider()
+
+                    Label("Or swipe right across the Home indicator at the very bottom of the screen.", systemImage: "hand.draw.fill")
+
+                    if guidance.target == .safari, guidance.hasPendingScan {
+                        Divider()
+                        Label("Tap Insert Last Scan on the Blip keyboard.", systemImage: "keyboard")
+                    }
+                }
+                .font(.headline)
+                .padding(20)
+                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
+
+                Text(guidance.target == .safari
+                     ? "For automatic return, choose another supported Return Target."
+                     : "If the app did not reopen, use iOS's previous-app control.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Spacer()
+            }
+            .padding(24)
+            .navigationTitle(guidance.target == .safari ? "Return to Safari Manually" : "Return to Previous App")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Close", action: onClose)
+                }
+            }
+        }
     }
 }
 

@@ -35,6 +35,10 @@ enum ScreenshotAutomation {
         }
 
         SharedKeyboardState.keyboardLanguage = arguments[languageIndex + 1] == "de" ? .german : .english
+        if scene == .scan {
+            SharedKeyboardState.returnTarget = .chrome
+            SharedKeyboardState.autoInsertScans = true
+        }
     }
 
     static let historyItems: [ScanHistoryItem] = [

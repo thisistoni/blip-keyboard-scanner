@@ -27,7 +27,7 @@ enum ScanInsertionStatus: String, Codable, CaseIterable, Identifiable {
         case .notQueued:
             NSLocalizedString("Not queued", comment: "History insertion status not queued")
         case .queuedForKeyboardInsertion:
-            NSLocalizedString("Inserted by keyboard", comment: "History insertion status inserted by keyboard")
+            NSLocalizedString("Queued for keyboard insertion", comment: "History insertion status queued for keyboard")
         }
     }
 }

@@ -1,5 +1,6 @@
 import UIKit
 import SwiftUI
+import os
 
 final class KeyboardViewController: UIInputViewController {
     private let rootStack = UIStackView()
@@ -7,11 +8,25 @@ final class KeyboardViewController: UIInputViewController {
     private var hostedToolbarControllers: [UIViewController] = []
     private var activeLayout = SharedKeyboardState.defaultKeyboardLayout
     private var isShifted = false
+    private var pendingInsertionWorkItem: DispatchWorkItem?
+    private var isInsertingScan = false
+    private let insertionLogger = Logger(subsystem: "com.antoniobeslic.Blip", category: "ScanInsertion")
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(extensionHostDidBecomeActive),
+            name: NSNotification.Name.NSExtensionHostDidBecomeActive,
+            object: nil
+        )
         configureRootStack()
         rebuildKeyboard()
+    }
+
+    deinit {
+        pendingInsertionWorkItem?.cancel()
+        NotificationCenter.default.removeObserver(self)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -23,7 +38,25 @@ final class KeyboardViewController: UIInputViewController {
         }
 
         SharedKeyboardState.recordKeyboardRuntime(hasFullAccess: hasFullAccess)
-        insertPendingScanIfNeeded()
+        refreshRecoveryButtonIfNeeded()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        insertionLogger.debug("Keyboard view appeared")
+        schedulePendingScanInsertion()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        pendingInsertionWorkItem?.cancel()
+        pendingInsertionWorkItem = nil
+    }
+
+    override func textDidChange(_ textInput: UITextInput?) {
+        super.textDidChange(textInput)
+        insertionLogger.debug("Keyboard text context changed")
+        schedulePendingScanInsertion()
     }
 
     private func configureRootStack() {
@@ -72,7 +105,20 @@ final class KeyboardViewController: UIInputViewController {
 
         let scanButton = makeScannerButton()
         toolbar.addArrangedSubview(scanButton)
-        scanButton.widthAnchor.constraint(equalTo: toolbar.widthAnchor).isActive = true
+
+        if hasFullAccess, SharedKeyboardState.canAccessAppGroup,
+           !SharedKeyboardState.pendingScannedCode.isEmpty {
+            let insertButton = UIButton(type: .system)
+            insertButton.setTitle(NSLocalizedString("Insert Last Scan", comment: "Manually insert the last scanned code"), for: .normal)
+            insertButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+            insertButton.backgroundColor = .secondarySystemBackground
+            insertButton.layer.cornerRadius = 6
+            insertButton.addTarget(self, action: #selector(insertLastScanTapped), for: .touchUpInside)
+            toolbar.addArrangedSubview(insertButton)
+            insertButton.widthAnchor.constraint(equalTo: scanButton.widthAnchor).isActive = true
+        } else {
+            scanButton.widthAnchor.constraint(equalTo: toolbar.widthAnchor).isActive = true
+        }
 
         return toolbar
     }
@@ -206,25 +252,63 @@ final class KeyboardViewController: UIInputViewController {
         }
     }
 
-    private func insertPendingScanIfNeeded() {
-        guard hasFullAccess, SharedKeyboardState.canAccessAppGroup else { return }
+    private func refreshRecoveryButtonIfNeeded() {
+        let shouldShow = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
+            !SharedKeyboardState.pendingScannedCode.isEmpty
+        let isShowing = rootStack.arrangedSubviews.first
+            .flatMap { ($0 as? UIStackView)?.arrangedSubviews.count == 2 } ?? false
+        if shouldShow != isShowing { rebuildKeyboard() }
+    }
 
-        let identifier = SharedKeyboardState.pendingScanIdentifier
-        let activeIdentifier = SharedKeyboardState.activeScanRequestIdentifier
-        let code = SharedKeyboardState.pendingScannedCode
+    private func schedulePendingScanInsertion() {
+        guard !isInsertingScan, hasFullAccess, SharedKeyboardState.canAccessAppGroup,
+              SharedKeyboardState.pendingInsertion != nil else { return }
 
-        guard !identifier.isEmpty,
-              activeIdentifier.isEmpty || identifier == activeIdentifier,
-              identifier != SharedKeyboardState.consumedScanIdentifier,
-              !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        else {
+        pendingInsertionWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.pendingInsertionWorkItem = nil
+            self?.insertPendingScanIfReady()
+        }
+        pendingInsertionWorkItem = workItem
+        insertionLogger.debug("Automatic scan insertion scheduled")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7, execute: workItem)
+    }
+
+    private func insertPendingScanIfReady() {
+        guard !isInsertingScan, view.window != nil, hasFullAccess,
+              let pending = SharedKeyboardState.pendingInsertion else {
+            insertionLogger.debug("Automatic scan insertion deferred; keyboard or scan is not ready")
             return
         }
 
-        SharedKeyboardState.consumedScanIdentifier = identifier
-        SharedKeyboardState.activeScanRequestIdentifier = ""
-        textDocumentProxy.insertText(code)
+        isInsertingScan = true
+        defer { isInsertingScan = false }
+
+        textDocumentProxy.insertText(pending.code)
         applyInsertSuffix(SharedKeyboardState.insertSuffix)
+        SharedKeyboardState.markPendingInsertionAttempted(identifier: pending.identifier)
+        insertionLogger.info("Automatic scan proxy write issued")
+    }
+
+    @objc private func insertLastScanTapped() {
+        guard hasFullAccess, SharedKeyboardState.canAccessAppGroup,
+              !SharedKeyboardState.pendingScannedCode.isEmpty else { return }
+
+        pendingInsertionWorkItem?.cancel()
+        pendingInsertionWorkItem = nil
+        isInsertingScan = true
+        defer { isInsertingScan = false }
+
+        textDocumentProxy.insertText(SharedKeyboardState.pendingScannedCode)
+        applyInsertSuffix(SharedKeyboardState.insertSuffix)
+        SharedKeyboardState.markPendingInsertionAttempted(identifier: SharedKeyboardState.pendingScanIdentifier)
+        insertionLogger.info("Manual last-scan proxy write issued")
+    }
+
+    @objc private func extensionHostDidBecomeActive() {
+        insertionLogger.debug("Keyboard host became active")
+        refreshRecoveryButtonIfNeeded()
+        schedulePendingScanInsertion()
     }
 
     private func applyInsertSuffix(_ suffix: InsertSuffix) {
@@ -236,8 +320,11 @@ final class KeyboardViewController: UIInputViewController {
         case .tab:
             textDocumentProxy.insertText("\t")
         case .newline:
+            let activeWindow = view.window
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-                self?.textDocumentProxy.insertText("\n")
+                guard let self, let activeWindow,
+                      self.view.window === activeWindow else { return }
+                self.textDocumentProxy.insertText("\n")
             }
         }
     }
