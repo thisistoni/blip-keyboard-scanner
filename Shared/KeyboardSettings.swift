@@ -526,6 +526,8 @@ enum SharedKeyboardState {
         static let scannerFlashlightMode = "scannerFlashlightMode"
         static let scanFormatProfile = "scanFormatProfile"
         static let playScanSound = "playScanSound"
+        static let keyboardClickSound = "keyboardClickSound"
+        static let keyboardHaptics = "keyboardHaptics"
         static let returnTarget = "returnTarget"
         static let customReturnURL = "customReturnURL"
         static let scanHistoryItems = "scanHistoryItems"
@@ -540,6 +542,14 @@ enum SharedKeyboardState {
 
     static var appStorageDefaults: UserDefaults {
         defaults ?? .standard
+    }
+
+    static var keyboardClickSound: Bool {
+        defaults?.object(forKey: Keys.keyboardClickSound) as? Bool ?? true
+    }
+
+    static var keyboardHaptics: Bool {
+        defaults?.object(forKey: Keys.keyboardHaptics) as? Bool ?? true
     }
 
     static var canAccessAppGroup: Bool {

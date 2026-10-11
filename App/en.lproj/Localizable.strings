@@ -265,3 +265,7 @@
 "Automatically returns to your open browser tab after scanning." = "Automatically returns to your open browser tab after scanning.";
 "Automatically returns to the selected browser after scanning." = "Automatically returns to the selected browser after scanning.";
 "Automatically opens your Custom Return URL after scanning." = "Automatically opens your Custom Return URL after scanning.";
+
+"Key Clicks" = "Key Clicks";
+"Key Haptics" = "Key Haptics";
+"Keyboard Feedback" = "Keyboard Feedback";

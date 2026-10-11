@@ -43,6 +43,12 @@ struct KeyboardLayoutSettingsView: View {
     @AppStorage(SharedKeyboardState.Keys.customReturnURL, store: SharedKeyboardState.appStorageDefaults)
     private var customReturnURL = ""
 
+    @AppStorage(SharedKeyboardState.Keys.keyboardClickSound, store: SharedKeyboardState.appStorageDefaults)
+    private var keyboardClickSound = true
+
+    @AppStorage(SharedKeyboardState.Keys.keyboardHaptics, store: SharedKeyboardState.appStorageDefaults)
+    private var keyboardHaptics = true
+
     @State private var showingMailError = false
     @State private var showingStoreError = false
     @State private var showingSystemReturnHelp = false
@@ -196,6 +202,13 @@ struct KeyboardLayoutSettingsView: View {
                     Text("Keyboard")
                 } footer: {
                     Text("Choose the keyboard language and which layouts you can cycle through. Turn every layout off to show only the Scan button.")
+                }
+
+                Section {
+                    Toggle("Key Clicks", isOn: $keyboardClickSound)
+                    Toggle("Key Haptics", isOn: $keyboardHaptics)
+                } header: {
+                    Text("Keyboard Feedback")
                 }
 
                 Section {

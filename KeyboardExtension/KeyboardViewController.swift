@@ -1,30 +1,40 @@
 import UIKit
 import SwiftUI
+import KeyboardKit
 import os
 
-final class KeyboardViewController: UIInputViewController {
-    private let rootStack = UIStackView()
-    private var heightConstraint: NSLayoutConstraint?
-    private var hostedToolbarControllers: [UIViewController] = []
-    private var inputModeSwitchButton: UIButton?
-    private var inputModeSwitchRow: UIStackView?
-    private var isRecoveryButtonVisible = false
-    private var activeLayout = SharedKeyboardState.defaultKeyboardLayout
-    private var isShifted = false
+final class KeyboardViewController: KeyboardInputViewController {
+    private let presentation = BlipKeyboardPresentation()
     private var pendingInsertionWorkItem: DispatchWorkItem?
     private var isInsertingScan = false
     private let insertionLogger = Logger(subsystem: "com.antoniobeslic.Blip", category: "ScanInsertion")
 
+    override func loadView() {
+        // Let iOS draw the keyboard backdrop and its rounded system contour.
+        inputView = BlipInputView(frame: .zero, inputViewStyle: .keyboard)
+        view = inputView
+        view.backgroundColor = .clear
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(extensionHostDidBecomeActive),
-            name: NSNotification.Name.NSExtensionHostDidBecomeActive,
-            object: nil
-        )
-        configureRootStack()
-        rebuildKeyboard()
+        setup(for: KeyboardApp(
+            name: "Blip",
+            appGroupId: SharedKeyboardState.appGroupIdentifier,
+            locales: [Locale(identifier: SharedKeyboardState.keyboardLanguage == .german ? "de" : "en")],
+            keyboardSettingsKeyPrefix: "blip.keyboardkit"
+        ))
+        services.feedbackService = BlipFeedbackService(controller: self)
+        services.calloutService = .standard(
+            keyboardContext: state.keyboardContext, feedbackService: services.feedbackService)
+        services.actionHandler = BlipActionHandler(controller: self)
+        state.feedbackContext.hapticConfiguration = .init(
+            press: .selectionChanged, release: .none, doubleTap: .none,
+            longPress: .lightImpact, repeat: .selectionChanged)
+        state.keyboardContext.isLiquidGlassEnabled = false
+        state.keyboardContext.settings.spaceLongPressBehavior = .moveInputCursor
+        NotificationCenter.default.addObserver(self, selector: #selector(extensionHostDidBecomeActive),
+            name: NSNotification.Name.NSExtensionHostDidBecomeActive, object: nil)
     }
 
     deinit {
@@ -32,29 +42,36 @@ final class KeyboardViewController: UIInputViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        let storedLayout = SharedKeyboardState.defaultKeyboardLayout
-        if storedLayout != activeLayout {
-            activeLayout = storedLayout
-            rebuildKeyboard()
+    override func viewWillSetupKeyboardView() {
+        setupKeyboardView { [unowned self] controller in
+            BlipPremiumKeyboard(state: controller.state, services: controller.services,
+                presentation: self.presentation,
+                insertScan: { [weak self] in self?.insertLastScanTapped() })
         }
+    }
 
+    override func viewWillSetupInitialKeyboardType() {
+        // Blip's enabled profiles, including large numbers and scan-only, own the layout.
+        state.keyboardContext.keyboardType = .alphabetic
+    }
+
+    override func viewWillSyncWithContext() {
+        super.viewWillSyncWithContext()
+        state.keyboardContext.keyboardType = .alphabetic
+        state.keyboardContext.locale = Locale(identifier: SharedKeyboardState.keyboardLanguage == .german ? "de" : "en")
+        refreshRecoveryButtonIfNeeded()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        presentation.layout = SharedKeyboardState.defaultKeyboardLayout
+        super.viewWillAppear(animated)
         SharedKeyboardState.recordKeyboardRuntime(hasFullAccess: hasFullAccess)
         refreshRecoveryButtonIfNeeded()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        insertionLogger.debug("Keyboard view appeared")
         schedulePendingScanInsertion()
-    }
-
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        inputModeSwitchButton?.isHidden = !needsInputModeSwitchKey
-        inputModeSwitchRow?.isHidden = !needsInputModeSwitchKey
-        heightConstraint?.constant = keyboardHeight
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -65,252 +82,20 @@ final class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
-        insertionLogger.debug("Keyboard text context changed")
         schedulePendingScanInsertion()
     }
 
-    private func configureRootStack() {
-        view.backgroundColor = .systemGray4
-
-        rootStack.axis = .vertical
-        rootStack.spacing = 8
-        rootStack.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(rootStack)
-
-        NSLayoutConstraint.activate([
-            rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 6),
-            rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -6),
-            rootStack.topAnchor.constraint(equalTo: view.topAnchor, constant: 6),
-            rootStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -6),
-        ])
-    }
-
-    private func rebuildKeyboard() {
-        clearHostedToolbarControllers()
-        inputModeSwitchButton = nil
-        inputModeSwitchRow = nil
-
-        rootStack.arrangedSubviews.forEach { view in
-            rootStack.removeArrangedSubview(view)
-            view.removeFromSuperview()
-        }
-
-        rootStack.addArrangedSubview(makeToolbar())
-
-        let nextLayoutTitle = SharedKeyboardState.nextKeyboardLayoutTitle(after: activeLayout)
-        let rows = KeyboardLayoutEngine.rows(for: activeLayout, nextLayoutTitle: nextLayoutTitle)
-        for (index, row) in rows.enumerated() {
-            rootStack.addArrangedSubview(makeRow(row, includesInputModeSwitch: index == rows.count - 1))
-        }
-        if rows.isEmpty {
-            let switchRow = makeRow(KeyboardRow([]), includesInputModeSwitch: true)
-            switchRow.addArrangedSubview(UIView())
-            switchRow.isHidden = !needsInputModeSwitchKey
-            inputModeSwitchRow = switchRow
-            rootStack.addArrangedSubview(switchRow)
-        }
-
-        heightConstraint?.isActive = false
-        heightConstraint = view.heightAnchor.constraint(equalToConstant: keyboardHeight)
-        heightConstraint?.priority = .defaultHigh
-        heightConstraint?.isActive = true
-    }
-
-    private var keyboardHeight: CGFloat {
-        let baseHeight = KeyboardLayoutEngine.height(for: activeLayout)
-        guard activeLayout == .scanOnly, needsInputModeSwitchKey else { return baseHeight }
-        return baseHeight + KeyboardLayoutEngine.rowHeight(for: activeLayout) + rootStack.spacing
-    }
-
-    private func makeToolbar() -> UIView {
-        let toolbar = UIStackView()
-        toolbar.axis = .horizontal
-        toolbar.alignment = .fill
-        toolbar.spacing = 6
-        toolbar.heightAnchor.constraint(equalToConstant: 38).isActive = true
-
-        let scanButton = makeScannerButton()
-        toolbar.addArrangedSubview(scanButton)
-
-        isRecoveryButtonVisible = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
-            !SharedKeyboardState.pendingScannedCode.isEmpty
-        if isRecoveryButtonVisible {
-            let insertButton = UIButton(type: .system)
-            insertButton.setTitle(NSLocalizedString("Insert Last Scan", comment: "Manually insert the last scanned code"), for: .normal)
-            insertButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-            insertButton.backgroundColor = .secondarySystemBackground
-            insertButton.layer.cornerRadius = 6
-            insertButton.addTarget(self, action: #selector(insertLastScanTapped), for: .touchUpInside)
-            toolbar.addArrangedSubview(insertButton)
-            insertButton.widthAnchor.constraint(equalTo: scanButton.widthAnchor).isActive = true
-        }
-
-        return toolbar
-    }
-
-    private func makeInputModeSwitchButton() -> UIButton {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "globe"), for: .normal)
-        button.tintColor = .label
-        button.backgroundColor = .systemGray3
-        button.layer.cornerRadius = 5
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = traitCollection.userInterfaceStyle == .dark ? 0 : 0.18
-        button.layer.shadowRadius = 0
-        button.layer.shadowOffset = CGSize(width: 0, height: 1)
-        button.accessibilityLabel = NSLocalizedString("Next keyboard", comment: "Switch to another installed keyboard")
-        button.isHidden = !needsInputModeSwitchKey
-        button.addTarget(self, action: #selector(handleInputModeList(from:with:)), for: .allTouchEvents)
-
-        let widthConstraint = button.widthAnchor.constraint(equalToConstant: 44)
-        widthConstraint.priority = UILayoutPriority(999)
-        widthConstraint.isActive = true
-        return button
-    }
-
-    private func clearHostedToolbarControllers() {
-        for controller in hostedToolbarControllers {
-            controller.willMove(toParent: nil)
-            controller.view.removeFromSuperview()
-            controller.removeFromParent()
-        }
-
-        hostedToolbarControllers.removeAll()
-    }
-
-    private func makeScannerButton() -> UIView {
-        let controller = UIHostingController(rootView: KeyboardScannerButton())
-
-        addChild(controller)
-        controller.view.backgroundColor = .clear
-        controller.view.heightAnchor.constraint(equalToConstant: 38).isActive = true
-        controller.didMove(toParent: self)
-        hostedToolbarControllers.append(controller)
-
-        return controller.view
-    }
-
-    private func makeRow(_ keyboardRow: KeyboardRow, includesInputModeSwitch: Bool = false) -> UIStackView {
-        let row = UIStackView()
-        row.axis = .horizontal
-        row.spacing = 5
-        row.distribution = .fill
-        let rowHeight = row.heightAnchor.constraint(equalToConstant: KeyboardLayoutEngine.rowHeight(for: activeLayout))
-        rowHeight.priority = keyboardRow.keys.isEmpty ? UILayoutPriority(999) : .required
-        rowHeight.isActive = true
-        row.isLayoutMarginsRelativeArrangement = true
-        row.directionalLayoutMargins = NSDirectionalEdgeInsets(
-            top: 0,
-            leading: keyboardRow.leadingInset,
-            bottom: 0,
-            trailing: keyboardRow.trailingInset
-        )
-
-        if includesInputModeSwitch {
-            let switchButton = makeInputModeSwitchButton()
-            row.addArrangedSubview(switchButton)
-            inputModeSwitchButton = switchButton
-        }
-
-        let buttons = keyboardRow.keys.map(makeKeyButton(for:))
-
-        for button in buttons {
-            row.addArrangedSubview(button)
-        }
-
-        if let firstButton = buttons.first, let firstKey = keyboardRow.keys.first {
-            for (button, key) in zip(buttons.dropFirst(), keyboardRow.keys.dropFirst()) {
-                button.widthAnchor.constraint(equalTo: firstButton.widthAnchor, multiplier: key.widthWeight / firstKey.widthWeight).isActive = true
-            }
-        }
-
-        return row
-    }
-
-    private func makeKeyButton(for key: KeyboardKey) -> UIButton {
-        let button = UIButton(type: .system)
-        button.setTitle(key.title(isShifted: isShifted, activeLayout: activeLayout), for: .normal)
-        button.titleLabel?.font = keyFont(for: key)
-        button.tintColor = .label
-        button.backgroundColor = keyBackgroundColor(for: key)
-        button.layer.cornerRadius = 5
-        button.layer.masksToBounds = false
-        button.layer.shadowColor = UIColor.black.cgColor
-        button.layer.shadowOpacity = traitCollection.userInterfaceStyle == .dark ? 0 : 0.18
-        button.layer.shadowRadius = 0
-        button.layer.shadowOffset = CGSize(width: 0, height: 1)
-        button.accessibilityLabel = accessibilityLabel(for: key)
-        button.addTarget(self, action: #selector(keyTapped(_:)), for: .touchUpInside)
-        button.key = key
-        return button
-    }
-
-    private func keyFont(for key: KeyboardKey) -> UIFont {
-        switch key {
-        case .text:
-            if activeLayout == .largeNumbers {
-                return .systemFont(ofSize: 28, weight: .regular)
-            }
-
-            return .systemFont(ofSize: 22, weight: .regular)
-        case .space:
-            return .systemFont(ofSize: 16, weight: .regular)
-        default:
-            return .systemFont(ofSize: 16, weight: .regular)
-        }
-    }
-
-    private func keyBackgroundColor(for key: KeyboardKey) -> UIColor {
-        key.isPrimaryText ? .systemBackground : .systemGray3
-    }
-
-    private func accessibilityLabel(for key: KeyboardKey) -> String {
-        switch key {
-        case let .text(value):
-            value
-        case .backspace:
-            NSLocalizedString("Delete", comment: "Delete key accessibility label")
-        case .space:
-            NSLocalizedString("Space", comment: "Space key accessibility label")
-        case .return:
-            NSLocalizedString("Return", comment: "Return key accessibility label")
-        case .shift:
-            NSLocalizedString("Shift", comment: "Shift key accessibility label")
-        case .switchNextLayout:
-            NSLocalizedString("Switch layout", comment: "Switch layout key accessibility label")
-        }
-    }
-
-    @objc private func keyTapped(_ sender: UIButton) {
-        guard let key = sender.key else { return }
-
-        switch key {
-        case let .text(value):
-            textDocumentProxy.insertText(isShifted ? value.uppercased() : value)
-        case .backspace:
-            textDocumentProxy.deleteBackward()
-        case .space:
-            textDocumentProxy.insertText(" ")
-        case .return:
-            textDocumentProxy.insertText("\n")
-        case .shift:
-            isShifted.toggle()
-            rebuildKeyboard()
-        case .switchNextLayout:
-            isShifted = false
-            if let nextLayout = SharedKeyboardState.nextKeyboardLayout(after: activeLayout) {
-                activeLayout = nextLayout
-                rebuildKeyboard()
-            }
+    fileprivate func cycleLayout() {
+        if let next = SharedKeyboardState.nextKeyboardLayout(after: presentation.layout) {
+            presentation.layout = next
+            state.keyboardContext.keyboardCase = .lowercased
         }
     }
 
     private func refreshRecoveryButtonIfNeeded() {
-        let shouldShow = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
+        presentation.canInsertScan = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
             !SharedKeyboardState.pendingScannedCode.isEmpty
-        if shouldShow != isRecoveryButtonVisible { rebuildKeyboard() }
     }
-
     private func schedulePendingScanInsertion() {
         guard !isInsertingScan, hasFullAccess, SharedKeyboardState.canAccessAppGroup,
               SharedKeyboardState.pendingInsertion != nil else { return }
@@ -341,7 +126,7 @@ final class KeyboardViewController: UIInputViewController {
         insertionLogger.info("Automatic scan proxy write issued")
     }
 
-    @objc private func insertLastScanTapped() {
+    fileprivate func insertLastScanTapped() {
         guard hasFullAccess, SharedKeyboardState.canAccessAppGroup,
               !SharedKeyboardState.pendingScannedCode.isEmpty else { return }
 
@@ -381,38 +166,177 @@ final class KeyboardViewController: UIInputViewController {
     }
 }
 
-private var keyboardKeyAssociation = 0
+private final class BlipKeyboardPresentation: ObservableObject {
+    @Published var layout = SharedKeyboardState.defaultKeyboardLayout
+    @Published var canInsertScan = false
+}
 
-private extension UIButton {
-    var key: KeyboardKey? {
-        get {
-            objc_getAssociatedObject(self, &keyboardKeyAssociation) as? KeyboardKey
+private final class BlipInputView: UIInputView, UIInputViewAudioFeedback {
+    var enableInputClicksWhenVisible: Bool { SharedKeyboardState.keyboardClickSound }
+}
+
+private final class BlipFeedbackService: Feedback.StandardFeedbackService {
+    private weak var controller: UIInputViewController?
+
+    init(controller: UIInputViewController) {
+        self.controller = controller
+        super.init()
+    }
+
+    override func triggerAudioFeedback(_ feedback: Feedback.Audio) {
+        guard feedback != .none, SharedKeyboardState.keyboardClickSound,
+              controller?.hasFullAccess == true else { return }
+        // The public input-click API honors iOS keyboard-click preferences and silent mode.
+        UIDevice.current.playInputClick()
+    }
+
+    override func triggerHapticFeedback(_ feedback: Feedback.Haptic) {
+        guard SharedKeyboardState.keyboardHaptics, controller?.hasFullAccess == true else { return }
+        super.triggerHapticFeedback(feedback)
+    }
+}
+
+private final class BlipActionHandler: KeyboardAction.StandardActionHandler {
+    override func action(for gesture: Keyboard.Gesture, on action: KeyboardAction) -> KeyboardAction.GestureAction? {
+        if action == .custom(named: "blip.nextLayout"), gesture == .release {
+            return { controller in (controller as? KeyboardViewController)?.cycleLayout() }
         }
-        set {
-            objc_setAssociatedObject(self, &keyboardKeyAssociation, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        return super.action(for: gesture, on: action)
+    }
+}
+
+private struct BlipPremiumKeyboard: View {
+    let state: Keyboard.State
+    let services: Keyboard.Services
+    @ObservedObject var presentation: BlipKeyboardPresentation
+    let insertScan: () -> Void
+    @EnvironmentObject private var context: KeyboardContext
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        KeyboardView(
+            layout: layout,
+            state: state,
+            services: services,
+            renderBackground: false,
+            buttonContent: { params in
+                if params.item.action == .custom(named: "blip.nextLayout") {
+                    Text(SharedKeyboardState.nextKeyboardLayoutTitle(after: presentation.layout) ?? "ABC")
+                        .font(.system(size: 15, weight: .medium))
+                } else {
+                    params.view
+                }
+            },
+            buttonView: { $0.view },
+            collapsedView: { _ in EmptyView() },
+            emojiKeyboard: { _ in EmptyView() },
+            toolbar: { _ in toolbar }
+        )
+        .keyboardButtonStyle { params in
+            var style = params.standardStyle(for: context)
+            if presentation.layout == .largeNumbers, params.action.isCharacterAction {
+                style.nativeFont = .system(size: 28, weight: .regular)
+            }
+            return style
+        }
+        .keyboardCalloutActions { params in
+            let custom = Callouts.Actions(characters: [
+                "a": "aäáàâãåæ", "o": "oöóòôõøœ", "u": "uüúùû",
+                "s": "sßśš", "e": "eéèêë", "i": "iíìîï", "n": "nñń",
+                "c": "cçćč", "y": "yýÿ", "z": "zžźż", "ü": "üu", "ö": "öo", "ä": "äa"
+            ])
+            return custom.actions(for: params.action) ?? params.standardActions(for: context)
+        }
+    }
+
+    private var toolbar: some View {
+        HStack(spacing: 8) {
+            Button {
+                let requestIdentifier = UUID().uuidString
+                SharedKeyboardState.activeScanRequestIdentifier = requestIdentifier
+                openURL(SharedKeyboardState.scanURL(requestIdentifier: requestIdentifier))
+            } label: {
+                Label("Scan", systemImage: "barcode.viewfinder")
+                    .frame(maxWidth: .infinity, minHeight: 36)
+            }
+            .accessibilityLabel(context.locale.language.languageCode?.identifier == "de" ? "Scannen" : "Scan")
+            if presentation.canInsertScan {
+                Button(action: insertScan) {
+                    Label(context.locale.language.languageCode?.identifier == "de" ? "Scan einfügen" : "Insert Last Scan", systemImage: "arrow.down.doc")
+                        .frame(maxWidth: .infinity, minHeight: 36)
+                }
+            }
+        }
+        .font(.system(size: 15, weight: .semibold))
+        .buttonStyle(BlipToolbarButtonStyle())
+        .padding(.horizontal, 6)
+        .padding(.top, 4)
+        .padding(.bottom, 6)
+    }
+
+    private var layout: KeyboardKit.KeyboardLayout {
+        let profile = presentation.layout
+        let rows = KeyboardLayoutEngine.rows(for: profile,
+            nextLayoutTitle: SharedKeyboardState.nextKeyboardLayoutTitle(after: profile))
+        let landscape = context.interfaceOrientation.isLandscape
+        let height: CGFloat = profile == .largeNumbers ? (landscape ? 44 : 58) : (landscape ? 38 : 52)
+        var itemRows: KeyboardKit.KeyboardLayout.ItemRows = rows.enumerated().map { index, row in
+            let showsGlobe = index == rows.count - 1 && context.needsInputModeSwitchKey
+            let globeWeight: CGFloat = showsGlobe ? 1.1 : 0
+            let weight = row.keys.reduce(CGFloat.zero) { $0 + $1.widthWeight } + globeWeight
+            var items: KeyboardKit.KeyboardLayout.ItemRow = []
+            if showsGlobe {
+                items.append(item(.nextKeyboard, weight: globeWeight / weight, height: height))
+            }
+            items += row.keys.map { key in
+                item(action(for: key), weight: key.widthWeight / weight, height: height)
+            }
+            // Inset alphabetic second rows proportionally, preserving balanced key widths.
+            if row.leadingInset > 0, !items.isEmpty {
+                let inset = min(row.leadingInset / max(context.screenSize.width, 1), 0.05)
+                items = items.map { value in
+                    var value = value
+                    if case .percentage(let fraction) = value.size.width {
+                        value.size.width = .percentage(fraction * (1 - 2 * inset))
+                    }
+                    return value
+                }
+                items.insert(item(.none, weight: inset, height: height), at: 0)
+                items.append(item(.none, weight: inset, height: height))
+            }
+            return items
+        }
+        if rows.isEmpty, context.needsInputModeSwitchKey {
+            itemRows = [[item(.nextKeyboard, weight: 0.14, height: height), item(.none, weight: 0.86, height: height)]]
+        }
+        return KeyboardKit.KeyboardLayout(itemRows: itemRows, idealItemHeight: Double(height),
+            idealItemInsets: EdgeInsets(top: 4, leading: 3, bottom: 4, trailing: 3))
+    }
+
+    private func item(_ action: KeyboardAction, weight: CGFloat, height: CGFloat) -> KeyboardKit.KeyboardLayout.Item {
+        .init(action: action, size: .init(width: .percentage(weight), height: height),
+            edgeInsets: EdgeInsets(top: 4, leading: 3, bottom: 4, trailing: 3))
+    }
+
+    private func action(for key: KeyboardKey) -> KeyboardAction {
+        switch key {
+        case .text(let text): return .character(context.keyboardCase.isUppercasedOrCapslocked ? text.uppercased() : text)
+        case .backspace: return .backspace
+        case .space: return .space
+        case .shift: return .shift(context.keyboardCase)
+        case .switchNextLayout: return .custom(named: "blip.nextLayout")
+        case .return:
+            let type = context.returnKeyType ?? .return
+            return .primary(type == .return ? .newLine : type)
         }
     }
 }
 
-private struct KeyboardScannerButton: View {
-    @Environment(\.openURL) private var openURL
-
-    var body: some View {
-        Button {
-            let requestIdentifier = UUID().uuidString
-            SharedKeyboardState.activeScanRequestIdentifier = requestIdentifier
-            openURL(SharedKeyboardState.scanURL(requestIdentifier: requestIdentifier))
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "barcode.viewfinder")
-                Text("Scan")
-            }
-            .font(.callout.weight(.semibold))
-            .foregroundStyle(Color(uiColor: .label))
-            .frame(maxWidth: .infinity, minHeight: 38)
-            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 6))
-            .contentShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
+private struct BlipToolbarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(Color.primary)
+            .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+            .opacity(configuration.isPressed ? 0.65 : 1)
     }
 }

@@ -265,3 +265,7 @@
 "Automatically returns to your open browser tab after scanning." = "Kehrt nach dem Scannen automatisch zu deinem geöffneten Browser-Tab zurück.";
 "Automatically returns to the selected browser after scanning." = "Kehrt nach dem Scannen automatisch zum ausgewählten Browser zurück.";
 "Automatically opens your Custom Return URL after scanning." = "Öffnet nach dem Scannen automatisch deine eigene Rückkehr-URL.";
+
+"Key Clicks" = "Tastentöne";
+"Key Haptics" = "Tastenhaptik";
+"Keyboard Feedback" = "Tastaturfeedback";
