@@ -1,8 +1,8 @@
 import SwiftUI
 import os
+import UIKit
 #if DEBUG
 import CoreImage.CIFilterBuiltins
-import UIKit
 #endif
 
 private let scanInsertionLogger = Logger(subsystem: "com.antoniobeslic.Blip", category: "ScanInsertion")
@@ -34,6 +34,13 @@ struct ScannerScreen: View {
 
     @AppStorage(SharedKeyboardState.Keys.customReturnURL, store: SharedKeyboardState.appStorageDefaults)
     private var customReturnURL = ""
+
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var testText = ""
+    @State private var testFocused = false
+    @State private var testFieldID = UUID().uuidString
+    @State private var restoreTestField = false
+    private let testLeaseTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     @State private var activeSession: ScannerSession?
     @State private var returnGuidance: KeyboardReturnGuidance?
@@ -74,19 +81,14 @@ struct ScannerScreen: View {
                 }
 
                 Section {
-                    Button {
-                        activeSession = ScannerSession(
-                            id: UUID().uuidString,
-                            source: .app,
-                            scanFormatProfile: scanFormatProfile,
-                            returnTarget: returnTarget,
-                            customReturnURL: customReturnURL
-                        )
-                    } label: {
-                        Label("Test Scanner", systemImage: "barcode.viewfinder")
-                    }
-
-                    LabeledContent("Keyboard return target", value: returnTarget.title)
+                    KeyboardTestTextField(text: $testText, focused: $testFocused, sessionID: testFieldID,
+                        onPrepare: prepareTestFieldEditing, onBegin: beginTestFieldEditing, onEnd: endTestFieldEditing)
+                        .frame(minHeight: 36)
+                    LabeledContent("External return target", value: returnTarget.title)
+                } header: {
+                    Text("Test the Blip keyboard")
+                } footer: {
+                    Text("Choose Blip with the globe key, then tap Scan. This test returns here.")
                 }
             }
             .navigationTitle("Scan")
@@ -97,7 +99,18 @@ struct ScannerScreen: View {
             .onChange(of: externalLaunchRequest) { request in
                 handleExternalLaunchRequest(request)
             }
-            .fullScreenCover(item: $activeSession) { session in
+            .onReceive(testLeaseTimer) { _ in
+                if scenePhase == .active, testFocused || activeSession?.testSessionID == testFieldID || restoreTestField {
+                    SharedKeyboardState.renewKeyboardTest(id: testFieldID)
+                }
+            }
+            .onChange(of: scenePhase) { phase in
+                if phase == .background { cancelTestField() }
+            }
+            .onDisappear {
+                if activeSession?.testSessionID != testFieldID, !restoreTestField { cancelTestField() }
+            }
+            .fullScreenCover(item: $activeSession, onDismiss: restoreTestFieldAfterScanner) { session in
                 ScannerPresentation(
                     session: session,
                     playScanSound: playScanSound,
@@ -115,6 +128,45 @@ struct ScannerScreen: View {
                     returnGuidance = nil
                 }
             }
+        }
+    }
+
+    private func prepareTestFieldEditing() -> String {
+        if let session = SharedKeyboardState.keyboardTestSession,
+           session.id == testFieldID, session.phase == .returning {
+            return testFieldID
+        }
+        // A fresh ownership nonce prevents delayed extension writes from reviving an abandoned test.
+        let id = UUID().uuidString
+        testFieldID = id
+        SharedKeyboardState.beginKeyboardTest(id: id)
+        return id
+    }
+
+    private func beginTestFieldEditing() {
+        _ = SharedKeyboardState.resumeKeyboardTest(id: testFieldID)
+    }
+
+    private func endTestFieldEditing() {
+        let phase = SharedKeyboardState.keyboardTestSession?.phase
+        if phase != .launching && phase != .scanning && phase != .returning {
+            SharedKeyboardState.cancelKeyboardTest(id: testFieldID)
+        }
+    }
+
+    private func cancelTestField() {
+        restoreTestField = false
+        testFocused = false
+        SharedKeyboardState.cancelKeyboardTest(id: testFieldID)
+    }
+
+    private func restoreTestFieldAfterScanner() {
+        guard restoreTestField else { return }
+        restoreTestField = false
+        DispatchQueue.main.async {
+            guard scenePhase == .active,
+                  SharedKeyboardState.keyboardTestSession?.id == testFieldID else { return }
+            testFocused = true
         }
     }
 
@@ -136,9 +188,22 @@ struct ScannerScreen: View {
 
         handledLaunchRequestID = request.id
         returnGuidance = nil
+        if request.testSessionID != nil {
+            guard request.testSessionID == testFieldID,
+                  SharedKeyboardState.acceptKeyboardTestRequest(request, ownerID: testFieldID) else {
+                if SharedKeyboardState.activeScanRequestIdentifier == request.id {
+                    SharedKeyboardState.activeScanRequestIdentifier = ""
+                }
+                return
+            }
+            testFocused = false
+        } else {
+            cancelTestField()
+        }
         activeSession = ScannerSession(
             id: request.id,
             source: request.launchedFromKeyboard ? .keyboard : .app,
+            testSessionID: request.testSessionID,
             scanFormatProfile: scanFormatProfile,
             returnTarget: returnTarget,
             customReturnURL: customReturnURL
@@ -147,6 +212,17 @@ struct ScannerScreen: View {
 
     private func handleScannedCode(_ result: ScannerCodeResult, for session: ScannerSession) {
         guard !result.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+        if let testID = session.testSessionID {
+            guard SharedKeyboardState.finishKeyboardTest(id: testID, requestID: session.id, code: result.value) else {
+                activeSession = nil
+                return
+            }
+            ScanSoundPlayer.shared.playIfEnabled(playScanSound)
+            restoreTestField = true
+            activeSession = nil
+            return
+        }
 
         ScanSoundPlayer.shared.playIfEnabled(playScanSound)
         lastScannedCode = result.value
@@ -183,6 +259,11 @@ struct ScannerScreen: View {
     }
 
     private func handleScannerCancel(for session: ScannerSession) {
+        if let testID = session.testSessionID {
+            restoreTestField = SharedKeyboardState.finishKeyboardTest(id: testID, requestID: session.id, code: nil)
+            activeSession = nil
+            return
+        }
         activeSession = nil
 
         guard session.source == .keyboard else { return }
@@ -380,12 +461,14 @@ private struct ScannerSession: Identifiable, Equatable {
 
     let id: String
     let source: Source
+    var testSessionID: String? = nil
     let scanFormatProfile: ScanFormatProfile
     let returnTarget: ReturnTarget
     let customReturnURL: String
 
     var title: String {
-        switch source {
+        if testSessionID != nil { return NSLocalizedString("Return to Keyboard Test", comment: "Scanner test return title") }
+        return switch source {
         case .app:
             NSLocalizedString("Scanner", comment: "Scanner title")
         case .keyboard:
@@ -525,7 +608,7 @@ private struct ScannerPresentation: View {
             } else if session.source == .keyboard {
                 ScanStatusPill(
                     title: "Target",
-                    detail: session.returnTarget.title,
+                    detail: session.testSessionID == nil ? session.returnTarget.title : NSLocalizedString("Keyboard Test", comment: "Keyboard test target"),
                     systemImage: "arrowshape.turn.up.backward.fill",
                     color: .blue
                 )
@@ -729,5 +812,59 @@ private struct EmptyStateView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
+    }
+}
+
+
+/// A native input field, using the installed extension selected by the user.
+private struct KeyboardTestTextField: UIViewRepresentable {
+    @Binding var text: String
+    @Binding var focused: Bool
+    let sessionID: String
+    let onPrepare: () -> String
+    let onBegin: () -> Void
+    let onEnd: () -> Void
+
+    func makeUIView(context: Context) -> UITextField {
+        let field = UITextField()
+        field.delegate = context.coordinator
+        field.placeholder = NSLocalizedString("Scan result", comment: "Keyboard test text field")
+        field.accessibilityLabel = NSLocalizedString("Test the Blip keyboard", comment: "Keyboard test text field label")
+        field.font = .preferredFont(forTextStyle: .body)
+        field.adjustsFontForContentSizeCategory = true
+        field.clearButtonMode = .whileEditing
+        field.autocorrectionType = .no
+        field.autocapitalizationType = .none
+        field.textContentType = UITextContentType(rawValue: KeyboardTestSession.contentTypePrefix + sessionID)
+        field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
+        return field
+    }
+
+    func updateUIView(_ field: UITextField, context: Context) {
+        context.coordinator.parent = self
+        if field.text != text { field.text = text }
+        if focused, !field.isFirstResponder { field.becomeFirstResponder() }
+        if !focused, field.isFirstResponder { field.resignFirstResponder() }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: KeyboardTestTextField
+        init(_ parent: KeyboardTestTextField) { self.parent = parent }
+        @objc func changed(_ field: UITextField) { parent.text = field.text ?? "" }
+        func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
+            // Set the explicit cooperating-field trait before UIKit asks the extension for input.
+            textField.textContentType = UITextContentType(rawValue: KeyboardTestSession.contentTypePrefix + parent.onPrepare())
+            return true
+        }
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            parent.focused = true
+            parent.onBegin()
+        }
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            parent.focused = false
+            parent.onEnd()
+        }
     }
 }

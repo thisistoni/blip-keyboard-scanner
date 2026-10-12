@@ -46,6 +46,11 @@ final class KeyboardViewController: KeyboardInputViewController {
         setupKeyboardView { [unowned self] controller in
             BlipPremiumKeyboard(state: controller.state, services: controller.services,
                 presentation: self.presentation,
+                scanRequest: { [weak self] in
+                    guard let self else { return KeyboardScanRequest(source: "keyboard") }
+                    return SharedKeyboardState.keyboardScanRequest(
+                        contentType: self.textDocumentProxy.textContentType?.rawValue)
+                },
                 insertScan: { [weak self] in self?.insertLastScanTapped() })
         }
     }
@@ -122,12 +127,25 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     private func refreshRecoveryButtonIfNeeded() {
         presentation.appearance = SharedKeyboardState.keyboardAppearance
-        presentation.canInsertScan = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
-            !SharedKeyboardState.pendingScannedCode.isEmpty
+        presentation.canInsertScan = hasFullAccess && SharedKeyboardState.canAccessAppGroup && (
+            isTestField ? testPendingInsertion != nil : !SharedKeyboardState.pendingScannedCode.isEmpty)
     }
+    private var isTestField: Bool {
+        textDocumentProxy.textContentType?.rawValue.hasPrefix(KeyboardTestSession.contentTypePrefix) == true
+    }
+
+    private var testPendingInsertion: PendingScanInsertion? {
+        SharedKeyboardState.keyboardTestSession?.insertion(
+            contentType: textDocumentProxy.textContentType?.rawValue)
+    }
+
+    private var automaticPendingInsertion: PendingScanInsertion? {
+        isTestField ? testPendingInsertion : SharedKeyboardState.pendingInsertion
+    }
+
     private func schedulePendingScanInsertion() {
         guard !isInsertingScan, hasFullAccess, SharedKeyboardState.canAccessAppGroup,
-              SharedKeyboardState.pendingInsertion != nil else { return }
+              automaticPendingInsertion != nil else { return }
 
         pendingInsertionWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
@@ -140,8 +158,15 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     private func insertPendingScanIfReady() {
+        let proxy = textDocumentProxy
+        let contentType = proxy.textContentType?.rawValue
+        let isTest = contentType?.hasPrefix(KeyboardTestSession.contentTypePrefix) == true
+        let selectedPending = isTest
+            ? SharedKeyboardState.keyboardTestSession?.insertion(contentType: contentType)
+            : SharedKeyboardState.pendingInsertion
         guard !isInsertingScan, view.window != nil, hasFullAccess,
-              let pending = SharedKeyboardState.pendingInsertion else {
+              let pending = selectedPending,
+              (!isTest || textDocumentProxy.textContentType?.rawValue == contentType) else {
             insertionLogger.debug("Automatic scan insertion deferred; keyboard or scan is not ready")
             return
         }
@@ -149,15 +174,23 @@ final class KeyboardViewController: KeyboardInputViewController {
         isInsertingScan = true
         defer { isInsertingScan = false }
 
-        textDocumentProxy.insertText(pending.code)
-        applyInsertSuffix(SharedKeyboardState.insertSuffix)
-        SharedKeyboardState.markPendingInsertionAttempted(identifier: pending.identifier)
+        proxy.insertText(pending.code)
+        applyInsertSuffix(SharedKeyboardState.insertSuffix, testContentType: isTest ? contentType : nil)
+        if isTest {
+            SharedKeyboardState.consumeKeyboardTest(requestID: pending.identifier, contentType: contentType)
+        } else {
+            SharedKeyboardState.markPendingInsertionAttempted(identifier: pending.identifier)
+        }
         insertionLogger.info("Automatic scan proxy write issued")
     }
 
     fileprivate func insertLastScanTapped() {
-        guard hasFullAccess, SharedKeyboardState.canAccessAppGroup,
-              !SharedKeyboardState.pendingScannedCode.isEmpty else { return }
+        guard hasFullAccess, SharedKeyboardState.canAccessAppGroup else { return }
+        if isTestField {
+            insertPendingScanIfReady()
+            return
+        }
+        guard !SharedKeyboardState.pendingScannedCode.isEmpty else { return }
 
         pendingInsertionWorkItem?.cancel()
         pendingInsertionWorkItem = nil
@@ -179,7 +212,10 @@ final class KeyboardViewController: KeyboardInputViewController {
         schedulePendingScanInsertion()
     }
 
-    private func applyInsertSuffix(_ suffix: InsertSuffix) {
+    private func applyInsertSuffix(_ suffix: InsertSuffix, testContentType: String? = nil) {
+        if let testContentType {
+            guard textDocumentProxy.textContentType?.rawValue == testContentType else { return }
+        }
         switch suffix {
         case .none:
             break
@@ -192,6 +228,9 @@ final class KeyboardViewController: KeyboardInputViewController {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
                 guard let self, let activeWindow,
                       self.view.window === activeWindow else { return }
+                if let testContentType {
+                    guard self.textDocumentProxy.textContentType?.rawValue == testContentType else { return }
+                }
                 self.textDocumentProxy.insertText("\n")
             }
         }
@@ -242,6 +281,7 @@ private struct BlipPremiumKeyboard: View {
     let state: Keyboard.State
     let services: Keyboard.Services
     @ObservedObject var presentation: BlipKeyboardPresentation
+    let scanRequest: () -> KeyboardScanRequest
     let insertScan: () -> Void
     @EnvironmentObject private var context: KeyboardContext
     @Environment(\.openURL) private var openURL
@@ -375,9 +415,7 @@ private struct BlipPremiumKeyboard: View {
     private var toolbar: some View {
         HStack(spacing: 8) {
             Button {
-                let requestIdentifier = UUID().uuidString
-                SharedKeyboardState.activeScanRequestIdentifier = requestIdentifier
-                openURL(SharedKeyboardState.scanURL(requestIdentifier: requestIdentifier))
+                openURL(scanRequest().url)
             } label: {
                 Label("Scan", systemImage: "barcode.viewfinder")
                     .frame(maxWidth: .infinity, minHeight: 36)

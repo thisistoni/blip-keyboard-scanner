@@ -83,6 +83,37 @@ enum PendingScanInsertionTests {
             $0.title == "Insert Scans Automatically"
         })
 
-        print("Pending scan token checks passed")
+        // An explicit field token is required; a stale app-group session cannot tag another host.
+        var keyboardTest = KeyboardTestSession(id: "test-field")
+        precondition(!keyboardTest.launch(requestID: "r1", contentType: nil))
+        precondition(!keyboardTest.launch(requestID: "r1", contentType: KeyboardTestSession(id: "other-field").contentType))
+        precondition(keyboardTest.isOwned(ownerID: "test-field", leaseUntil: 101, now: 100))
+        precondition(!keyboardTest.isOwned(ownerID: "test-field", leaseUntil: 100, now: 100))
+        precondition(!keyboardTest.isOwned(ownerID: "", leaseUntil: 101, now: 100))
+        precondition(keyboardTest.launch(requestID: "r1", contentType: keyboardTest.contentType))
+        let testRequest = KeyboardScanRequest(id: "r1", source: "keyboard", testSessionID: "test-field")
+        precondition(KeyboardScanRequest(url: testRequest.url) == testRequest)
+        precondition(KeyboardScanRequest(url: KeyboardScanRequest(id: "external", source: "keyboard").url)?.testSessionID == nil)
+        precondition(!keyboardTest.accept(KeyboardScanRequest(id: "wrong", source: "keyboard", testSessionID: "test-field")))
+        precondition(!keyboardTest.accept(KeyboardScanRequest(id: "r1", source: "app", testSessionID: "test-field")))
+        precondition(keyboardTest.accept(testRequest))
+        precondition(!keyboardTest.accept(testRequest))
+        precondition(!keyboardTest.finish(requestID: "stale", code: code))
+        precondition(keyboardTest.finish(requestID: "r1", code: code))
+        precondition(keyboardTest.insertion(contentType: keyboardTest.contentType) == nil)
+        precondition(keyboardTest.resume())
+        // Only the cooperating field can receive the test result.
+        precondition(keyboardTest.insertion(contentType: nil) == nil)
+        precondition(keyboardTest.insertion(contentType: keyboardTest.contentType)?.code == code)
+        keyboardTest.consume()
+        precondition(keyboardTest.insertion(contentType: keyboardTest.contentType) == nil)
+        precondition(keyboardTest.launch(requestID: "r2", contentType: keyboardTest.contentType))
+        precondition(!keyboardTest.accept(testRequest)) // Old deep-link cannot hijack the next scan.
+        precondition(keyboardTest.accept(KeyboardScanRequest(id: "r2", source: "keyboard", testSessionID: "test-field")))
+        precondition(keyboardTest.finish(requestID: "r2", code: nil))
+        precondition(keyboardTest.resume())
+        precondition(keyboardTest.phase == .editing && keyboardTest.code == nil && keyboardTest.requestIdentifier == nil)
+
+        print("Pending scan and scoped keyboard test checks passed")
     }
 }

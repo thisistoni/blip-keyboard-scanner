@@ -273,3 +273,10 @@
 "System" = "System";
 "Blip Blue" = "Blip-Blau";
 "Keyboard Feedback" = "Tastaturfeedback";
+
+"Test the Blip keyboard" = "Blip-Tastatur testen";
+"Scan result" = "Scan-Ergebnis";
+"External return target" = "Externes Rückkehrziel";
+"Choose Blip with the globe key, then tap Scan. This test returns here." = "Wähle Blip mit der Globustaste und tippe auf Scan. Dieser Test kehrt hierher zurück.";
+"Return to Keyboard Test" = "Zurück zum Tastaturtest";
+"Keyboard Test" = "Tastaturtest";

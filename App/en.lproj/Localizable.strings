@@ -273,3 +273,10 @@
 "System" = "System";
 "Blip Blue" = "Blip Blue";
 "Keyboard Feedback" = "Keyboard Feedback";
+
+"Test the Blip keyboard" = "Test the Blip keyboard";
+"Scan result" = "Scan result";
+"External return target" = "External return target";
+"Choose Blip with the globe key, then tap Scan. This test returns here." = "Choose Blip with the globe key, then tap Scan. This test returns here.";
+"Return to Keyboard Test" = "Return to Keyboard Test";
+"Keyboard Test" = "Keyboard Test";

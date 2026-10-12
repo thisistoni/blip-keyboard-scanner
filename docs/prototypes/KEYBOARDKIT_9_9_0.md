@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (13)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
+Development build **1.0.4 (14)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
 
 ## Dependency and license
 
@@ -36,6 +36,10 @@ The inspected core resolves the button-style builder in KeyboardViewItem, then p
 | Emphasized text | #FFFFFF | #FFFFFF |
 
 Lowercase key weight is regular; KeyboardKit's standard font sizing remains intact (normally 26-point lowercase / 23-point uppercase on iPhone; context can adjust sizes). Large-number keys remain 28-point regular; the layout switch remains 15-point medium. No exact native color or timing equivalence is claimed.
+
+## Native keyboard scan test
+
+Build 14 replaces the Scan page’s direct Test Scanner button with a real native test field using the installed Blip extension. The request/field-scoped test stays in Blip and automatically inserts without modifying saved return/Auto Insert preferences; external scans retain their route. See [KEYBOARD_SCAN_TEST.md](KEYBOARD_SCAN_TEST.md) for the cooperative field tag, lifecycle boundaries, checks and physical acceptance steps. Theme rendering is unchanged. ANT-67 tracks this feature separately from ANT-65.
 
 ## Debug-only geometry investigation
 

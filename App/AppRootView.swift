@@ -5,6 +5,7 @@ struct AppRootView: View {
 
     @State private var selectedTab: AppTab = .scan
     @State private var scannerLaunchRequest: KeyboardScanRequest?
+    @State private var didResetTestScope = false
     @State private var setupStatus = SetupVerificationStatus.current
 
     private let setupPoller = Timer.publish(every: 0.7, on: .main, in: .common).autoconnect()
@@ -18,8 +19,18 @@ struct AppRootView: View {
             }
         }
         .onOpenURL(perform: handleURL)
-        .onAppear(perform: refreshSetupStatus)
+        .onAppear {
+            if !didResetTestScope {
+                SharedKeyboardState.cancelKeyboardTest()
+                didResetTestScope = true
+            }
+            refreshSetupStatus()
+        }
+        .onChange(of: selectedTab) { tab in
+            if tab != .scan { SharedKeyboardState.cancelKeyboardTest() }
+        }
         .onChange(of: scenePhase) { phase in
+            if phase == .background { SharedKeyboardState.cancelKeyboardTest() }
             guard phase == .active else { return }
             refreshSetupStatus()
         }
