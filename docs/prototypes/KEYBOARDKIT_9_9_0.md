@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (10)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
+Development build **1.0.4 (11)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
 
 ## Dependency and license
 
@@ -22,7 +22,7 @@ Reference source: https://github.com/KeyboardKit/KeyboardKit/tree/9.9.0
 
 ## Rendering and theme details
 
-The inspected core resolves the button-style builder in KeyboardViewItem, then passes the result to Keyboard.ButtonKey, which paints `background` over `backgroundColor`. Blip clears any background layer before applying its opaque Blue colors, so they affect real key shapes, including idle keys. KeyboardView uses the environment callout style because the installed standard style service returns nil; both popup bodies and button overlays consume that style. The SwiftUI panel is painted behind the complete KeyboardView, not clipped around the popup-bearing view. Build 10 also fills the entire allocated UIKit input view and its edge-pinned hosting view with the same Blue canvas (#BCD2F2 light / #101F3B dark), including safe-area or intrinsic-content gaps around the SwiftUI panel. The fill refreshes after appearance/context and post-layout color-scheme synchronization. System restores both layers to clear. Content geometry, safe-area layout, callout placement and outer iOS contour are not changed. This addresses uncovered extension-owned space; system-owned areas outside the extension cannot be recolored by this fill. Spacers stay transparent over the Blue panel. iOS-owned globe/home-indicator space outside the extension's surface is not recolored.
+The inspected core resolves the button-style builder in KeyboardViewItem, then passes the result to Keyboard.ButtonKey, which paints `background` over `backgroundColor`. Blip clears any background layer before applying its opaque Blue colors, so they affect real key shapes, including idle keys. KeyboardView uses the environment callout style because the installed standard style service returns nil; both popup bodies and button overlays consume that style. The SwiftUI panel is painted behind the complete KeyboardView, not clipped around the popup-bearing view. Build 11 restores build 9's bounded rendering exactly: input and hosting views stay transparent, and only the SwiftUI Blue panel is painted with its 12-point top-corner mask. Build 10's outer fill was rejected after physical testing: corners appeared unrounded, Blue overflowed the gray container, and the top strip remained. The assumption that the reported strip was uncovered extension-owned space was not established by visual evidence. No further geometry change is attempted until a real screenshot or live preview identifies the strip's relationship to the extension bounds. Spacers stay transparent over the Blue panel. iOS-owned globe/home-indicator space outside the extension's surface is not recolored.
 
 | Surface | Blue light sRGB | Blue dark sRGB |
 | --- | --- | --- |
@@ -53,15 +53,15 @@ KeyboardKit 9.9.0 contains optional legacy status inspection and responder-chain
 
 ## Verification
 
-- Signed Debug build 10 for paired iPhone 16 Pro Max passed with no compiler warnings.
+- Signed Debug build 11 for paired iPhone 16 Pro Max passed with no compiler warnings.
 - Blue foreground/surface contrast calculations passed at least 5.69:1 for all chosen light/dark idle/pressed combinations; this is a color-pair calculation, not a completed physical accessibility audit.
-- Full MIT notice in both build 10 bundles matches the source notice byte for byte. No visible credits/licensing screen was added.
+- Full MIT notice in both build 11 bundles matches the source notice byte for byte. No visible credits/licensing screen was added.
 - `codesign --verify --deep --strict` passed; existing team, bundle IDs, and App Group retained.
 - Existing pending scan token regression checks passed.
-- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (10).
+- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (11).
 - Installed in place on the paired physical iPhone, preserving the application identifier and without uninstalling or clearing app-group preferences.
 - No simulator launched, new runtime downloaded, or parallel build started. One build worker; indexing disabled.
-- Build 9 theme design has user acceptance, except for the reported gray top area. Build 10 background coverage, detailed gesture/feedback and scan round-trip results are pending user testing. iPad, floating mode, orientation matrix and VoiceOver are also unverified. ANT-65 remains In Progress.
+- Build 9 theme design has user acceptance, except for the reported gray top area. Build 11 restoration of bounded rendering, detailed gesture/feedback and scan round-trip results are pending user testing. iPad, floating mode, orientation matrix and VoiceOver are also unverified. ANT-65 remains In Progress.
 
 ## Phone acceptance checklist
 
@@ -73,4 +73,4 @@ KeyboardKit 9.9.0 contains optional legacy status inspection and responder-chain
 
 ## First physical user feedback
 
-Antonio tested build 7 on his iPhone and reported: “wow feels much better than what we had”; subsequent feedback also said it looks much better. This confirms a positive overall physical-device impression. It does not separately verify every gesture, Return context, sound/haptic toggle, silent mode, light/dark/orientation combination or scan round trip. Build 8 was tested: Antonio reported dark System keys did not match the native keyboard, accent holds felt too slow, and the partial blue styling was unsatisfactory. Build 9 addresses those specific reports with opaque dark grays, a shorter letter hold and full blue surfaces. Antonio accepted build 9's full Blue design and said System looks fine, with a remaining gray area above Blue. Build 10 fills the hosting/input view bounds rather than redesigning the theme. Removal of that physical strip still needs confirmation; the USB screenshot service returned Invalid service, so no before/after screenshot verification is claimed. Native equivalence, detailed orientation/Increase Contrast/popup selection and physical timing have not been measured. Keep those specific acceptance checks open.
+Antonio tested build 7 on his iPhone and reported: “wow feels much better than what we had”; subsequent feedback also said it looks much better. This confirms a positive overall physical-device impression. It does not separately verify every gesture, Return context, sound/haptic toggle, silent mode, light/dark/orientation combination or scan round trip. Build 8 was tested: Antonio reported dark System keys did not match the native keyboard, accent holds felt too slow, and the partial blue styling was unsatisfactory. Build 9 addresses those specific reports with opaque dark grays, a shorter letter hold and full blue surfaces. Antonio accepted build 9's full Blue design and said System looks fine, with a remaining gray area above Blue. Build 10 was worse on the phone: unrounded corners, Blue overflow and the original gray strip remaining. Build 11 removes only its outer input/hosting fill and returns the keyboard controller source byte for byte to build 9. The top strip remains unresolved. USB screenshot capture previously failed with Invalid service and then No device found; no active phone-mirroring/QuickTime preview was present in the Mac app inventory. No new capture attempt or screenshot verification is claimed. Native equivalence, detailed orientation/Increase Contrast/popup selection and physical timing have not been measured. Keep those specific acceptance checks open.

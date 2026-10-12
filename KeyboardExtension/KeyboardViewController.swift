@@ -74,11 +74,6 @@ final class KeyboardViewController: KeyboardInputViewController {
         schedulePendingScanInsertion()
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        updateKeyboardBackground()
-    }
-
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         pendingInsertionWorkItem?.cancel()
@@ -99,28 +94,8 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     private func refreshRecoveryButtonIfNeeded() {
         presentation.appearance = SharedKeyboardState.keyboardAppearance
-        updateKeyboardBackground()
         presentation.canInsertScan = hasFullAccess && SharedKeyboardState.canAccessAppGroup &&
             !SharedKeyboardState.pendingScannedCode.isEmpty
-    }
-
-    private func updateKeyboardBackground() {
-        guard isViewLoaded else { return }
-        // Paint the entire allocated input view, including space outside the SwiftUI content.
-        // Its transparent hosting view reveals this fill; iOS still owns the outer contour.
-        let background: UIColor = presentation.appearance == .blipBlue
-            ? UIColor(BlipKeyboardPalette(isDark: state.keyboardContext.colorScheme == .dark,
-                increasedContrast: false).canvas)
-            : .clear
-        if view.backgroundColor != background {
-            view.backgroundColor = background
-        }
-        for child in children where child.isViewLoaded && child.view.superview === view {
-            // The hosting view is pinned to every input-view edge, beyond SwiftUI safe areas.
-            if child.view.backgroundColor != background {
-                child.view.backgroundColor = background
-            }
-        }
     }
     private func schedulePendingScanInsertion() {
         guard !isInsertingScan, hasFullAccess, SharedKeyboardState.canAccessAppGroup,
