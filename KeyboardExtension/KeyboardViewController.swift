@@ -72,7 +72,25 @@ final class KeyboardViewController: KeyboardInputViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         schedulePendingScanInsertion()
+#if DEBUG
+        recordDebugGeometry(event: "didAppear")
+#endif
     }
+
+#if DEBUG
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        recordDebugGeometry(event: "afterLayout")
+    }
+
+    private func recordDebugGeometry(event: String) {
+        BlipGeometryDiagnostics.log(view, role: "extensionRoot", event: event)
+        if let inputView { BlipGeometryDiagnostics.log(inputView, role: "inputView", event: event) }
+        for child in children where child.isViewLoaded {
+            BlipGeometryDiagnostics.log(child.view, role: "hostingView", event: event)
+        }
+    }
+#endif
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
@@ -144,6 +162,9 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     @objc private func extensionHostDidBecomeActive() {
         insertionLogger.debug("Keyboard host became active")
+#if DEBUG
+        recordDebugGeometry(event: "hostResume")
+#endif
         refreshRecoveryButtonIfNeeded()
         schedulePendingScanInsertion()
     }
@@ -250,6 +271,9 @@ private struct BlipPremiumKeyboard: View {
         )
         .keyboardButtonStyle { buttonStyle($0) }
         .keyboardCalloutStyle(calloutStyle)
+#if DEBUG
+        .background(BlipGeometryProbe().allowsHitTesting(false).accessibilityHidden(true))
+#endif
         .background {
             if presentation.appearance == .blipBlue {
                 // Clip only the painted panel, leaving key callouts free to extend above it.
@@ -478,3 +502,85 @@ private struct BlipKeyboardPalette {
             blue: Double(value & 255) / 255, opacity: 1)
     }
 }
+
+#if DEBUG
+/// Numeric-only diagnostics. Never inspect proxy text, clipboard, scan values or view descriptions.
+@MainActor
+private enum BlipGeometryDiagnostics {
+    private static let logger = Logger(subsystem: "com.antoniobeslic.Blip", category: "KeyboardGeometry")
+    private static var lastReports: [String: String] = [:]
+
+    private static func rect(_ value: CGRect) -> [Double] {
+        [value.origin.x, value.origin.y, value.width, value.height].map { Double(($0 * 1000).rounded() / 1000) }
+    }
+
+    private static func insets(_ value: UIEdgeInsets) -> [Double] {
+        [value.top, value.left, value.bottom, value.right].map(Double.init)
+    }
+
+    static func log(_ view: UIView, role: String, event: String) {
+        guard let window = view.window, !view.bounds.isEmpty else { return }
+        func geometry(_ item: UIView) -> [String: Any] {
+            let inWindow = item.convert(item.bounds, to: window)
+            let margins = item.directionalLayoutMargins
+            return ["class": String(describing: type(of: item)), "frame": rect(item.frame),
+                "bounds": rect(item.bounds), "inWindow": rect(inWindow),
+                "inScreen": rect(window.convert(inWindow, to: window.screen.coordinateSpace)),
+                "safeArea": insets(item.safeAreaInsets), "layoutMargins": insets(item.layoutMargins),
+                "directionalMargins": [Double(margins.top), Double(margins.leading), Double(margins.bottom), Double(margins.trailing)]]
+        }
+        func emit(_ fields: [String: Any], suffix: String) {
+            var report = fields
+            report["role"] = role + suffix
+            report["event"] = event
+            report["appearance"] = SharedKeyboardState.keyboardAppearance.rawValue
+            guard let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
+                  let message = String(data: data, encoding: .utf8) else { return }
+            let key = role + suffix + event
+            guard lastReports[key] != message else { return }
+            lastReports[key] = message
+            logger.info("BLIP_GEOMETRY \(message, privacy: .public)")
+        }
+        // The physical relay truncates long messages; keep each geometry record separate.
+        emit(["view": geometry(view)], suffix: "")
+        emit(["windowFrame": rect(window.frame), "windowBounds": rect(window.bounds),
+            "screenBounds": rect(window.screen.coordinateSpace.bounds),
+            "screenScale": Double(window.screen.scale)], suffix: ".window")
+        var parent = view.superview
+        var index = 0
+        while let item = parent, index < 8 {
+            emit(["view": geometry(item)], suffix: ".parent\(index)")
+            parent = item.superview
+            index += 1
+        }
+    }
+}
+
+private struct BlipGeometryProbe: UIViewRepresentable {
+    func makeUIView(context: Context) -> BlipGeometryProbeView {
+        let view = BlipGeometryProbeView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        view.accessibilityElementsHidden = true
+        return view
+    }
+    func updateUIView(_ uiView: BlipGeometryProbeView, context: Context) {}
+}
+
+private final class BlipGeometryProbeView: UIView {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        reportAfterLayout()
+    }
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        reportAfterLayout()
+    }
+    private func reportAfterLayout() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            BlipGeometryDiagnostics.log(self, role: "swiftuiPanel", event: "afterLayout")
+        }
+    }
+}
+#endif

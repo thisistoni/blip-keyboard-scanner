@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (11)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
+Development build **1.0.4 (12)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
 
 ## Dependency and license
 
@@ -37,6 +37,12 @@ The inspected core resolves the button-style builder in KeyboardViewItem, then p
 
 Lowercase key weight is regular; KeyboardKit's standard font sizing remains intact (normally 26-point lowercase / 23-point uppercase on iPhone; context can adjust sizes). Large-number keys remain 28-point regular; the layout switch remains 15-point medium. No exact native color or timing equivalence is claimed.
 
+## Debug-only geometry investigation
+
+Build 12 adds numeric-only diagnostics after layout, appearance and host resume, plus an invisible, noninteractive background UIView probe for the SwiftUI panel. All instrumentation is under `#if DEBUG`. It does not change colors, sizing, constraints, content or safe-area handling. Records include frames/bounds, window and screen coordinate conversions, safe-area insets, ordinary/directional layout margins, window/screen dimensions and scale, and up to eight ancestor class/geometry entries. No proxy text, clipboard, scan values or full view descriptions are read or logged.
+
+The physical USB log relay connects successfully. Its 1,024-byte message limit truncated the initial records; build 12 was reinstalled with separate compact records for each view/window/ancestor. A fresh Spotlight activation is required after that reinstall. The supplied screenshot shows Blue inside a larger gray rounded container; that image alone does not establish ownership of the top strip. Final numeric findings and a first-show/resume comparison remain pending that activation. Remote extension/window screen-coordinate conversion also needs to be checked against the screenshot rather than treated as the final system-hosted screen position automatically.
+
 ## Feedback limits
 
 Audio replaces KeyboardKit's raw sound-ID playback with UIKit's public `UIDevice.playInputClick()` and `UIInputViewAudioFeedback`. Apple's API respects the system keyboard-click setting; no custom audio session overrides silent mode. Playback is gated on Blip's setting and Full Access. Physical silent-mode behavior remains to be confirmed.
@@ -53,12 +59,12 @@ KeyboardKit 9.9.0 contains optional legacy status inspection and responder-chain
 
 ## Verification
 
-- Signed Debug build 11 for paired iPhone 16 Pro Max passed with no compiler warnings.
+- Signed Debug build 12 for paired iPhone 16 Pro Max passed with no compiler warnings.
 - Blue foreground/surface contrast calculations passed at least 5.69:1 for all chosen light/dark idle/pressed combinations; this is a color-pair calculation, not a completed physical accessibility audit.
-- Full MIT notice in both build 11 bundles matches the source notice byte for byte. No visible credits/licensing screen was added.
+- Full MIT notice in both build 12 bundles matches the source notice byte for byte. No visible credits/licensing screen was added.
 - `codesign --verify --deep --strict` passed; existing team, bundle IDs, and App Group retained.
 - Existing pending scan token regression checks passed.
-- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (11).
+- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (12).
 - Installed in place on the paired physical iPhone, preserving the application identifier and without uninstalling or clearing app-group preferences.
 - No simulator launched, new runtime downloaded, or parallel build started. One build worker; indexing disabled.
 - Build 9 theme design has user acceptance, except for the reported gray top area. Build 11 restoration of bounded rendering, detailed gesture/feedback and scan round-trip results are pending user testing. iPad, floating mode, orientation matrix and VoiceOver are also unverified. ANT-65 remains In Progress.
