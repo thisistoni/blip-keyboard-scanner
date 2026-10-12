@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (12)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
+Development build **1.0.4 (13)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
 
 ## Dependency and license
 
@@ -41,7 +41,21 @@ Lowercase key weight is regular; KeyboardKit's standard font sizing remains inta
 
 Build 12 adds numeric-only diagnostics after layout, appearance and host resume, plus an invisible, noninteractive background UIView probe for the SwiftUI panel. All instrumentation is under `#if DEBUG`. It does not change colors, sizing, constraints, content or safe-area handling. Records include frames/bounds, window and screen coordinate conversions, safe-area insets, ordinary/directional layout margins, window/screen dimensions and scale, and up to eight ancestor class/geometry entries. No proxy text, clipboard, scan values or full view descriptions are read or logged.
 
-The physical USB log relay connects successfully. Its 1,024-byte message limit truncated the initial records; build 12 was reinstalled with separate compact records for each view/window/ancestor. A fresh Spotlight activation is required after that reinstall. The supplied screenshot shows Blue inside a larger gray rounded container; that image alone does not establish ownership of the top strip. Final numeric findings and a first-show/resume comparison remain pending that activation. Remote extension/window screen-coordinate conversion also needs to be checked against the screenshot rather than treated as the final system-hosted screen position automatically.
+The physical USB log relay connects successfully. Its 1,024-byte message limit truncated the initial records; compact per-view records fixed that. Build 13 additionally resamples the panel after its hosting ancestor moves, avoiding a stale initial probe position. User confirmed Spotlight was open with Blue selected and the strip visible. The supplied screenshot was inspected at its original 1320×2868 resolution; this is user-supplied visual evidence, not a successful automated device screenshot.
+
+### Measured result
+
+The settled root, input, hosting and SwiftUI panel rectangles are **(0, 0, 440, 256)** in the extension window. Every safe-area inset is **0**. Root/input/hosting layout margins are **(0, 20, 0, 20)**, so there is no top layout margin; the measuring UIView's default 8-point margins do not inset its measured full-size rectangle. Screen bounds are 440×956 points at 3× scale.
+
+At the reference screenshot's centerline, the gray container starts at pixel y=1824, Blue starts at 1875, and Blue ends at 2643. Thus the upper gray band is 51 pixels = **17 points**, while Blue is 768 pixels = **256 points**, matching the entire settled drawable rectangle. The panel has no top offset or uncovered strip inside the root. The band is outside Blip's measured surface, in the host/system container; its specific private owner/class is not observable from the extension. The native globe/microphone region is also outside the 256-point panel. Remote-window `inScreen` values remain local-origin coordinates, not the final on-phone hosting translation (the reference image puts Blue at physical y=625 points).
+
+First presentation transitions through a full-screen 956-point viewport with the 256-point panel centered at local y=350; one brief 245-point root phase puts the panel at y=-5.333. It then settles to 256 points and panel y=0. Repeated shows settled identically. A host-resume sample at 23:12:38 also measured all four rectangles as (0,0,440,256) with zero safe areas. The user's fleeting disappearance of the strip occurred during presentation, but no synchronized video establishes which transition frame caused that visual change; it is not evidence of a 17-point safe-area bug.
+
+Numeric snapshots are in [keyboard-geometry-measurements.json](keyboard-geometry-measurements.json). Only diagnostic code and the build number changed; no appearance adjustment was made.
+
+### Supported options and limits
+
+There is no internal top inset to remove or fill. Preserve the accepted bounded Blue theme with the surrounding host frame, or use System to blend with that frame. Painting outer hosting/input backgrounds was already physically rejected in build 10 and is not repeated. The available 26.5 SDK's public UIInputView/UIInputViewController headers expose no host-container recoloring API; the phone runs 27.0.1, so this is not a blanket claim about every future SDK. Apple's archived [Custom Keyboard guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/CustomKeyboard.html) states the keyboard's drawable area is its primary view. A request to Apple for themed container support is appropriate if a uniformly colored outer frame is required; changing private host views is not a supported remedy.
 
 ## Feedback limits
 
@@ -59,12 +73,12 @@ KeyboardKit 9.9.0 contains optional legacy status inspection and responder-chain
 
 ## Verification
 
-- Signed Debug build 12 for paired iPhone 16 Pro Max passed with no compiler warnings.
+- Signed Debug build 13 for paired iPhone 16 Pro Max passed with no compiler warnings.
 - Blue foreground/surface contrast calculations passed at least 5.69:1 for all chosen light/dark idle/pressed combinations; this is a color-pair calculation, not a completed physical accessibility audit.
-- Full MIT notice in both build 12 bundles matches the source notice byte for byte. No visible credits/licensing screen was added.
+- Full MIT notice in both build 13 bundles matches the source notice byte for byte. No visible credits/licensing screen was added.
 - `codesign --verify --deep --strict` passed; existing team, bundle IDs, and App Group retained.
 - Existing pending scan token regression checks passed.
-- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (12).
+- Package version, revision, license and dependency list inspected. App/extension bundle version: 1.0.4 (13).
 - Installed in place on the paired physical iPhone, preserving the application identifier and without uninstalling or clearing app-group preferences.
 - No simulator launched, new runtime downloaded, or parallel build started. One build worker; indexing disabled.
 - Build 9 theme design has user acceptance, except for the reported gray top area. Build 11 restoration of bounded rendering, detailed gesture/feedback and scan round-trip results are pending user testing. iPad, floating mode, orientation matrix and VoiceOver are also unverified. ANT-65 remains In Progress.

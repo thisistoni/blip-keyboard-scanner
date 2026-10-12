@@ -81,6 +81,9 @@ final class KeyboardViewController: KeyboardInputViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         recordDebugGeometry(event: "afterLayout")
+        DispatchQueue.main.async { [weak self] in
+            self?.recordDebugGeometry(event: "settledLayout")
+        }
     }
 
     private func recordDebugGeometry(event: String) {
@@ -88,6 +91,13 @@ final class KeyboardViewController: KeyboardInputViewController {
         if let inputView { BlipGeometryDiagnostics.log(inputView, role: "inputView", event: event) }
         for child in children where child.isViewLoaded {
             BlipGeometryDiagnostics.log(child.view, role: "hostingView", event: event)
+        }
+        var pending = [view!]
+        while let item = pending.popLast() {
+            if item is BlipGeometryProbeView {
+                BlipGeometryDiagnostics.log(item, role: "swiftuiPanel", event: event)
+            }
+            pending.append(contentsOf: item.subviews)
         }
     }
 #endif
