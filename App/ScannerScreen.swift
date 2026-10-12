@@ -36,7 +36,6 @@ struct ScannerScreen: View {
     private var customReturnURL = ""
 
     @Environment(\.scenePhase) private var scenePhase
-    @State private var testText = ""
     @State private var testFocused = false
     @State private var testFieldID = UUID().uuidString
     @State private var restoreTestField = false
@@ -81,8 +80,8 @@ struct ScannerScreen: View {
                 }
 
                 Section {
-                    KeyboardTestTextField(text: $testText, focused: $testFocused, sessionID: testFieldID,
-                        onPrepare: prepareTestFieldEditing, onBegin: beginTestFieldEditing, onEnd: endTestFieldEditing)
+                    KeyboardTestTextField(focused: $testFocused, sessionID: testFieldID,
+                        onPrepare: prepareTestFieldEditing, onEnd: endTestFieldEditing)
                         .frame(minHeight: 36)
                     LabeledContent("External return target", value: returnTarget.title)
                 } header: {
@@ -132,25 +131,40 @@ struct ScannerScreen: View {
     }
 
     private func prepareTestFieldEditing() -> String {
+#if DEBUG
+        KeyboardTestDiagnostics.record("prepare", source: "app", details: ["focused": testFocused])
+#endif
         if let session = SharedKeyboardState.keyboardTestSession,
-           session.id == testFieldID, session.phase == .returning {
+           session.id == testFieldID {
+            // UIKit can preflight focus repeatedly, including while opening the camera.
+            // Preserve every live phase; only a revoked/expired scope gets a new owner.
+            // Queue the result before UIKit creates/resumes the extension's document proxy.
+            _ = SharedKeyboardState.resumeKeyboardTest(id: testFieldID)
+#if DEBUG
+            KeyboardTestDiagnostics.record("resumeBeforeFocus", source: "app")
+#endif
             return testFieldID
         }
         // A fresh ownership nonce prevents delayed extension writes from reviving an abandoned test.
         let id = UUID().uuidString
         testFieldID = id
         SharedKeyboardState.beginKeyboardTest(id: id)
+#if DEBUG
+        KeyboardTestDiagnostics.record("newOwner", source: "app")
+#endif
         return id
     }
 
-    private func beginTestFieldEditing() {
-        _ = SharedKeyboardState.resumeKeyboardTest(id: testFieldID)
-    }
-
     private func endTestFieldEditing() {
+#if DEBUG
+        KeyboardTestDiagnostics.record("endEditing", source: "app")
+#endif
         let phase = SharedKeyboardState.keyboardTestSession?.phase
         if phase != .launching && phase != .scanning && phase != .returning {
             SharedKeyboardState.cancelKeyboardTest(id: testFieldID)
+#if DEBUG
+            KeyboardTestDiagnostics.record("cancelOnEndEditing", source: "app")
+#endif
         }
     }
 
@@ -167,6 +181,9 @@ struct ScannerScreen: View {
             guard scenePhase == .active,
                   SharedKeyboardState.keyboardTestSession?.id == testFieldID else { return }
             testFocused = true
+#if DEBUG
+            KeyboardTestDiagnostics.record("focusRequested", source: "app")
+#endif
         }
     }
 
@@ -219,6 +236,9 @@ struct ScannerScreen: View {
                 return
             }
             ScanSoundPlayer.shared.playIfEnabled(playScanSound)
+#if DEBUG
+            KeyboardTestDiagnostics.record("cameraFinished", source: "app")
+#endif
             restoreTestField = true
             activeSession = nil
             return
@@ -818,14 +838,15 @@ private struct EmptyStateView: View {
 
 /// A native input field, using the installed extension selected by the user.
 private struct KeyboardTestTextField: UIViewRepresentable {
-    @Binding var text: String
     @Binding var focused: Bool
     let sessionID: String
     let onPrepare: () -> String
-    let onBegin: () -> Void
     let onEnd: () -> Void
 
     func makeUIView(context: Context) -> UITextField {
+#if DEBUG
+        KeyboardTestDiagnostics.record("fieldCreated", source: "app")
+#endif
         let field = UITextField()
         field.delegate = context.coordinator
         field.placeholder = NSLocalizedString("Scan result", comment: "Keyboard test text field")
@@ -836,13 +857,11 @@ private struct KeyboardTestTextField: UIViewRepresentable {
         field.autocorrectionType = .no
         field.autocapitalizationType = .none
         field.textContentType = UITextContentType(rawValue: KeyboardTestSession.contentTypePrefix + sessionID)
-        field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
         return field
     }
 
     func updateUIView(_ field: UITextField, context: Context) {
         context.coordinator.parent = self
-        if field.text != text { field.text = text }
         if focused, !field.isFirstResponder { field.becomeFirstResponder() }
         if !focused, field.isFirstResponder { field.resignFirstResponder() }
     }
@@ -867,25 +886,45 @@ private struct KeyboardTestTextField: UIViewRepresentable {
             guard needsPresentationRefresh, let field = activeField, field.isFirstResponder else { return }
             // Refresh UIKit's initial host presentation once, retaining the selected extension and focus.
             needsPresentationRefresh = false
+#if DEBUG
+            KeyboardTestDiagnostics.record("willReload", source: "app", details: ["hasText": field.hasText])
+#endif
             field.reloadInputViews()
+#if DEBUG
+            KeyboardTestDiagnostics.record("didReload", source: "app", details: ["hasText": field.hasText])
+#endif
         }
-        @objc func changed(_ field: UITextField) { parent.text = field.text ?? "" }
         func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
             // Set the explicit cooperating-field trait before UIKit asks the extension for input.
             textField.textContentType = UITextContentType(rawValue: KeyboardTestSession.contentTypePrefix + parent.onPrepare())
+#if DEBUG
+            KeyboardTestDiagnostics.record("nativeWillBegin", source: "app", details: ["hasText": textField.hasText])
+#endif
             return true
         }
         func textFieldDidBeginEditing(_ textField: UITextField) {
             activeField = textField
             needsPresentationRefresh = true
             parent.focused = true
-            parent.onBegin()
+#if DEBUG
+            KeyboardTestDiagnostics.record("nativeDidBegin", source: "app", details: ["hasText": textField.hasText])
+#endif
         }
         func textFieldDidEndEditing(_ textField: UITextField) {
+#if DEBUG
+            KeyboardTestDiagnostics.record("nativeDidEnd", source: "app", details: ["hasText": textField.hasText])
+#endif
             needsPresentationRefresh = false
             activeField = nil
             parent.focused = false
             parent.onEnd()
         }
+
+#if DEBUG
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            KeyboardTestDiagnostics.record("nativeSelectionChanged", source: "app",
+                details: ["hasText": textField.hasText, "firstResponder": textField.isFirstResponder])
+        }
+#endif
     }
 }

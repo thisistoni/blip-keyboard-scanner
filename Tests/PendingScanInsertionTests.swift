@@ -97,6 +97,11 @@ enum PendingScanInsertionTests {
         precondition(!keyboardTest.accept(KeyboardScanRequest(id: "wrong", source: "keyboard", testSessionID: "test-field")))
         precondition(!keyboardTest.accept(KeyboardScanRequest(id: "r1", source: "app", testSessionID: "test-field")))
         precondition(keyboardTest.accept(testRequest))
+        // Repeated native focus preflights during camera handoff must not erase the request.
+        let scanningSession = keyboardTest
+        precondition(!keyboardTest.resume())
+        precondition(!keyboardTest.resume())
+        precondition(keyboardTest == scanningSession)
         precondition(!keyboardTest.accept(testRequest))
         precondition(!keyboardTest.finish(requestID: "stale", code: code))
         precondition(keyboardTest.finish(requestID: "r1", code: code))

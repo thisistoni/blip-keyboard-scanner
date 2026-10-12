@@ -1,6 +1,27 @@
 import CoreGraphics
 import Foundation
 
+#if DEBUG
+enum KeyboardTestDiagnostics {
+    static func record(_ event: String, source: String, details: [String: Any] = [:]) {
+        guard let defaults = UserDefaults(suiteName: SharedKeyboardState.appGroupIdentifier) else { return }
+        let key = "debugKeyboardTestEvents." + source
+        var rows = defaults.array(forKey: key) as? [[String: Any]] ?? []
+        var row = details
+        row["event"] = event
+        row["time"] = Date().timeIntervalSince1970
+        if let session = SharedKeyboardState.keyboardTestSession {
+            row["phase"] = session.phase.rawValue
+            row["sessionID"] = session.id
+            row["hasResult"] = session.code != nil
+            row["hasRequest"] = session.requestIdentifier != nil
+        } else { row["phase"] = "none" }
+        rows.append(row)
+        defaults.set(Array(rows.suffix(40)), forKey: key)
+    }
+}
+#endif
+
 enum KeyboardAppearance: String, CaseIterable, Identifiable {
     case system
     case blipBlue

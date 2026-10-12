@@ -144,6 +144,13 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     private func schedulePendingScanInsertion() {
+#if DEBUG
+        if isTestField {
+            KeyboardTestDiagnostics.record("schedule", source: "extension", details: [
+                "hasPending": automaticPendingInsertion != nil, "hasWindow": view.window != nil,
+                "fullAccess": hasFullAccess])
+        }
+#endif
         guard !isInsertingScan, hasFullAccess, SharedKeyboardState.canAccessAppGroup,
               automaticPendingInsertion != nil else { return }
 
@@ -164,6 +171,14 @@ final class KeyboardViewController: KeyboardInputViewController {
         let selectedPending = isTest
             ? SharedKeyboardState.keyboardTestSession?.insertion(contentType: contentType)
             : SharedKeyboardState.pendingInsertion
+#if DEBUG
+        if isTest {
+            KeyboardTestDiagnostics.record("attempt", source: "extension", details: [
+                "hasPending": selectedPending != nil, "hasWindow": view.window != nil,
+                "fullAccess": hasFullAccess, "cachedMatchesNative": proxy === originalTextDocumentProxy,
+                "nativeTagMatches": originalTextDocumentProxy.textContentType?.rawValue == contentType])
+        }
+#endif
         guard !isInsertingScan, view.window != nil, hasFullAccess,
               let pending = selectedPending,
               (!isTest || textDocumentProxy.textContentType?.rawValue == contentType) else {
@@ -175,9 +190,15 @@ final class KeyboardViewController: KeyboardInputViewController {
         defer { isInsertingScan = false }
 
         proxy.insertText(pending.code)
+#if DEBUG
+        if isTest { KeyboardTestDiagnostics.record("proxyWriteIssued", source: "extension") }
+#endif
         applyInsertSuffix(SharedKeyboardState.insertSuffix, testContentType: isTest ? contentType : nil)
         if isTest {
             SharedKeyboardState.consumeKeyboardTest(requestID: pending.identifier, contentType: contentType)
+#if DEBUG
+            KeyboardTestDiagnostics.record("consumed", source: "extension")
+#endif
         } else {
             SharedKeyboardState.markPendingInsertionAttempted(identifier: pending.identifier)
         }

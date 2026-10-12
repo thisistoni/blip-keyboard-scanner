@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (20)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
+Development build **1.0.4 (23)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending Antonio's physical iPhone acceptance.
 
 ## Dependency and license
 
