@@ -851,7 +851,24 @@ private struct KeyboardTestTextField: UIViewRepresentable {
 
     final class Coordinator: NSObject, UITextFieldDelegate {
         var parent: KeyboardTestTextField
-        init(_ parent: KeyboardTestTextField) { self.parent = parent }
+        private weak var activeField: UITextField?
+        private var needsPresentationRefresh = false
+
+        init(_ parent: KeyboardTestTextField) {
+            self.parent = parent
+            super.init()
+            NotificationCenter.default.addObserver(self, selector: #selector(keyboardDidShow),
+                name: UIResponder.keyboardDidShowNotification, object: nil)
+        }
+
+        deinit { NotificationCenter.default.removeObserver(self) }
+
+        @objc private func keyboardDidShow() {
+            guard needsPresentationRefresh, let field = activeField, field.isFirstResponder else { return }
+            // Refresh UIKit's initial host presentation once, retaining the selected extension and focus.
+            needsPresentationRefresh = false
+            field.reloadInputViews()
+        }
         @objc func changed(_ field: UITextField) { parent.text = field.text ?? "" }
         func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
             // Set the explicit cooperating-field trait before UIKit asks the extension for input.
@@ -859,10 +876,14 @@ private struct KeyboardTestTextField: UIViewRepresentable {
             return true
         }
         func textFieldDidBeginEditing(_ textField: UITextField) {
+            activeField = textField
+            needsPresentationRefresh = true
             parent.focused = true
             parent.onBegin()
         }
         func textFieldDidEndEditing(_ textField: UITextField) {
+            needsPresentationRefresh = false
+            activeField = nil
             parent.focused = false
             parent.onEnd()
         }

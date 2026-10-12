@@ -1,6 +1,6 @@
 # Real keyboard scan test
 
-Prototype build **1.0.4 (15)** replaces the Scan page's Test Scanner button with a native UITextField. It uses the installed keyboard extension selected by the user, the existing camera scanner, and the extension's real textDocumentProxy insertion. The app never assigns a decoded result directly to the text field or simulates a keyboard.
+Prototype build **1.0.4 (19)** replaces the Scan page's Test Scanner button with a native UITextField. It uses the installed keyboard extension selected by the user, the existing camera scanner, and the extension's real textDocumentProxy insertion. The app never assigns a decoded result directly to the text field or simulates a keyboard.
 
 ## User flow
 
@@ -9,7 +9,7 @@ Prototype build **1.0.4 (15)** replaces the Scan page's Test Scanner button with
 3. Scan a real barcode/QR code. The camera dismisses, the same test field regains focus, and the extension inserts the result once.
 4. Repeat or cancel. Try with an external return target configured and Auto Insert off; the test stays in Blip and still inserts automatically. Saved preferences are unchanged.
 
-The keyboard keeps the normal Scan / Insert Last Scan toolbar. A saved last scan remains manually insertable in the test field; a fresh test result takes precedence while waiting for insertion. There is no test-specific keyboard layout or palette. Build 15 enables UIKit input-view self-sizing so the same toolbar and fixed-height rows can determine the keyboard height across hosts; the reported top overflow still needs a physical recheck.
+The keyboard keeps the normal Scan / Insert Last Scan toolbar. A saved last scan remains manually insertable in the test field; a fresh test result takes precedence while waiting for insertion. There is no test-specific keyboard layout or palette. Build 15 enabled UIKit input-view self-sizing, which did not resolve the reported spacing difference. Build 18 also reports the existing SwiftUI hosting view’s measured content height as the input view’s intrinsic height. This applies to the same renderer in every host and is recalculated for layout changes; no test-specific padding, palette or key layout is added. Physical visual acceptance remains pending.
 
 The normal insert suffix is retained, including a field-tag guard on delayed newline insertion. Test results are stored separately from the normal pending-scan slot and do not overwrite normal last-scan, clipboard or history state. They are consumed by the extension, not pasted programmatically by the app.
 
@@ -31,3 +31,9 @@ The test alone enables automatic insertion, independent of the saved Auto Insert
 - Real camera → keyboard insertion, custom trait forwarding, focus restoration, repeat/cancel and external-app switching still require user testing on the installed iPhone. Build/unit checks are not physical round-trip proof.
 
 Tracks ANT-67. ANT-65 remains separate visual/feedback validation. This is part of the existing keyboard prototype PR; no merge or App Store submission is authorized yet.
+
+## Physical sizing investigation
+
+On the user-confirmed test field in build 17, the initial root/input/hosting bounds were 440×224 points while the SwiftUI panel remained 440×256 and was centered at y=−16. About one second later all four settled to (0,0,440,256), with zero safe-area insets and no top layout margin. That settled size matches the earlier external-app measurement. The initial undersized container explains an initial top overflow, but does not prove the cause of any persistent difference in the surrounding host/system region. A fresh build 18 test-field snapshot measured root and panel at (0,0,440,256) from didAppear through settledLayout: the initial −16-point panel offset is absent. Antonio still observed different surrounding top spacing on first display, which matches other apps after switching keyboards and returning to Blip. Build 19 asks the test UITextField to reload its native input views once after keyboardDidShow, retaining its first responder, selected extension and test identity. That refresh is limited to the test field; physical visual acceptance is still pending.
+
+DEBUG-only geometry snapshots are saved as bounded numeric records in the app group (file plus shared-preferences fallback), with capture timestamps. They include no proxy text, clipboard values or barcode contents. The collector retains windowless/empty layouts and marks non-finite rectangle components as null instead of discarding the record. No release build enables the collector.

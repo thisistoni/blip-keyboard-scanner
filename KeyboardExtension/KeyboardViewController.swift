@@ -71,6 +71,7 @@ final class KeyboardViewController: KeyboardInputViewController {
     override func viewWillAppear(_ animated: Bool) {
         presentation.layout = SharedKeyboardState.defaultKeyboardLayout
         super.viewWillAppear(animated)
+        updateKeyboardContentHeight()
         SharedKeyboardState.recordKeyboardRuntime(hasFullAccess: hasFullAccess)
         refreshRecoveryButtonIfNeeded()
     }
@@ -83,15 +84,30 @@ final class KeyboardViewController: KeyboardInputViewController {
 #endif
     }
 
-#if DEBUG
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updateKeyboardContentHeight()
+#if DEBUG
         recordDebugGeometry(event: "afterLayout")
         DispatchQueue.main.async { [weak self] in
             self?.recordDebugGeometry(event: "settledLayout")
         }
+#endif
     }
 
+    private func updateKeyboardContentHeight() {
+        guard let inputView = inputView as? BlipInputView,
+              let hostingView = children.first(where: { $0.isViewLoaded })?.view,
+              view.bounds.width > 0 else { return }
+        let size = hostingView.systemLayoutSizeFitting(
+            CGSize(width: view.bounds.width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel)
+        guard size.height.isFinite, size.height > 0 else { return }
+        inputView.setContentHeight(size.height)
+    }
+
+#if DEBUG
     private func recordDebugGeometry(event: String) {
         BlipGeometryDiagnostics.log(view, role: "extensionRoot", event: event)
         if let inputView { BlipGeometryDiagnostics.log(inputView, role: "inputView", event: event) }
@@ -246,7 +262,19 @@ private final class BlipKeyboardPresentation: ObservableObject {
 }
 
 private final class BlipInputView: UIInputView, UIInputViewAudioFeedback {
+    private var contentHeight: CGFloat?
     var enableInputClicksWhenVisible: Bool { SharedKeyboardState.keyboardClickSound }
+
+    override var intrinsicContentSize: CGSize {
+        guard let contentHeight else { return super.intrinsicContentSize }
+        return CGSize(width: UIView.noIntrinsicMetric, height: contentHeight)
+    }
+
+    func setContentHeight(_ height: CGFloat) {
+        guard contentHeight.map({ abs($0 - height) > 0.5 }) ?? true else { return }
+        contentHeight = height
+        invalidateIntrinsicContentSize()
+    }
 }
 
 private final class BlipFeedbackService: Feedback.StandardFeedbackService {
@@ -559,9 +587,30 @@ private struct BlipKeyboardPalette {
 private enum BlipGeometryDiagnostics {
     private static let logger = Logger(subsystem: "com.antoniobeslic.Blip", category: "KeyboardGeometry")
     private static var lastReports: [String: String] = [:]
+    private static var snapshots: [String: [String: Any]] = [:]
+    private static var snapshotWriteScheduled = false
 
-    private static func rect(_ value: CGRect) -> [Double] {
-        [value.origin.x, value.origin.y, value.width, value.height].map { Double(($0 * 1000).rounded() / 1000) }
+    private static func saveSnapshot(_ report: [String: Any], key: String) {
+        var snapshot = report
+        snapshot["capturedAt"] = Date().timeIntervalSince1970
+        snapshots[key] = snapshot
+        guard !snapshotWriteScheduled else { return }
+        snapshotWriteScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            snapshotWriteScheduled = false
+            guard let data = try? JSONSerialization.data(withJSONObject: snapshots, options: [.sortedKeys]) else { return }
+            UserDefaults(suiteName: SharedKeyboardState.appGroupIdentifier)?.set(data, forKey: "debugKeyboardGeometry")
+            guard let container = FileManager.default.containerURL(
+                forSecurityApplicationGroupIdentifier: SharedKeyboardState.appGroupIdentifier) else { return }
+            // DEBUG-only, bounded numeric layout records; readable through CoreDevice if syslog drops.
+            try? data.write(to: container.appendingPathComponent("BlipKeyboardGeometry.json"), options: .atomic)
+        }
+    }
+
+    private static func rect(_ value: CGRect) -> [Any] {
+        [value.origin.x, value.origin.y, value.width, value.height].map {
+            $0.isFinite ? Double(($0 * 1000).rounded() / 1000) as Any : NSNull()
+        }
     }
 
     private static func insets(_ value: UIEdgeInsets) -> [Double] {
@@ -569,15 +618,19 @@ private enum BlipGeometryDiagnostics {
     }
 
     static func log(_ view: UIView, role: String, event: String) {
-        guard let window = view.window, !view.bounds.isEmpty else { return }
+        let window = view.window
         func geometry(_ item: UIView) -> [String: Any] {
-            let inWindow = item.convert(item.bounds, to: window)
             let margins = item.directionalLayoutMargins
-            return ["class": String(describing: type(of: item)), "frame": rect(item.frame),
-                "bounds": rect(item.bounds), "inWindow": rect(inWindow),
-                "inScreen": rect(window.convert(inWindow, to: window.screen.coordinateSpace)),
+            var result: [String: Any] = ["class": String(describing: type(of: item)), "frame": rect(item.frame),
+                "bounds": rect(item.bounds), "hasWindow": item.window != nil,
                 "safeArea": insets(item.safeAreaInsets), "layoutMargins": insets(item.layoutMargins),
                 "directionalMargins": [Double(margins.top), Double(margins.leading), Double(margins.bottom), Double(margins.trailing)]]
+            if let window {
+                let inWindow = item.convert(item.bounds, to: window)
+                result["inWindow"] = rect(inWindow)
+                result["inScreen"] = rect(window.convert(inWindow, to: window.screen.coordinateSpace))
+            }
+            return result
         }
         func emit(_ fields: [String: Any], suffix: String) {
             var report = fields
@@ -587,15 +640,18 @@ private enum BlipGeometryDiagnostics {
             guard let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
                   let message = String(data: data, encoding: .utf8) else { return }
             let key = role + suffix + event
+            saveSnapshot(report, key: key)
             guard lastReports[key] != message else { return }
             lastReports[key] = message
             logger.info("BLIP_GEOMETRY \(message, privacy: .public)")
         }
         // The physical relay truncates long messages; keep each geometry record separate.
         emit(["view": geometry(view)], suffix: "")
-        emit(["windowFrame": rect(window.frame), "windowBounds": rect(window.bounds),
-            "screenBounds": rect(window.screen.coordinateSpace.bounds),
-            "screenScale": Double(window.screen.scale)], suffix: ".window")
+        if let window {
+            emit(["windowFrame": rect(window.frame), "windowBounds": rect(window.bounds),
+                "screenBounds": rect(window.screen.coordinateSpace.bounds),
+                "screenScale": Double(window.screen.scale)], suffix: ".window")
+        }
         var parent = view.superview
         var index = 0
         while let item = parent, index < 8 {
