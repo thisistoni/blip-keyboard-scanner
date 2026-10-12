@@ -12,6 +12,7 @@ final class KeyboardViewController: KeyboardInputViewController {
     override func loadView() {
         // Let iOS draw the keyboard backdrop and its rounded system contour.
         inputView = BlipInputView(frame: .zero, inputViewStyle: .keyboard)
+        inputView?.allowsSelfSizing = true
         view = inputView
         view.backgroundColor = .clear
     }
@@ -127,8 +128,9 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     private func refreshRecoveryButtonIfNeeded() {
         presentation.appearance = SharedKeyboardState.keyboardAppearance
+        // The test changes the scan destination, not the normal toolbar or last-scan action.
         presentation.canInsertScan = hasFullAccess && SharedKeyboardState.canAccessAppGroup && (
-            isTestField ? testPendingInsertion != nil : !SharedKeyboardState.pendingScannedCode.isEmpty)
+            !SharedKeyboardState.pendingScannedCode.isEmpty || testPendingInsertion != nil)
     }
     private var isTestField: Bool {
         textDocumentProxy.textContentType?.rawValue.hasPrefix(KeyboardTestSession.contentTypePrefix) == true
@@ -186,7 +188,7 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     fileprivate func insertLastScanTapped() {
         guard hasFullAccess, SharedKeyboardState.canAccessAppGroup else { return }
-        if isTestField {
+        if isTestField, testPendingInsertion != nil {
             insertPendingScanIfReady()
             return
         }

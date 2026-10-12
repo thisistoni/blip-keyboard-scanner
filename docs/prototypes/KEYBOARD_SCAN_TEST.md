@@ -1,6 +1,6 @@
 # Real keyboard scan test
 
-Prototype build **1.0.4 (14)** replaces the Scan page's Test Scanner button with a native UITextField. It uses the installed keyboard extension selected by the user, the existing camera scanner, and the extension's real textDocumentProxy insertion. The app never assigns a decoded result directly to the text field or simulates a keyboard.
+Prototype build **1.0.4 (15)** replaces the Scan page's Test Scanner button with a native UITextField. It uses the installed keyboard extension selected by the user, the existing camera scanner, and the extension's real textDocumentProxy insertion. The app never assigns a decoded result directly to the text field or simulates a keyboard.
 
 ## User flow
 
@@ -8,6 +8,8 @@ Prototype build **1.0.4 (14)** replaces the Scan page's Test Scanner button with
 2. Select Blip with the native globe menu and tap Scan on the extension.
 3. Scan a real barcode/QR code. The camera dismisses, the same test field regains focus, and the extension inserts the result once.
 4. Repeat or cancel. Try with an external return target configured and Auto Insert off; the test stays in Blip and still inserts automatically. Saved preferences are unchanged.
+
+The keyboard keeps the normal Scan / Insert Last Scan toolbar. A saved last scan remains manually insertable in the test field; a fresh test result takes precedence while waiting for insertion. There is no test-specific keyboard layout or palette. Build 15 enables UIKit input-view self-sizing so the same toolbar and fixed-height rows can determine the keyboard height across hosts; the reported top overflow still needs a physical recheck.
 
 The normal insert suffix is retained, including a field-tag guard on delayed newline insertion. Test results are stored separately from the normal pending-scan slot and do not overwrite normal last-scan, clipboard or history state. They are consumed by the extension, not pasted programmatically by the app.
 
