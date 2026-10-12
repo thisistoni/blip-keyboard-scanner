@@ -12,7 +12,6 @@ final class KeyboardViewController: KeyboardInputViewController {
     override func loadView() {
         // Let iOS draw the keyboard backdrop and its rounded system contour.
         inputView = BlipInputView(frame: .zero, inputViewStyle: .keyboard)
-        inputView?.allowsSelfSizing = true
         view = inputView
         view.backgroundColor = .clear
     }
@@ -71,7 +70,6 @@ final class KeyboardViewController: KeyboardInputViewController {
     override func viewWillAppear(_ animated: Bool) {
         presentation.layout = SharedKeyboardState.defaultKeyboardLayout
         super.viewWillAppear(animated)
-        updateKeyboardContentHeight()
         SharedKeyboardState.recordKeyboardRuntime(hasFullAccess: hasFullAccess)
         refreshRecoveryButtonIfNeeded()
     }
@@ -84,30 +82,14 @@ final class KeyboardViewController: KeyboardInputViewController {
 #endif
     }
 
+#if DEBUG
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        updateKeyboardContentHeight()
-#if DEBUG
         recordDebugGeometry(event: "afterLayout")
         DispatchQueue.main.async { [weak self] in
             self?.recordDebugGeometry(event: "settledLayout")
         }
-#endif
     }
-
-    private func updateKeyboardContentHeight() {
-        guard let inputView = inputView as? BlipInputView,
-              let hostingView = children.first(where: { $0.isViewLoaded })?.view,
-              view.bounds.width > 0 else { return }
-        let size = hostingView.systemLayoutSizeFitting(
-            CGSize(width: view.bounds.width, height: UIView.layoutFittingCompressedSize.height),
-            withHorizontalFittingPriority: .required,
-            verticalFittingPriority: .fittingSizeLevel)
-        guard size.height.isFinite, size.height > 0 else { return }
-        inputView.setContentHeight(size.height)
-    }
-
-#if DEBUG
     private func recordDebugGeometry(event: String) {
         BlipGeometryDiagnostics.log(view, role: "extensionRoot", event: event)
         if let inputView { BlipGeometryDiagnostics.log(inputView, role: "inputView", event: event) }
@@ -262,19 +244,7 @@ private final class BlipKeyboardPresentation: ObservableObject {
 }
 
 private final class BlipInputView: UIInputView, UIInputViewAudioFeedback {
-    private var contentHeight: CGFloat?
     var enableInputClicksWhenVisible: Bool { SharedKeyboardState.keyboardClickSound }
-
-    override var intrinsicContentSize: CGSize {
-        guard let contentHeight else { return super.intrinsicContentSize }
-        return CGSize(width: UIView.noIntrinsicMetric, height: contentHeight)
-    }
-
-    func setContentHeight(_ height: CGFloat) {
-        guard contentHeight.map({ abs($0 - height) > 0.5 }) ?? true else { return }
-        contentHeight = height
-        invalidateIntrinsicContentSize()
-    }
 }
 
 private final class BlipFeedbackService: Feedback.StandardFeedbackService {
