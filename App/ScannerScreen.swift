@@ -127,7 +127,7 @@ struct ScannerScreen: View {
                     playScanSound: playScanSound,
                     defaultZoomLevel: scannerZoomLevel,
                     scanArea: scannerScanArea,
-                    flashlightModeRawValue: $scannerFlashlightModeRawValue
+                    defaultFlashlightMode: ScannerFlashlightMode(rawValue: scannerFlashlightModeRawValue) ?? .off
                 ) { result in
                     handleScannedCode(result, for: session)
                 } onCancel: {
@@ -572,18 +572,33 @@ private struct ScannerPresentation: View {
     let playScanSound: Bool
     let defaultZoomLevel: ScannerZoomLevel
     let scanArea: ScannerScanArea
-    @Binding var flashlightModeRawValue: String
     let onCode: (ScannerCodeResult) -> Void
     let onCancel: () -> Void
 
+    @State private var flashlightMode: ScannerFlashlightMode
     @State private var isTorchAvailable = false
     @State private var isTorchOn = false
     @State private var scannerStatusMessage: String?
     @State private var scannedCode: String?
     @State private var currentZoomFactor = 1.0
 
-    private var flashlightMode: ScannerFlashlightMode {
-        ScannerFlashlightMode(rawValue: flashlightModeRawValue) ?? .off
+    init(
+        session: ScannerSession,
+        playScanSound: Bool,
+        defaultZoomLevel: ScannerZoomLevel,
+        scanArea: ScannerScanArea,
+        defaultFlashlightMode: ScannerFlashlightMode,
+        onCode: @escaping (ScannerCodeResult) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.session = session
+        self.playScanSound = playScanSound
+        self.defaultZoomLevel = defaultZoomLevel
+        self.scanArea = scanArea
+        // A toolbar toggle applies to this scan; only Settings changes the next scan's default.
+        _flashlightMode = State(initialValue: defaultFlashlightMode)
+        self.onCode = onCode
+        self.onCancel = onCancel
     }
 
     private var scannerFeedIsAvailable: Bool {
@@ -627,7 +642,12 @@ private struct ScannerPresentation: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        flashlightModeRawValue = (flashlightMode == .on ? ScannerFlashlightMode.off : ScannerFlashlightMode.on).rawValue
+                        flashlightMode = flashlightMode == .on ? .off : .on
+#if DEBUG
+                        if ScreenshotAutomation.usesSimulatedCamera {
+                            isTorchOn = flashlightMode == .on
+                        }
+#endif
                     } label: {
                         Image(systemName: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
                             .foregroundStyle(isTorchOn ? .yellow : .primary)

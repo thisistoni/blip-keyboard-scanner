@@ -1,6 +1,6 @@
 # Blip 1.0.4 device validation
 
-Current development build: **34**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
+Current development build: **36**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
 
 This is the current acceptance summary. The prototype documents also contain historical investigation results, which are not a claim that every later check is complete.
 
@@ -20,6 +20,8 @@ This is the current acceptance summary. The prototype documents also contain his
 | Native scanner test | Real camera result inserted exactly once with Safari configured and automatic insertion disabled. Repeated scan and Cancel paths checked. Native testing preserved ordinary scan/history state. |
 | Chrome | Real camera return to the same test field; automatic insertion exactly once. With automatic insertion off, field stayed empty until Insert was tapped. Build 28. |
 | Brave | Real camera return to the same test field and one insertion, with Blip selected. Build 29. |
+| Faster automatic insertion | Build 36: two real QR scans returned to the same Brave Google field and inserted the exact value once. Each matching request had one proxy write and was consumed; the last scheduling event to write measured about 417 ms. With Auto Insert off, a third scan left the field empty and request unconsumed; explicit Insert entered the value once. These checks ran over Wi-Fi. |
+| Flashlight default | Build 35: saved OFF → manually ON → cancel/reopen started OFF; saved ON → manually OFF → cancel/reopen started ON. Shared preferences retained the saved default during both overrides. Build 36: a completed Brave scan with the flashlight manually ON left the saved default OFF; the next scanner started OFF. |
 | Firefox | Real camera return and one insertion after the first-use iOS Open Firefox confirmation. Build 29. |
 | Safari | Real camera scan showed the manual instructions. A home-indicator swipe returned to the original tab and empty field; Insert entered the result once. Build 29. |
 | Profile import | Real camera preview/Cancel/Apply and file export/import checked. Apply changed the expected five settings; Cancel changed none. |
@@ -35,9 +37,11 @@ Build 33 adds the public app-settings shortcut and removes the diagnostic Settin
 
 Build 34 removes the Best company setup row and its divider from the Scan guide, plus the unused English/German copy. Signed Debug/Release builds and localization lint pass; installed in place. Visual review is left to the owner for this copy-only change. No new automated device interaction or camera round trip is claimed.
 
+Build 36 gives each scanner presentation its own flashlight state initialized from the saved default; the camera toolbar no longer writes the next scan's default. Automatic insertion now waits 400 ms after the latest scheduling event instead of 700 ms, preserving cancellation, lifecycle checks, manual insertion and consumption guards. A 200 ms trial in build 35 issued proxy writes but left Brave's field empty, so it was not retained. Debug-only bounded traces record request identifiers and scheduling/write timestamps without barcode text. Signed Debug/Release builds, plist lint and standalone scan/session/profile tests pass. Installed in place wirelessly. The measured delay is the settling interval, not the full scan-to-return time, and this does not establish reliability in every host app.
+
 ## Still to verify
 
-- Music through an actual completed scan/beep, repeated open/cancel, and the sound-disabled variant on build 31. The scanner is open for the camera check; opening with sound enabled is already verified.
+- Music through an actual completed scan/beep, repeated open/cancel, and the sound-disabled variant on build 31. Opening with sound enabled is already verified; the later scan checks did not verify concurrent audio playback.
 
 - Final visual acceptance of the revised profile QR sheet.
 - Visual acceptance of the reorganized Settings pages in builds 32–33. Dark appearance and German-language navigation labels have not been physically reviewed for this organization change.

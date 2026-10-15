@@ -4,6 +4,7 @@ import KeyboardKit
 import os
 
 final class KeyboardViewController: KeyboardInputViewController {
+    private static let scanInsertionSettlingDelay: TimeInterval = 0.4
     private let presentation = BlipKeyboardPresentation()
     private var pendingInsertionWorkItem: DispatchWorkItem?
     private var isInsertingScan = false
@@ -232,7 +233,11 @@ final class KeyboardViewController: KeyboardInputViewController {
         }
         pendingInsertionWorkItem = workItem
         insertionLogger.debug("Automatic scan insertion scheduled")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7, execute: workItem)
+#if DEBUG
+        KeyboardTestDiagnostics.record("scheduled", source: "scanInsertion", details: [
+            "requestID": automaticPendingInsertion?.identifier ?? "", "delay": Self.scanInsertionSettlingDelay])
+#endif
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.scanInsertionSettlingDelay, execute: workItem)
     }
 
     private func insertPendingScanIfReady() {
@@ -263,6 +268,8 @@ final class KeyboardViewController: KeyboardInputViewController {
 
         proxy.insertText(pending.code)
 #if DEBUG
+        KeyboardTestDiagnostics.record("proxyWriteIssued", source: "scanInsertion", details: [
+            "requestID": pending.identifier])
         if isTest { KeyboardTestDiagnostics.record("proxyWriteIssued", source: "extension") }
 #endif
         applyInsertSuffix(SharedKeyboardState.insertSuffix, testContentType: isTest ? contentType : nil)
