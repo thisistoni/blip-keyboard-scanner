@@ -4,7 +4,7 @@ import KeyboardKit
 import os
 
 final class KeyboardViewController: KeyboardInputViewController {
-    private static let scanInsertionSettlingDelay: TimeInterval = 0.4
+    private static let scanInsertionSettlingDelay: TimeInterval = 0.7
     private let presentation = BlipKeyboardPresentation()
     private var pendingInsertionWorkItem: DispatchWorkItem?
     private var isInsertingScan = false
