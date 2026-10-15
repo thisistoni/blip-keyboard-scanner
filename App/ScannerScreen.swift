@@ -88,7 +88,6 @@ struct ScannerScreen: View {
                             onPrepare: prepareTestFieldEditing, onEnd: endTestFieldEditing)
                             .frame(minHeight: 36)
                             .id("keyboardTestField")
-                        LabeledContent("External return target", value: returnTarget.title)
                     } header: {
                         Text("Test the Blip keyboard")
                     } footer: {
