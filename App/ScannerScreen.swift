@@ -419,13 +419,6 @@ private struct ScannerWorkflowGuideView: View {
                 message: "Blip attempts to insert the scan and copies it for Paste if needed."
             )
 
-            Divider()
-
-            ScannerWorkflowGuideRow(
-                systemImage: "keyboard.badge.ellipsis",
-                title: "Best company setup",
-                message: "Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan."
-            )
         }
         .padding(.vertical, 4)
     }

@@ -101,12 +101,10 @@
 "return" = "return";
 "space" = "Leerzeichen";
 "After enabling Blip and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Blip so it can refresh the keyboard state." = "Nachdem du Blip und Vollen Zugriff erlaubt hast, tippe auf Erneut prüfen. Falls iOS die Tastatur immer noch nicht meldet, schließe Blip vollständig und öffne die App neu, damit der Tastaturstatus aktualisiert wird.";
-"Best company setup" = "Beste Firmeneinrichtung";
 "Check Again" = "Erneut prüfen";
 "How It Works" = "So funktioniert es";
 "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button." = "Tippe in Safari oder einer anderen App in ein Textfeld und wechsle unten links über die Tastaturtaste zu Blip.";
 "Inserted where you started" = "Wird dort eingefügt, wo du gestartet bist";
-"Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan." = "Entferne nicht benötigte Tastaturen in den iOS-Tastatureinstellungen, damit Mitarbeiter nicht versehentlich zu einer Tastatur ohne Scan wechseln.";
 "Scan from the keyboard" = "Über die Tastatur scannen";
 "Still seeing setup?" = "Siehst du weiterhin die Einrichtung?";
 "Tap Scan, scan the barcode, and Blip returns to the original app." = "Tippe auf Scan, scanne den Barcode, und Blip kehrt zur ursprünglichen App zurück.";

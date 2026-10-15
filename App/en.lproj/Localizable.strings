@@ -101,12 +101,10 @@
 "return" = "return";
 "space" = "space";
 "After enabling Blip and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Blip so it can refresh the keyboard state." = "After enabling Blip and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Blip so it can refresh the keyboard state.";
-"Best company setup" = "Best company setup";
 "Check Again" = "Check Again";
 "How It Works" = "How It Works";
 "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button." = "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button.";
 "Inserted where you started" = "Inserted where you started";
-"Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan." = "Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan.";
 "Scan from the keyboard" = "Scan from the keyboard";
 "Still seeing setup?" = "Still seeing setup?";
 "Tap Scan, scan the barcode, and Blip returns to the original app." = "Tap Scan, scan the barcode, and Blip returns to the original app.";

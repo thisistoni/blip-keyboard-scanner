@@ -1,6 +1,6 @@
 # Blip 1.0.4 device validation
 
-Current development build: **33**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
+Current development build: **34**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
 
 This is the current acceptance summary. The prototype documents also contain historical investigation results, which are not a claim that every later check is complete.
 
@@ -32,6 +32,8 @@ This is the current acceptance summary. The prototype documents also contain his
 Debug and Release builds, strict code-signature verification, localization lint, and standalone scan/session/profile tests pass for build 29. Build 29 changed QR text contrast and bundle build numbers. Build 30 changes input/accent popup colors to use the ordinary letter-key style; the scan/session repair is unchanged from build 28. Debug and Release builds and strict signature verification pass for build 30. Build 31 corrects audio-session ordering and video-only capture configuration; signed Debug/Release builds pass. Build 32 groups the existing settings into dedicated pages with local state ownership, retaining their shared storage keys/defaults and typed bindings. It also removes the misleading external-target row from the native test and adds English/German release-note drafts. Signed Debug/Release builds, localization lint, and in-place installation pass. The earlier scan/profile checks retain their stated build numbers; no fresh camera round trip is claimed for this navigation-only change.
 
 Build 33 adds the public app-settings shortcut and removes the diagnostic Settings page and its unused state/strings. Signed Debug/Release builds and localization lint pass, and the update is installed in place. The shortcut uses `UIApplication.openSettingsURLString`; the user taps Language on the destination app-settings page. This follows [Apple's recommended per-app language flow](https://developer.apple.com/videos/play/wwdc2019/403/).
+
+Build 34 removes the Best company setup row and its divider from the Scan guide, plus the unused English/German copy. Signed Debug/Release builds and localization lint pass; installed in place. Visual review is left to the owner for this copy-only change. No new automated device interaction or camera round trip is claimed.
 
 ## Still to verify
 
