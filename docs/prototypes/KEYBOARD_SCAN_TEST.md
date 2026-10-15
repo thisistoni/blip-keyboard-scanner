@@ -31,7 +31,8 @@ The test alone enables automatic insertion, independent of the saved Auto Insert
 - Antonio confirmed a real camera → native test field insertion on the paired iPhone 16 Pro Max in build 23. The trace retains one owner through scanning/returning/ready, issues one extension proxy write, consumes the request, and records the native first responder receiving text. The saved return target was Safari and the saved Auto Insert setting remained its default; the test stayed in Blip.
 - Build 27: canceling the real scanner returned to the empty native field without insertion. A scanned company profile opened its preview, and canceling preserved the configuration.
 - Build 27 scrolls the focused test field above the keyboard after presentation and allows interactive keyboard dismissal. Both behaviors were checked on the physical iPhone.
-- Repeat insertion, Auto Insert off, external-app switching on the latest build and the broader orientation/iPad/accessibility matrix remain unverified on hardware.
+- Build 27: a real camera scan with Safari configured and Auto Insert off returned to Blip and inserted the test value exactly once. Device preferences retained those choices; the extension trace shows one proxy write and consumption, followed by the native field receiving text. The normal last scan and history remained unchanged.
+- Repeat insertion, external-app switching on the latest build and the broader orientation/iPad/accessibility matrix remain unverified on hardware.
 
 Tracks ANT-67. ANT-65 remains separate visual/feedback validation. This is part of the existing keyboard prototype PR; no merge or App Store submission is authorized yet.
 
