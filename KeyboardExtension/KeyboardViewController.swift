@@ -389,7 +389,8 @@ private struct BlipPremiumKeyboard: View {
                         params.view
                     }
                 }
-                .modifier(BlipImmediateKeyFeedback(style: buttonStyle))
+                .modifier(BlipImmediateKeyFeedback(
+                    action: params.item.action, calloutContext: state.calloutContext, style: buttonStyle))
                 .keyboardButtonGestureConfiguration(gestureConfiguration(for: params.item.action))
             },
             collapsedView: { _ in EmptyView() },
@@ -599,9 +600,11 @@ private struct BlipPremiumKeyboard: View {
     }
 }
 
-/// Keep visual touch feedback independent of delayed SwiftUI drag recognition on iOS 27.
-/// KeyboardKit continues to own every typing, callout, repeat, and cursor action.
+/// Show the held key and input preview from touch-down, before SwiftUI's delayed drag.
+/// KeyboardKit continues to own typing, accent selection, repeat, and cursor actions.
 private struct BlipImmediateKeyFeedback: ViewModifier {
+    let action: KeyboardAction
+    let calloutContext: CalloutContext
     let style: Keyboard.ButtonStyleBuilder
     @State private var isTouchDown = false
 
@@ -613,10 +616,31 @@ private struct BlipImmediateKeyFeedback: ViewModifier {
                     style(.init(action: params.action, isPressed: isTouchDown))
                 }
                 .gesture(BlipKeyTouchObserver(isTouchDown: $isTouchDown))
-                .onDisappear { isTouchDown = false }
+                .background {
+                    GeometryReader { geometry in
+                        Color.clear.onChange(of: isTouchDown) { pressed in
+                            if pressed {
+                                calloutContext.updateInputAction(action, in: geometry)
+                            } else {
+                                dismissInputPreview()
+                            }
+                        }
+                    }
+                    .allowsHitTesting(false)
+                }
+                .onDisappear {
+                    isTouchDown = false
+                    dismissInputPreview()
+                }
         } else {
             content
         }
+    }
+
+    private func dismissInputPreview() {
+        // A different key may already own the shared preview during fast typing.
+        guard calloutContext.inputAction == action else { return }
+        calloutContext.resetInputActionWithDelay()
     }
 }
 
