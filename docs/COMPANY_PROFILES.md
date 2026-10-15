@@ -26,9 +26,10 @@ xcrun swiftc Shared/KeyboardSettings.swift Shared/BlipCompanyProfile.swift Share
 Physical validation for build 1.0.4 (27), on iPhone 16 Pro Max / iOS 27.0.1:
 
 - A real camera scan opened a preview with the expected five changed settings. Cancel preserved the saved configuration.
+- A subsequent real camera scan and explicit Apply changed all five expected settings: German to English, System to Blip Blue, and automatic insertion, key clicks and haptics to off. Device preferences confirmed the changes while Safari and the saved inactive custom destination remained unchanged.
 - The displayed QR decoded to the exported configuration, excluding the independently generated export timestamp. Safari was selected; the remembered inactive custom URL was absent from both the QR content and summary.
 - The QR remained readable in light and dark appearance. Landscape kept the full QR visible, with the settings below it scrollable.
 - File export to On My iPhone and re-import displayed a matching-settings preview.
 - After changing the theme to Blip Blue, importing the saved file previewed the change back to System. Apply restored it. Re-export matched every configuration value from before testing, and the inactive custom destination remained saved locally.
 
-Applying a changed profile through the camera, malformed-profile alerts through the camera, and a second receiving device still require physical verification. Passing the decoder tests does not establish those camera paths. This work remains in the combined draft update; it is not an App Store release.
+Malformed-profile alerts through the camera and a second receiving device still require physical verification. Passing the decoder tests does not establish those camera paths. This work remains in the combined draft update; it is not an App Store release.
