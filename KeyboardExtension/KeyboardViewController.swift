@@ -503,12 +503,10 @@ private struct BlipPremiumKeyboard: View {
     private var calloutStyle: Callouts.CalloutStyle {
         var style = Callouts.CalloutStyle.standard
         style.inputItemFont = .init(.largeTitle, .regular)
-        // KeyboardKit paints the pressed key area as part of both callouts.
-        // Keep that visible surface in the same pressed colors as the key below it.
-        style.backgroundColor = presentation.appearance == .blipBlue
-            ? palette.heldSurface : (context.colorScheme == .dark ? Color(white: 0.92) : Color(white: 0.25))
-        style.foregroundColor = presentation.appearance == .blipBlue
-            ? palette.heldText : (context.colorScheme == .dark ? .black : .white)
+        // Input previews and accent menus extend the ordinary letter-key surface.
+        let letterStyle = buttonStyle(.init(action: .character("a"), isPressed: false))
+        style.backgroundColor = letterStyle.backgroundColor ?? style.backgroundColor
+        style.foregroundColor = letterStyle.foregroundColor ?? style.foregroundColor
         if presentation.appearance == .blipBlue {
             style.selectedBackgroundColor = palette.emphasis
             style.selectedForegroundColor = .white

@@ -1,6 +1,6 @@
 # Blip 1.0.4 device validation
 
-Current development build: **29**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
+Current development build: **30**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
 
 This is the current acceptance summary. The prototype documents also contain historical investigation results, which are not a claim that every later check is complete.
 
@@ -9,6 +9,7 @@ This is the current acceptance summary. The prototype documents also contain his
 | Area | Physical evidence |
 | --- | --- |
 | Keyboard feedback visuals | Immediate held color and single-letter preview accepted on iPhone; System/Blue, light/dark, release reset, and accent-menu appearance checked. |
+| Popup colors | Build 30 recordings show letter previews matching ordinary key surfaces in System and Blue, light and dark. Light-mode accent menus also match in both themes. Original System/light settings restored and user preferences compared with the pre-test snapshot. |
 | Basic input | Letters, symbols, large numbers, German umlauts, single Shift, Delete, held Delete, and portrait/landscape input checked. Sliding from the accent menu selected an alternate character. English QWERTY input and spacebar hold/drag cursor movement also passed on build 29. |
 | Scan-only mode | Disabling all three layouts left the Scan/Insert controls and system keyboard switch accessible. Scan opened the native test camera; a profile preview was recognized and Cancel preserved settings. |
 | Camera format filtering | Under Common Barcodes, a fully visible ordinary QR was ignored; the camera screenshot independently decoded to the expected plain value. Replacing it with a valid company profile opened Preview. Apply then restored the original German/layout/format settings. |
@@ -25,7 +26,7 @@ This is the current acceptance summary. The prototype documents also contain his
 | Accessibility display options | Increase Contrast: QR sheet and System keyboard remained readable. Largest standard text size (accessibility sizes off): Scan page and QR summary remained readable and scrollable; every profile value was reachable. Original text size and contrast restored. |
 | Stability | Device crash inventory after build 29 browser tests contained only the previously recorded build 4/27 reports. This does not establish crash-free behavior outside tested paths. |
 
-Debug and Release builds, strict code-signature verification, localization lint, and standalone scan/session/profile tests pass for build 29. Build 29 changes QR text contrast and bundle build numbers only; the scan/keyboard repair is unchanged from build 28.
+Debug and Release builds, strict code-signature verification, localization lint, and standalone scan/session/profile tests pass for build 29. Build 29 changed QR text contrast and bundle build numbers. Build 30 changes input/accent popup colors to use the ordinary letter-key style; the scan/session repair is unchanged from build 28. Debug and Release builds and strict signature verification pass for build 30. The earlier scan/profile checks retain their stated build numbers.
 
 ## Still to verify
 

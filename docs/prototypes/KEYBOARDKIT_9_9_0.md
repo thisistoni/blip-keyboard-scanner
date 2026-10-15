@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (29)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending the remaining physical checks. See the [current combined validation summary](../RELEASE_1_0_4_QA.md); the investigation sections below retain their original build-specific limits.
+Development build **1.0.4 (30)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending the remaining physical checks. See the [current combined validation summary](../RELEASE_1_0_4_QA.md); the investigation sections below retain their original build-specific limits.
 
 ## Dependency and license
 
@@ -83,7 +83,7 @@ A [firsthand Apple Developer Forums report](https://developer.apple.com/forums/t
 
 ## Touch-down color feedback — October 15, 2026
 
-Development build 1.0.4 (27) now highlights the key surface immediately on touch-down. This supersedes the earlier pressed-color values above: System uses dark gray/white text in light appearance and light gray/black text in dark appearance; Blue uses #376594/white and #BBD6FB/#102A4C respectively. Input and accent callouts use the same held colors because KeyboardKit paints a key-shaped area beneath those callouts as well.
+Development build 1.0.4 (27) now highlights the key surface immediately on touch-down. This supersedes the earlier pressed-color values above: System uses dark gray/white text in light appearance and light gray/black text in dark appearance; Blue uses #376594/white and #BBD6FB/#102A4C respectively. Build 27 also used those held colors for input and accent callouts. Build 30 instead resolves popup background and foreground through the ordinary, unpressed letter-key style, so the popup matches the surrounding keys in System/Blue and light/dark appearance. Immediate key-down feedback retains its contrasting held surface.
 
 On the physical iPhone running iOS 27.0.1, the bundled SwiftUI drag recognizer sometimes did not deliver the press until roughly 0.75 seconds after UIKit received touch-down. This matches the class of delay described in [KeyboardKit's iOS 27 report](https://keyboardkit.com/blog/2026/09/09/gesture-problems-in-ios-27-public-beta). A passive public UIKit touch observer now drives the visual pressed state and the existing KeyboardKit input-preview callout on iOS 27 and later. It neither recognizes nor prevents a gesture, inserts text, or calls KeyboardKit's action handler. Release, cancellation, reset and view disappearance clear the highlight and dismiss that key's input preview. The preview uses the key geometry in KeyboardKit's existing callout coordinate space; it does not introduce another popup renderer. A release does not dismiss a preview belonging to a different key action. Earlier iOS versions retain KeyboardKit's existing pressed-state path.
 
@@ -96,6 +96,8 @@ Physical checks used WebDriverAgent on an iPhone 16 Pro Max, without a simulator
 - Follow-up after user feedback: the input preview and held-key color now appear in the same first pressed video frame, including a 120 ms letter tap and lower-row `v`, in System and Blue. Holding `a` still transitions from the single-letter preview to accent choices. Separate non-overlapping 100 ms automated touches enter `qwe` exactly once. The earlier reused-pointer batch generated unintended events and is excluded from keyboard verification.
 - Temporary numeric-only diagnostics measured the style update about 3–5 ms after UIKit touch-down. Video frames confirm the visible change, but their receive timestamps do not establish exact touch-to-display latency.
 - Diagnostics were removed before the final in-place installation. Original System theme and light device appearance were restored.
+
+Build 30 physical recordings confirm that letter previews now match ordinary letter keys in System and Blue, in light and dark appearance. Light-mode accent menus were checked in both themes. Signed Debug/Release builds passed, build 30 was installed in place, and the original user preferences plus System/light appearance were restored. This is a popup-color correction; the previously listed gesture, sound/haptic, accessibility and broader-device acceptance limits remain open.
 
 Physical iPad, older-iOS, VoiceOver and multi-touch checks remain unverified. The scan-return workflow was not changed or revalidated in this touch-feedback check. Final visual acceptance remains with the user.
 
