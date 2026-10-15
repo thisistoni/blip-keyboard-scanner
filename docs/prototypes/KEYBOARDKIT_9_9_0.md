@@ -71,6 +71,23 @@ Build 26 adds DEBUG-only, bounded activation timelines alongside the previous la
 
 A [firsthand Apple Developer Forums report](https://developer.apple.com/forums/thread/843093) describes matching behavior through iOS 27.0.1: switching from the system letter keyboard adds 17 points while switching from Emoji removes them. Reporters measured a change in the host-owned top constraint while extension bounds and safe areas remained identical, including a plain UIKit keyboard without third-party code. This supports a host presentation-state cause, but Blip's Notes host-owned constraint was not directly measured. QuickTime's local USB screen preview failed, so no paired screenshot or exact pixel comparison is claimed. The desired result is the gap present consistently in both paths. No production spacing workaround has been applied; a fixed internal spacer would add space to both identical extension layouts and cannot selectively correct the external inset.
 
+## Touch-down color feedback — October 15, 2026
+
+Development build 1.0.4 (27) now highlights the key surface immediately on touch-down. This supersedes the earlier pressed-color values above: System uses dark gray/white text in light appearance and light gray/black text in dark appearance; Blue uses #376594/white and #BBD6FB/#102A4C respectively. Input and accent callouts use the same held colors because KeyboardKit paints a key-shaped area beneath those callouts as well.
+
+On the physical iPhone running iOS 27.0.1, the bundled SwiftUI drag recognizer sometimes did not deliver the press until roughly 0.75 seconds after UIKit received touch-down. This matches the class of delay described in [KeyboardKit's iOS 27 report](https://keyboardkit.com/blog/2026/09/09/gesture-problems-in-ios-27-public-beta). A passive public UIKit touch observer now drives only the visual pressed state on iOS 27 and later. It neither recognizes nor prevents a gesture, inserts text, or calls KeyboardKit's action handler. Release, cancellation, reset and view disappearance clear the highlight. Earlier iOS versions retain KeyboardKit's existing pressed-state path.
+
+KeyboardKit remains pinned to the MIT-licensed 9.9.0. There is no modified package cache, vendored SDK update or paid API dependency. Typing, long-press accents, Delete repeat and cursor movement remain owned by KeyboardKit; this visual repair does not claim to remove its underlying gesture-recognition delay.
+
+Physical checks used WebDriverAgent on an iPhone 16 Pro Max, without a simulator:
+
+- Held and short-pressed keys changed color at initial touch and reset on release in System and Blue, in light and dark appearance.
+- The letter accent menu still opened. Individual 90 ms presses entered `q`, `v` and Space exactly once; Delete removed the space.
+- Temporary numeric-only diagnostics measured the style update about 3–5 ms after UIKit touch-down. Video frames confirm the visible change, but their receive timestamps do not establish exact touch-to-display latency.
+- Diagnostics were removed before the final in-place installation. Original System theme and light device appearance were restored.
+
+Physical iPad, older-iOS, VoiceOver and multi-touch checks remain unverified. The scan-return workflow was not changed or revalidated in this touch-feedback check. Final visual acceptance remains with the user.
+
 ## Feedback limits
 
 Audio replaces KeyboardKit's raw sound-ID playback with UIKit's public `UIDevice.playInputClick()` and `UIInputViewAudioFeedback`. Apple's API respects the system keyboard-click setting; no custom audio session overrides silent mode. Playback is gated on Blip's setting and Full Access. Physical silent-mode behavior remains to be confirmed.

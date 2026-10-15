@@ -389,6 +389,7 @@ private struct BlipPremiumKeyboard: View {
                         params.view
                     }
                 }
+                .modifier(BlipImmediateKeyFeedback(style: buttonStyle))
                 .keyboardButtonGestureConfiguration(gestureConfiguration(for: params.item.action))
             },
             collapsedView: { _ in EmptyView() },
@@ -450,13 +451,13 @@ private struct BlipPremiumKeyboard: View {
         if presentation.appearance == .blipBlue {
             let emphasized = params.action.isPrimaryAction || activeShift
             style.background = nil
-            style.backgroundColor = emphasized
-                ? (params.isPressed ? palette.emphasisPressed : palette.emphasis)
-                : (params.isPressed ? palette.pressedSurface : (ordinary ? palette.surface : palette.modifier))
-            style.foregroundColor = emphasized ? .white : palette.text
+            style.backgroundColor = params.isPressed ? palette.heldSurface
+                : (emphasized ? palette.emphasis : (ordinary ? palette.surface : palette.modifier))
+            style.foregroundColor = params.isPressed ? palette.heldText : (emphasized ? .white : palette.text)
             style.shadowColor = palette.shadow
             style.pressedOverlayColor = .clear
-            style.borderColor = colorSchemeContrast == .increased ? palette.text : palette.outline
+            style.borderColor = colorSchemeContrast == .increased
+                ? (params.isPressed ? palette.heldText : palette.text) : palette.outline
             style.borderSize = colorSchemeContrast == .increased ? 1 : 0.5
         } else if context.colorScheme == .dark {
             // The package's alpha-white assets vary with the host backdrop. Use opaque grays.
@@ -469,16 +470,25 @@ private struct BlipPremiumKeyboard: View {
                 style.foregroundColor = .white
             }
         }
+        if presentation.appearance == .system, params.isPressed {
+            // Use a contrasting surface for touch feedback in both system appearances.
+            style.background = nil
+            style.backgroundColor = context.colorScheme == .dark ? Color(white: 0.92) : Color(white: 0.25)
+            style.foregroundColor = context.colorScheme == .dark ? .black : .white
+            style.pressedOverlayColor = .clear
+        }
         return style
     }
 
     private var calloutStyle: Callouts.CalloutStyle {
         var style = Callouts.CalloutStyle.standard
         style.inputItemFont = .init(.largeTitle, .regular)
+        // KeyboardKit paints the pressed key area as part of both callouts.
+        // Keep that visible surface in the same pressed colors as the key below it.
         style.backgroundColor = presentation.appearance == .blipBlue
-            ? palette.surface : (context.colorScheme == .dark ? Color(white: 0.365) : .white)
+            ? palette.heldSurface : (context.colorScheme == .dark ? Color(white: 0.92) : Color(white: 0.25))
         style.foregroundColor = presentation.appearance == .blipBlue
-            ? palette.text : (context.colorScheme == .dark ? .white : .black)
+            ? palette.heldText : (context.colorScheme == .dark ? .black : .white)
         if presentation.appearance == .blipBlue {
             style.selectedBackgroundColor = palette.emphasis
             style.selectedForegroundColor = .white
@@ -589,22 +599,99 @@ private struct BlipPremiumKeyboard: View {
     }
 }
 
+/// Keep visual touch feedback independent of delayed SwiftUI drag recognition on iOS 27.
+/// KeyboardKit continues to own every typing, callout, repeat, and cursor action.
+private struct BlipImmediateKeyFeedback: ViewModifier {
+    let style: Keyboard.ButtonStyleBuilder
+    @State private var isTouchDown = false
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 27.0, *) {
+            content
+                .keyboardButtonStyle { params in
+                    style(.init(action: params.action, isPressed: isTouchDown))
+                }
+                .gesture(BlipKeyTouchObserver(isTouchDown: $isTouchDown))
+                .onDisappear { isTouchDown = false }
+        } else {
+            content
+        }
+    }
+}
+
+@available(iOS 18.0, *)
+private struct BlipKeyTouchObserver: UIGestureRecognizerRepresentable {
+    @Binding var isTouchDown: Bool
+
+    func makeUIGestureRecognizer(context: Context) -> BlipKeyTouchRecognizer {
+        let recognizer = BlipKeyTouchRecognizer()
+        recognizer.cancelsTouchesInView = false
+        recognizer.delaysTouchesBegan = false
+        recognizer.delaysTouchesEnded = false
+        recognizer.changed = { isTouchDown = $0 }
+        return recognizer
+    }
+
+    func updateUIGestureRecognizer(_ recognizer: BlipKeyTouchRecognizer, context: Context) {
+        recognizer.changed = { isTouchDown = $0 }
+    }
+}
+
+/// A passive observer: never recognizes or prevents a gesture, and never inserts text.
+private final class BlipKeyTouchRecognizer: UIGestureRecognizer {
+    var changed: ((Bool) -> Void)?
+    private var trackedTouch: UITouch?
+
+    override func canPrevent(_ preventedGestureRecognizer: UIGestureRecognizer) -> Bool { false }
+    override func canBePrevented(by preventingGestureRecognizer: UIGestureRecognizer) -> Bool { false }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        guard trackedTouch == nil, let touch = touches.first else { return }
+        trackedTouch = touch
+        changed?(true)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        guard let trackedTouch, touches.contains(trackedTouch) else { return }
+        finish()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        finish()
+    }
+
+    override func reset() {
+        super.reset()
+        trackedTouch = nil
+        changed?(false)
+    }
+
+    private func finish() {
+        trackedTouch = nil
+        changed?(false)
+        state = .failed
+    }
+}
+
 private struct BlipToolbarButtonStyle: ButtonStyle {
     var appearance: KeyboardAppearance
     var palette: BlipKeyboardPalette
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .foregroundStyle(appearance == .blipBlue ? Color.white : Color.primary)
-            .background(appearance == .blipBlue
-                ? (configuration.isPressed ? palette.emphasisPressed : palette.emphasis)
-                : Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+            .foregroundStyle(configuration.isPressed
+                ? (appearance == .blipBlue ? palette.heldText : (palette.isDark ? Color.black : Color.white))
+                : (appearance == .blipBlue ? Color.white : Color.primary))
+            .background(configuration.isPressed
+                ? (appearance == .blipBlue ? palette.heldSurface : Color(white: palette.isDark ? 0.92 : 0.25))
+                : (appearance == .blipBlue ? palette.emphasis : Color(uiColor: .tertiarySystemFill)),
+                in: RoundedRectangle(cornerRadius: 10))
             .overlay {
                 if appearance == .blipBlue, palette.increasedContrast {
                     RoundedRectangle(cornerRadius: 10).stroke(palette.text, lineWidth: 1)
                 }
             }
-            .opacity(appearance == .system && configuration.isPressed ? 0.65 : 1)
     }
 }
 
@@ -616,10 +703,10 @@ private struct BlipKeyboardPalette {
     var canvas: Color { isDark ? hex(0x101F3B) : hex(0xBCD2F2) }
     var surface: Color { isDark ? hex(0x23466E) : hex(0xEEF5FF) }
     var modifier: Color { isDark ? hex(0x193655) : hex(0xC8DDFA) }
-    var pressedSurface: Color { isDark ? hex(0x376594) : hex(0x90B7ED) }
+    var heldSurface: Color { isDark ? hex(0xBBD6FB) : hex(0x376594) }
+    var heldText: Color { isDark ? hex(0x102A4C) : .white }
     var text: Color { isDark ? hex(0xF3F8FF) : hex(0x102A4C) }
     var emphasis: Color { isDark ? hex(0x2E65AE) : hex(0x245AB5) }
-    var emphasisPressed: Color { hex(0x1B4385) }
     var outline: Color { text.opacity(increasedContrast ? 1 : 0.18) }
     var shadow: Color { hex(0x071B38).opacity(isDark ? 0.5 : 0.22) }
 
