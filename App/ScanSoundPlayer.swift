@@ -40,6 +40,8 @@ final class ScanSoundPlayer {
         }
 
         do {
+            // prepareToPlay activates audio too; establish mixing before preloading.
+            try configureAudioSession()
             player = try AVAudioPlayer(contentsOf: url)
             player?.volume = 1
             player?.prepareToPlay()

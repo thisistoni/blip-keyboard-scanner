@@ -72,14 +72,6 @@ enum ScreenshotAutomation {
 struct AppStoreScreenshotRootView: View {
     let scene: AppStoreScreenshotScene
 
-    private let setupStatus = SetupVerificationStatus(
-        snapshot: KeyboardSetupSnapshot(
-            isEnabled: true,
-            rawKeyboards: ["com.antoniobeslic.Blip.Keyboard"],
-            matchedKeyboard: "com.antoniobeslic.Blip.Keyboard"
-        )
-    )
-
     var body: some View {
         switch scene {
         case .scan, .scanner, .history, .settings:
@@ -116,7 +108,7 @@ struct AppStoreScreenshotRootView: View {
                 }
                 .tag(AppStoreScreenshotScene.history)
 
-            KeyboardLayoutSettingsView(setupStatus: setupStatus)
+            KeyboardLayoutSettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }

@@ -1,8 +1,8 @@
 import SwiftUI
 import os
+import UIKit
 #if DEBUG
 import CoreImage.CIFilterBuiltins
-import UIKit
 #endif
 
 private let scanInsertionLogger = Logger(subsystem: "com.antoniobeslic.Blip", category: "ScanInsertion")
@@ -35,6 +35,15 @@ struct ScannerScreen: View {
     @AppStorage(SharedKeyboardState.Keys.customReturnURL, store: SharedKeyboardState.appStorageDefaults)
     private var customReturnURL = ""
 
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var testFocused = false
+    @State private var testFieldID = UUID().uuidString
+    @State private var restoreTestField = false
+    @State private var pendingProfileAction: ScannedProfileAction?
+    @State private var profileReview: PendingCompanyProfile?
+    @State private var profileError: String?
+    private let testLeaseTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
     @State private var activeSession: ScannerSession?
     @State private var returnGuidance: KeyboardReturnGuidance?
     @State private var handledLaunchRequestID: String?
@@ -66,27 +75,31 @@ struct ScannerScreen: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    ScannerWorkflowGuideView()
-                } header: {
-                    Text("How It Works")
-                }
-
-                Section {
-                    Button {
-                        activeSession = ScannerSession(
-                            id: UUID().uuidString,
-                            source: .app,
-                            scanFormatProfile: scanFormatProfile,
-                            returnTarget: returnTarget,
-                            customReturnURL: customReturnURL
-                        )
-                    } label: {
-                        Label("Test Scanner", systemImage: "barcode.viewfinder")
+            ScrollViewReader { scrollProxy in
+                List {
+                    Section {
+                        ScannerWorkflowGuideView()
+                    } header: {
+                        Text("How It Works")
                     }
 
-                    LabeledContent("Keyboard return target", value: returnTarget.title)
+                    Section {
+                        KeyboardTestTextField(focused: $testFocused, sessionID: testFieldID,
+                            onPrepare: prepareTestFieldEditing, onEnd: endTestFieldEditing)
+                            .frame(minHeight: 36)
+                            .id("keyboardTestField")
+                    } header: {
+                        Text("Test the Blip keyboard")
+                    } footer: {
+                        Text("Choose Blip with the globe key, then tap Scan. This test returns here.")
+                    }
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
+                    guard testFocused else { return }
+                    withAnimation {
+                        scrollProxy.scrollTo("keyboardTestField", anchor: .center)
+                    }
                 }
             }
             .navigationTitle("Scan")
@@ -97,13 +110,24 @@ struct ScannerScreen: View {
             .onChange(of: externalLaunchRequest) { request in
                 handleExternalLaunchRequest(request)
             }
-            .fullScreenCover(item: $activeSession) { session in
+            .onReceive(testLeaseTimer) { _ in
+                if scenePhase == .active, testFocused || activeSession?.testSessionID == testFieldID || restoreTestField {
+                    SharedKeyboardState.renewKeyboardTest(id: testFieldID)
+                }
+            }
+            .onChange(of: scenePhase) { phase in
+                if phase == .background { cancelTestField() }
+            }
+            .onDisappear {
+                if activeSession?.testSessionID != testFieldID, !restoreTestField { cancelTestField() }
+            }
+            .fullScreenCover(item: $activeSession, onDismiss: scannerDidDismiss) { session in
                 ScannerPresentation(
                     session: session,
                     playScanSound: playScanSound,
                     defaultZoomLevel: scannerZoomLevel,
                     scanArea: scannerScanArea,
-                    flashlightModeRawValue: $scannerFlashlightModeRawValue
+                    defaultFlashlightMode: ScannerFlashlightMode(rawValue: scannerFlashlightModeRawValue) ?? .off
                 ) { result in
                     handleScannedCode(result, for: session)
                 } onCancel: {
@@ -115,7 +139,113 @@ struct ScannerScreen: View {
                     returnGuidance = nil
                 }
             }
+            .sheet(item: $profileReview, onDismiss: restoreTestFieldAfterScanner) { pending in
+                CompanyProfilePreview(profile: pending.profile,
+                    onCancel: { profileReview = nil },
+                    onApply: {
+                        do {
+                            try pending.profile.apply()
+                            profileReview = nil
+                        } catch {
+                            profileError = error.localizedDescription
+                        }
+                    })
+            }
+            .alert("Company Profile", isPresented: Binding(
+                get: { profileError != nil },
+                set: { if !$0 { profileError = nil } }
+            )) {
+                Button("OK", role: .cancel) {
+                    if profileReview == nil { restoreTestFieldAfterScanner() }
+                }
+            } message: {
+                Text(profileError ?? "")
+            }
         }
+    }
+
+    private func prepareTestFieldEditing() -> String {
+#if DEBUG
+        KeyboardTestDiagnostics.record("prepare", source: "app", details: ["focused": testFocused])
+#endif
+        if let session = SharedKeyboardState.keyboardTestSession,
+           session.id == testFieldID {
+            // UIKit can preflight focus repeatedly, including while opening the camera.
+            // Preserve every live phase; only a revoked/expired scope gets a new owner.
+            // Queue the result before UIKit creates/resumes the extension's document proxy.
+            _ = SharedKeyboardState.resumeKeyboardTest(id: testFieldID)
+#if DEBUG
+            KeyboardTestDiagnostics.record("resumeBeforeFocus", source: "app")
+#endif
+            return testFieldID
+        }
+        // A fresh ownership nonce prevents delayed extension writes from reviving an abandoned test.
+        let id = UUID().uuidString
+        testFieldID = id
+        SharedKeyboardState.beginKeyboardTest(id: id)
+#if DEBUG
+        KeyboardTestDiagnostics.record("newOwner", source: "app")
+#endif
+        return id
+    }
+
+    private func endTestFieldEditing() {
+#if DEBUG
+        KeyboardTestDiagnostics.record("endEditing", source: "app")
+#endif
+        let phase = SharedKeyboardState.keyboardTestSession?.phase
+        if phase != .launching && phase != .scanning && phase != .returning {
+            SharedKeyboardState.cancelKeyboardTest(id: testFieldID)
+#if DEBUG
+            KeyboardTestDiagnostics.record("cancelOnEndEditing", source: "app")
+#endif
+        }
+    }
+
+    private func cancelTestField() {
+        restoreTestField = false
+        testFocused = false
+        SharedKeyboardState.cancelKeyboardTest(id: testFieldID)
+    }
+
+    private func restoreTestFieldAfterScanner() {
+        guard restoreTestField else { return }
+        restoreTestField = false
+        DispatchQueue.main.async {
+            guard scenePhase == .active,
+                  SharedKeyboardState.keyboardTestSession?.id == testFieldID else { return }
+            testFocused = true
+#if DEBUG
+            KeyboardTestDiagnostics.record("focusRequested", source: "app")
+#endif
+        }
+    }
+
+    private func scannerDidDismiss() {
+        guard let action = pendingProfileAction else {
+            restoreTestFieldAfterScanner()
+            return
+        }
+        pendingProfileAction = nil
+        switch action {
+        case .preview(let profile): profileReview = PendingCompanyProfile(profile: profile)
+        case .error(let message): profileError = message
+        }
+    }
+
+    private func finishProfileScan(_ action: ScannedProfileAction, for session: ScannerSession) {
+        if let testID = session.testSessionID {
+            guard SharedKeyboardState.finishKeyboardTest(id: testID, requestID: session.id, code: nil) else {
+                activeSession = nil
+                return
+            }
+            restoreTestField = true
+        } else if session.source == .keyboard {
+            // A configuration QR is reviewed in Blip, never queued as text or sent to a browser.
+            SharedKeyboardState.consumedScanIdentifier = session.id
+        }
+        pendingProfileAction = action
+        activeSession = nil
     }
 
     private func presentScannerForScreenshotIfNeeded() {
@@ -136,9 +266,22 @@ struct ScannerScreen: View {
 
         handledLaunchRequestID = request.id
         returnGuidance = nil
+        if request.testSessionID != nil {
+            guard request.testSessionID == testFieldID,
+                  SharedKeyboardState.acceptKeyboardTestRequest(request, ownerID: testFieldID) else {
+                if SharedKeyboardState.activeScanRequestIdentifier == request.id {
+                    SharedKeyboardState.activeScanRequestIdentifier = ""
+                }
+                return
+            }
+            testFocused = false
+        } else {
+            cancelTestField()
+        }
         activeSession = ScannerSession(
             id: request.id,
             source: request.launchedFromKeyboard ? .keyboard : .app,
+            testSessionID: request.testSessionID,
             scanFormatProfile: scanFormatProfile,
             returnTarget: returnTarget,
             customReturnURL: customReturnURL
@@ -147,6 +290,31 @@ struct ScannerScreen: View {
 
     private func handleScannedCode(_ result: ScannerCodeResult, for session: ScannerSession) {
         guard !result.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+        do {
+            if let profile = try BlipCompanyProfileQR.decodeIfRecognized(result.value) {
+                ScanSoundPlayer.shared.playIfEnabled(playScanSound)
+                finishProfileScan(.preview(profile), for: session)
+                return
+            }
+        } catch {
+            finishProfileScan(.error(error.localizedDescription), for: session)
+            return
+        }
+
+        if let testID = session.testSessionID {
+            guard SharedKeyboardState.finishKeyboardTest(id: testID, requestID: session.id, code: result.value) else {
+                activeSession = nil
+                return
+            }
+            ScanSoundPlayer.shared.playIfEnabled(playScanSound)
+#if DEBUG
+            KeyboardTestDiagnostics.record("cameraFinished", source: "app")
+#endif
+            restoreTestField = true
+            activeSession = nil
+            return
+        }
 
         ScanSoundPlayer.shared.playIfEnabled(playScanSound)
         lastScannedCode = result.value
@@ -183,6 +351,11 @@ struct ScannerScreen: View {
     }
 
     private func handleScannerCancel(for session: ScannerSession) {
+        if let testID = session.testSessionID {
+            restoreTestField = SharedKeyboardState.finishKeyboardTest(id: testID, requestID: session.id, code: nil)
+            activeSession = nil
+            return
+        }
         activeSession = nil
 
         guard session.source == .keyboard else { return }
@@ -220,6 +393,11 @@ struct ScannerScreen: View {
     }
 }
 
+private enum ScannedProfileAction {
+    case preview(BlipCompanyProfile)
+    case error(String)
+}
+
 private struct ScannerWorkflowGuideView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -241,13 +419,6 @@ private struct ScannerWorkflowGuideView: View {
                 message: "Blip attempts to insert the scan and copies it for Paste if needed."
             )
 
-            Divider()
-
-            ScannerWorkflowGuideRow(
-                systemImage: "keyboard.badge.ellipsis",
-                title: "Best company setup",
-                message: "Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan."
-            )
         }
         .padding(.vertical, 4)
     }
@@ -380,12 +551,14 @@ private struct ScannerSession: Identifiable, Equatable {
 
     let id: String
     let source: Source
+    var testSessionID: String? = nil
     let scanFormatProfile: ScanFormatProfile
     let returnTarget: ReturnTarget
     let customReturnURL: String
 
     var title: String {
-        switch source {
+        if testSessionID != nil { return NSLocalizedString("Return to Keyboard Test", comment: "Scanner test return title") }
+        return switch source {
         case .app:
             NSLocalizedString("Scanner", comment: "Scanner title")
         case .keyboard:
@@ -399,18 +572,33 @@ private struct ScannerPresentation: View {
     let playScanSound: Bool
     let defaultZoomLevel: ScannerZoomLevel
     let scanArea: ScannerScanArea
-    @Binding var flashlightModeRawValue: String
     let onCode: (ScannerCodeResult) -> Void
     let onCancel: () -> Void
 
+    @State private var flashlightMode: ScannerFlashlightMode
     @State private var isTorchAvailable = false
     @State private var isTorchOn = false
     @State private var scannerStatusMessage: String?
     @State private var scannedCode: String?
     @State private var currentZoomFactor = 1.0
 
-    private var flashlightMode: ScannerFlashlightMode {
-        ScannerFlashlightMode(rawValue: flashlightModeRawValue) ?? .off
+    init(
+        session: ScannerSession,
+        playScanSound: Bool,
+        defaultZoomLevel: ScannerZoomLevel,
+        scanArea: ScannerScanArea,
+        defaultFlashlightMode: ScannerFlashlightMode,
+        onCode: @escaping (ScannerCodeResult) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
+        self.session = session
+        self.playScanSound = playScanSound
+        self.defaultZoomLevel = defaultZoomLevel
+        self.scanArea = scanArea
+        // A toolbar toggle applies to this scan; only Settings changes the next scan's default.
+        _flashlightMode = State(initialValue: defaultFlashlightMode)
+        self.onCode = onCode
+        self.onCancel = onCancel
     }
 
     private var scannerFeedIsAvailable: Bool {
@@ -454,7 +642,12 @@ private struct ScannerPresentation: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        flashlightModeRawValue = (flashlightMode == .on ? ScannerFlashlightMode.off : ScannerFlashlightMode.on).rawValue
+                        flashlightMode = flashlightMode == .on ? .off : .on
+#if DEBUG
+                        if ScreenshotAutomation.usesSimulatedCamera {
+                            isTorchOn = flashlightMode == .on
+                        }
+#endif
                     } label: {
                         Image(systemName: isTorchOn ? "flashlight.on.fill" : "flashlight.off.fill")
                             .foregroundStyle(isTorchOn ? .yellow : .primary)
@@ -525,7 +718,7 @@ private struct ScannerPresentation: View {
             } else if session.source == .keyboard {
                 ScanStatusPill(
                     title: "Target",
-                    detail: session.returnTarget.title,
+                    detail: session.testSessionID == nil ? session.returnTarget.title : NSLocalizedString("Keyboard Test", comment: "Keyboard test target"),
                     systemImage: "arrowshape.turn.up.backward.fill",
                     color: .blue
                 )
@@ -546,7 +739,8 @@ private struct ScannerPresentation: View {
     private func handleCode(_ result: ScannerCodeResult) {
         guard scannedCode == nil else { return }
 
-        scannedCode = result.value
+        scannedCode = result.value.hasPrefix(BlipCompanyProfileQR.marker)
+            ? NSLocalizedString("Company Profile", comment: "Recognized profile scan") : result.value
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             onCode(result)
         }
@@ -729,5 +923,129 @@ private struct EmptyStateView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
+    }
+}
+
+
+/// A native input field, using the installed extension selected by the user.
+private struct KeyboardTestTextField: UIViewRepresentable {
+    @Binding var focused: Bool
+    let sessionID: String
+    let onPrepare: () -> String
+    let onEnd: () -> Void
+
+    func makeUIView(context: Context) -> UITextField {
+#if DEBUG
+        KeyboardTestDiagnostics.record("fieldCreated", source: "app")
+#endif
+        let field = UITextField()
+        field.delegate = context.coordinator
+        field.placeholder = NSLocalizedString("Scan result", comment: "Keyboard test text field")
+        field.accessibilityLabel = NSLocalizedString("Test the Blip keyboard", comment: "Keyboard test text field label")
+        field.font = .preferredFont(forTextStyle: .body)
+        field.adjustsFontForContentSizeCategory = true
+        field.clearButtonMode = .whileEditing
+        field.autocorrectionType = .no
+        field.autocapitalizationType = .none
+        field.textContentType = UITextContentType(rawValue: KeyboardTestSession.contentTypePrefix + sessionID)
+        return field
+    }
+
+    func updateUIView(_ field: UITextField, context: Context) {
+        context.coordinator.parent = self
+        if focused, !field.isFirstResponder { field.becomeFirstResponder() }
+        if !focused, field.isFirstResponder { field.resignFirstResponder() }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: KeyboardTestTextField
+        private weak var activeField: UITextField?
+        private var needsPresentationRefresh = false
+
+        init(_ parent: KeyboardTestTextField) {
+            self.parent = parent
+            super.init()
+            NotificationCenter.default.addObserver(self, selector: #selector(keyboardDidShow(_:)),
+                name: UIResponder.keyboardDidShowNotification, object: nil)
+#if DEBUG
+            for name in [UIResponder.keyboardWillShowNotification,
+                         UIResponder.keyboardWillChangeFrameNotification,
+                         UIResponder.keyboardDidChangeFrameNotification] {
+                NotificationCenter.default.addObserver(self, selector: #selector(recordHostKeyboardFrame(_:)),
+                    name: name, object: nil)
+            }
+#endif
+        }
+
+        deinit { NotificationCenter.default.removeObserver(self) }
+
+        @objc private func keyboardDidShow(_ notification: Notification) {
+#if DEBUG
+            recordHostKeyboardFrame(notification)
+#endif
+            guard needsPresentationRefresh, let field = activeField, field.isFirstResponder else { return }
+            // Refresh UIKit's initial host presentation once, retaining the selected extension and focus.
+            needsPresentationRefresh = false
+#if DEBUG
+            KeyboardTestDiagnostics.record("willReload", source: "app", details: ["hasText": field.hasText])
+#endif
+            field.reloadInputViews()
+#if DEBUG
+            KeyboardTestDiagnostics.record("didReload", source: "app", details: ["hasText": field.hasText])
+#endif
+        }
+#if DEBUG
+        @objc private func recordHostKeyboardFrame(_ notification: Notification) {
+            guard let field = activeField, field.isFirstResponder,
+                  let frame = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
+            func rect(_ value: CGRect) -> [Double] {
+                [value.origin.x, value.origin.y, value.width, value.height].map(Double.init)
+            }
+            KeyboardTestDiagnostics.record("hostKeyboardFrame", source: "app", details: [
+                "notification": notification.name.rawValue,
+                "keyboardFrame": rect(frame),
+                "windowBounds": field.window.map { rect($0.bounds) } ?? [],
+                "windowSafeArea": field.window.map {
+                    [$0.safeAreaInsets.top, $0.safeAreaInsets.left, $0.safeAreaInsets.bottom, $0.safeAreaInsets.right].map(Double.init)
+                } ?? [],
+                "fieldAccessoryHeight": Double(field.inputAccessoryView?.bounds.height ?? 0),
+                "fieldFirstResponder": field.isFirstResponder,
+                "refreshPending": needsPresentationRefresh])
+        }
+#endif
+        func textFieldShouldBeginEditing(_ textField: UITextField) -> Bool {
+            // Set the explicit cooperating-field trait before UIKit asks the extension for input.
+            textField.textContentType = UITextContentType(rawValue: KeyboardTestSession.contentTypePrefix + parent.onPrepare())
+#if DEBUG
+            KeyboardTestDiagnostics.record("nativeWillBegin", source: "app", details: ["hasText": textField.hasText])
+#endif
+            return true
+        }
+        func textFieldDidBeginEditing(_ textField: UITextField) {
+            activeField = textField
+            needsPresentationRefresh = true
+            parent.focused = true
+#if DEBUG
+            KeyboardTestDiagnostics.record("nativeDidBegin", source: "app", details: ["hasText": textField.hasText])
+#endif
+        }
+        func textFieldDidEndEditing(_ textField: UITextField) {
+#if DEBUG
+            KeyboardTestDiagnostics.record("nativeDidEnd", source: "app", details: ["hasText": textField.hasText])
+#endif
+            needsPresentationRefresh = false
+            activeField = nil
+            parent.focused = false
+            parent.onEnd()
+        }
+
+#if DEBUG
+        func textFieldDidChangeSelection(_ textField: UITextField) {
+            KeyboardTestDiagnostics.record("nativeSelectionChanged", source: "app",
+                details: ["hasText": textField.hasText, "firstResponder": textField.isFirstResponder])
+        }
+#endif
     }
 }

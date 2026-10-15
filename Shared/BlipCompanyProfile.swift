@@ -18,6 +18,10 @@ struct BlipCompanyProfile: Codable, Equatable {
     let scannerFlashlightMode: String
     let scannerZoomLevel: String
     let scannerScanArea: String
+    // Optional so profiles exported before the KeyboardKit update remain compatible.
+    var keyboardAppearance: String?
+    var keyboardClickSound: Bool?
+    var keyboardHaptics: Bool?
 
     static var current: BlipCompanyProfile {
         BlipCompanyProfile(
@@ -31,11 +35,14 @@ struct BlipCompanyProfile: Codable, Equatable {
             autoInsertScans: SharedKeyboardState.autoInsertScans,
             scanFormatProfile: SharedKeyboardState.scanFormatProfile.rawValue,
             returnTarget: SharedKeyboardState.returnTarget.rawValue,
-            customReturnURL: SharedKeyboardState.customReturnURL,
+            customReturnURL: SharedKeyboardState.returnTarget == .custom ? SharedKeyboardState.customReturnURL : "",
             playScanSound: SharedKeyboardState.playScanSound,
             scannerFlashlightMode: SharedKeyboardState.scannerFlashlightMode.rawValue,
             scannerZoomLevel: SharedKeyboardState.scannerZoomLevel.rawValue,
-            scannerScanArea: SharedKeyboardState.scannerScanArea.rawValue
+            scannerScanArea: SharedKeyboardState.scannerScanArea.rawValue,
+            keyboardAppearance: SharedKeyboardState.keyboardAppearance.rawValue,
+            keyboardClickSound: SharedKeyboardState.keyboardClickSound,
+            keyboardHaptics: SharedKeyboardState.keyboardHaptics
         )
     }
 
@@ -87,6 +94,9 @@ struct BlipCompanyProfile: Codable, Equatable {
         guard ScannerScanArea(rawValue: scannerScanArea) != nil else {
             throw BlipCompanyProfileError.invalidValue("scannerScanArea")
         }
+        if let keyboardAppearance, KeyboardAppearance(rawValue: keyboardAppearance) == nil {
+            throw BlipCompanyProfileError.invalidValue("keyboardAppearance")
+        }
     }
 
     func apply() throws {
@@ -102,15 +112,23 @@ struct BlipCompanyProfile: Codable, Equatable {
         }
         SharedKeyboardState.scanFormatProfile = ScanFormatProfile(rawValue: scanFormatProfile) ?? .allSupported
         SharedKeyboardState.returnTarget = ReturnTarget(rawValue: returnTarget) ?? .safari
-        SharedKeyboardState.customReturnURL = customReturnURL
+        // An inactive custom destination is not part of the imported workflow.
+        if returnTarget == ReturnTarget.custom.rawValue {
+            SharedKeyboardState.customReturnURL = customReturnURL
+        }
         SharedKeyboardState.playScanSound = playScanSound
         SharedKeyboardState.scannerFlashlightMode = ScannerFlashlightMode(rawValue: scannerFlashlightMode) ?? .off
         SharedKeyboardState.scannerZoomLevel = ScannerZoomLevel(rawValue: scannerZoomLevel) ?? .x1
         SharedKeyboardState.scannerScanArea = ScannerScanArea(rawValue: scannerScanArea) ?? .fullFrame
+        if let keyboardAppearance {
+            SharedKeyboardState.keyboardAppearance = KeyboardAppearance(rawValue: keyboardAppearance) ?? .system
+        }
+        if let keyboardClickSound { SharedKeyboardState.keyboardClickSound = keyboardClickSound }
+        if let keyboardHaptics { SharedKeyboardState.keyboardHaptics = keyboardHaptics }
     }
 
     func changes(comparedTo current: BlipCompanyProfile = .current) -> [BlipCompanyProfileChange] {
-        [
+        var result = [
             change("Keyboard Language", current.keyboardLanguage, keyboardLanguage) { KeyboardLanguage(rawValue: $0) },
             change("Keyboard Type", current.keyboardType, keyboardType) { KeyboardType(rawValue: $0) },
             change("Enabled Layouts", current.enabledKeyboardLayouts, enabledKeyboardLayouts, BlipCompanyProfile.formatLayouts),
@@ -123,7 +141,6 @@ struct BlipCompanyProfile: Codable, Equatable {
             ),
             change("Scan Formats", current.scanFormatProfile, scanFormatProfile) { ScanFormatProfile(rawValue: $0) },
             change("Return Target", current.returnTarget, returnTarget) { ReturnTarget(rawValue: $0) },
-            change("Custom Return URL", current.customReturnURL, customReturnURL) { $0.isEmpty ? NSLocalizedString("None", comment: "No custom URL profile value") : $0 },
             BlipCompanyProfileChange(
                 title: "Blip Sound",
                 currentValue: current.playScanSound ? NSLocalizedString("On", comment: "Profile sound on value") : NSLocalizedString("Off", comment: "Profile sound off value"),
@@ -133,7 +150,61 @@ struct BlipCompanyProfile: Codable, Equatable {
             change("Default Zoom", current.scannerZoomLevel, scannerZoomLevel) { ScannerZoomLevel(rawValue: $0) },
             change("Scan Area", current.scannerScanArea, scannerScanArea) { ScannerScanArea(rawValue: $0) },
         ]
-        .filter { $0.currentValue != $0.incomingValue }
+        if returnTarget == ReturnTarget.custom.rawValue {
+            result.append(change("Custom Return URL", current.customReturnURL, customReturnURL) {
+                $0.isEmpty ? NSLocalizedString("None", comment: "No custom URL profile value") : $0
+            })
+        }
+        if let keyboardAppearance {
+            result.append(change("Keyboard Appearance", current.keyboardAppearance ?? KeyboardAppearance.system.rawValue,
+                                 keyboardAppearance) { KeyboardAppearance(rawValue: $0) })
+        }
+        for (title, currentValue, incomingValue) in [
+            ("Key Clicks", current.keyboardClickSound, keyboardClickSound),
+            ("Key Haptics", current.keyboardHaptics, keyboardHaptics)
+        ] {
+            if let incomingValue {
+                result.append(BlipCompanyProfileChange(title: title,
+                    currentValue: Self.formatToggle(currentValue ?? true),
+                    incomingValue: Self.formatToggle(incomingValue)))
+            }
+        }
+        return result.filter { $0.currentValue != $0.incomingValue }
+    }
+
+    /// Values from the same immutable snapshot that is encoded in the QR code.
+    var includedSettings: [BlipCompanyProfileSetting] {
+        var settings = [
+            BlipCompanyProfileSetting("Return Target", ReturnTarget(rawValue: returnTarget)?.title ?? returnTarget)
+        ]
+        if returnTarget == ReturnTarget.custom.rawValue {
+            settings.append(.init("Custom Return URL", customReturnURL))
+        }
+        settings += [
+            .init("Keyboard Language", KeyboardLanguage(rawValue: keyboardLanguage)?.title ?? keyboardLanguage),
+            .init("Keyboard Type", KeyboardType(rawValue: keyboardType)?.title ?? keyboardType),
+            .init("Enabled Layouts", Self.formatLayouts(enabledKeyboardLayouts)),
+            .init("Opening Layout", Self.formatLayoutSlot(startupKeyboardLayout)),
+            .init("Scan Suffix", InsertSuffix(rawValue: scanSuffix)?.title ?? scanSuffix)
+        ]
+        if let autoInsertScans { settings.append(.init("Insert Scans Automatically", Self.formatToggle(autoInsertScans))) }
+        settings += [
+            .init("Scan Formats", ScanFormatProfile(rawValue: scanFormatProfile)?.title ?? scanFormatProfile),
+            .init("Blip Sound", Self.formatToggle(playScanSound)),
+            .init("Default Flashlight", ScannerFlashlightMode(rawValue: scannerFlashlightMode)?.title ?? scannerFlashlightMode),
+            .init("Default Zoom", ScannerZoomLevel(rawValue: scannerZoomLevel)?.title ?? scannerZoomLevel),
+            .init("Scan Area", ScannerScanArea(rawValue: scannerScanArea)?.title ?? scannerScanArea)
+        ]
+        if let keyboardAppearance {
+            settings.append(.init("Keyboard Appearance", KeyboardAppearance(rawValue: keyboardAppearance)?.title ?? keyboardAppearance))
+        }
+        if let keyboardClickSound { settings.append(.init("Key Clicks", Self.formatToggle(keyboardClickSound))) }
+        if let keyboardHaptics { settings.append(.init("Key Haptics", Self.formatToggle(keyboardHaptics))) }
+        return settings
+    }
+
+    private static func formatToggle(_ enabled: Bool) -> String {
+        NSLocalizedString(enabled ? "On" : "Off", comment: "Profile toggle value")
     }
 
     func exportData() throws -> Data {
@@ -195,6 +266,17 @@ struct BlipCompanyProfile: Codable, Equatable {
     }
 }
 
+struct BlipCompanyProfileSetting: Identifiable, Equatable {
+    let title: String
+    let value: String
+    var id: String { title }
+
+    init(_ title: String, _ value: String) {
+        self.title = title
+        self.value = value
+    }
+}
+
 struct BlipCompanyProfileChange: Identifiable, Equatable {
     let id = UUID()
     let title: String
@@ -216,11 +298,60 @@ enum BlipCompanyProfileError: LocalizedError {
     }
 }
 
+/// A local transport for the same validated schema used by file import/export.
+enum BlipCompanyProfileQR {
+    static let marker = "BLIP_PROFILE:"
+    static let prefix = marker + "1:"
+    static let maximumBytes = 1_200
+
+    static func acceptsScannedQR(_ value: String, formatProfile: ScanFormatProfile) -> Bool {
+        formatProfile != .commonBarcodes || value.hasPrefix(marker)
+    }
+
+    static func encode(_ profile: BlipCompanyProfile) throws -> Data {
+        try profile.validate()
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        let payload = Data(prefix.utf8) + (try encoder.encode(profile))
+        guard payload.count <= maximumBytes else { throw BlipCompanyProfileQRError.tooLarge }
+        return payload
+    }
+
+    static func decodeIfRecognized(_ value: String) throws -> BlipCompanyProfile? {
+        guard value.hasPrefix(marker) else { return nil }
+        guard value.utf8.count <= maximumBytes else { throw BlipCompanyProfileQRError.tooLarge }
+        guard value.hasPrefix(prefix) else { throw BlipCompanyProfileQRError.unsupportedVersion }
+        return try BlipCompanyProfile.decode(from: Data(value.dropFirst(prefix.count).utf8))
+    }
+}
+
+enum BlipCompanyProfileQRError: LocalizedError {
+    case tooLarge
+    case unsupportedVersion
+    case cannotRender
+
+    var errorDescription: String? {
+        switch self {
+        case .tooLarge:
+            NSLocalizedString("This profile is too large for a readable QR code. Use file export and import instead.", comment: "Profile QR size error")
+        case .unsupportedVersion:
+            NSLocalizedString("This company profile QR version is not supported.", comment: "Profile QR version error")
+        case .cannotRender:
+            NSLocalizedString("The company profile QR code could not be created. Use file export instead.", comment: "Profile QR rendering error")
+        }
+    }
+}
+
 private protocol ProfileDisplayOption {
     var profileDisplayTitle: String { get }
 }
 
 extension KeyboardLanguage: ProfileDisplayOption {
+    var profileDisplayTitle: String { title }
+}
+
+extension KeyboardAppearance: ProfileDisplayOption {
     var profileDisplayTitle: String { title }
 }
 

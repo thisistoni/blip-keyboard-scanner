@@ -1,0 +1,982 @@
+{
+  "alreadySelected": {
+    "activation": 7,
+    "samples": [
+      {
+        "capturedAt": 1792044842.262391,
+        "event": "willAppear",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              956
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              956
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      },
+      {
+        "capturedAt": 1792044842.439915,
+        "event": "didAppear",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 0,
+                "firstAttribute": 3,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 3
+              },
+              {
+                "constant": 0,
+                "firstAttribute": 4,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 4
+              },
+              {
+                "constant": 224,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "hostingView": {
+            "bounds": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "intrinsicSize": [
+              209.33333333333331,
+              256
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "swiftuiPanel": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              -16,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          },
+          "toolbar": {
+            "bounds": [
+              0,
+              0,
+              440,
+              46
+            ],
+            "inWindow": [
+              0,
+              -15,
+              440,
+              46
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      },
+      {
+        "capturedAt": 1792044842.5443459,
+        "event": "appeared+0.1",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 0,
+                "firstAttribute": 3,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 3
+              },
+              {
+                "constant": 0,
+                "firstAttribute": 4,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 4
+              },
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "hostingView": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              209.33333333333331,
+              256
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "swiftuiPanel": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          },
+          "toolbar": {
+            "bounds": [
+              0,
+              0,
+              440,
+              46
+            ],
+            "inWindow": [
+              0,
+              1,
+              440,
+              46
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      },
+      {
+        "capturedAt": 1792044844.003778,
+        "event": "appeared+1.5",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 0,
+                "firstAttribute": 3,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 3
+              },
+              {
+                "constant": 0,
+                "firstAttribute": 4,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 4
+              },
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "hostingView": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              209.33333333333331,
+              256
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "swiftuiPanel": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          },
+          "toolbar": {
+            "bounds": [
+              0,
+              0,
+              440,
+              46
+            ],
+            "inWindow": [
+              0,
+              1,
+              440,
+              46
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      }
+    ],
+    "settledContext": {
+      "additionalSafeArea": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "appearance": "system",
+      "colorScheme": "light",
+      "floating": false,
+      "initialSetupComplete": true,
+      "keyboardType": "alphabetic",
+      "layout": "german",
+      "nativeAppearance": 2,
+      "nativeKeyboardType": 0,
+      "nativeNeedsGlobe": false,
+      "nativeReturnKeyType": 0,
+      "needsGlobe": false,
+      "orientation": "portrait",
+      "preferredContentSize": [
+        0,
+        0
+      ],
+      "screenSize": [
+        440,
+        956
+      ],
+      "uiStyle": 1
+    },
+    "userObservedGap": false
+  },
+  "build": "26",
+  "date": "2026-10-15",
+  "device": "iPhone 16 Pro Max",
+  "evidenceLimit": "User reported the visible gap. Extension geometry was copied over USB; paired phone screenshots and the Notes host-owned inset were not captured. Numeric Auto Layout attributes follow NSLayoutConstraint.Attribute raw values.",
+  "host": "Apple Notes, same note and editing field",
+  "os": "27.0.1 (24A446)",
+  "schemaVersion": 1,
+  "switchedBack": {
+    "activation": 4,
+    "samples": [
+      {
+        "capturedAt": 1792044629.72348,
+        "event": "willAppear",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              956
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              956
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      },
+      {
+        "capturedAt": 1792044629.86707,
+        "event": "didAppear",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 0,
+                "firstAttribute": 3,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 3
+              },
+              {
+                "constant": 0,
+                "firstAttribute": 4,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 4
+              },
+              {
+                "constant": 224,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "hostingView": {
+            "bounds": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              224
+            ],
+            "intrinsicSize": [
+              209.33333333333331,
+              256
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "swiftuiPanel": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              -16,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          },
+          "toolbar": {
+            "bounds": [
+              0,
+              0,
+              440,
+              46
+            ],
+            "inWindow": [
+              0,
+              -15,
+              440,
+              46
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      },
+      {
+        "capturedAt": 1792044629.986445,
+        "event": "appeared+0.1",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 0,
+                "firstAttribute": 3,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 3
+              },
+              {
+                "constant": 0,
+                "firstAttribute": 4,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 4
+              },
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "hostingView": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              440,
+              256
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "swiftuiPanel": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          },
+          "toolbar": {
+            "bounds": [
+              0,
+              0,
+              440,
+              46
+            ],
+            "inWindow": [
+              0,
+              1,
+              440,
+              46
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      },
+      {
+        "capturedAt": 1792044631.4405131,
+        "event": "appeared+1.5",
+        "views": {
+          "extensionRoot": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 0,
+                "firstAttribute": 3,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 3
+              },
+              {
+                "constant": 0,
+                "firstAttribute": 4,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 4
+              },
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "hostingView": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              440,
+              256
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": [
+              {
+                "constant": 256,
+                "firstAttribute": 8,
+                "multiplier": 1,
+                "priority": 1000,
+                "relation": 0,
+                "secondAttribute": 0
+              }
+            ]
+          },
+          "swiftuiPanel": {
+            "bounds": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "inWindow": [
+              0,
+              0,
+              440,
+              256
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          },
+          "toolbar": {
+            "bounds": [
+              0,
+              0,
+              440,
+              46
+            ],
+            "inWindow": [
+              0,
+              1,
+              440,
+              46
+            ],
+            "intrinsicSize": [
+              -1,
+              -1
+            ],
+            "safeArea": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "verticalConstraints": []
+          }
+        }
+      }
+    ],
+    "settledContext": {
+      "additionalSafeArea": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "appearance": "system",
+      "colorScheme": "light",
+      "floating": false,
+      "initialSetupComplete": true,
+      "keyboardType": "alphabetic",
+      "layout": "german",
+      "nativeAppearance": 2,
+      "nativeKeyboardType": 0,
+      "nativeNeedsGlobe": false,
+      "nativeReturnKeyType": 0,
+      "needsGlobe": false,
+      "orientation": "portrait",
+      "preferredContentSize": [
+        0,
+        0
+      ],
+      "screenSize": [
+        440,
+        956
+      ],
+      "uiStyle": 1
+    },
+    "userObservedGap": true
+  },
+  "version": "1.0.4"
+}
