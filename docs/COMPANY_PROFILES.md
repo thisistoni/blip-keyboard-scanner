@@ -31,5 +31,6 @@ Physical validation for build 1.0.4 (27), on iPhone 16 Pro Max / iOS 27.0.1:
 - The QR remained readable in light and dark appearance. Landscape kept the full QR visible, with the settings below it scrollable.
 - File export to On My iPhone and re-import displayed a matching-settings preview.
 - After changing the theme to Blip Blue, importing the saved file previewed the change back to System. Apply restored it. Re-export matched every configuration value from before testing, and the inactive custom destination remained saved locally.
+- Scanning `BLIP_PROFILE:2:{}` through the real camera showed the unsupported-version warning. After dismissing it, the existing native test-field text was unchanged. Saved preferences, ordinary last-scan/pending-scan/history data and the extension insertion trace confirmed that no profile was applied and no text was inserted.
 
-Malformed-profile alerts through the camera and a second receiving device still require physical verification. Passing the decoder tests does not establish those camera paths. This work remains in the combined draft update; it is not an App Store release.
+Other malformed-payload camera paths and a second receiving device still require physical verification. Passing the decoder tests does not establish those camera paths. This work remains in the combined draft update; it is not an App Store release.

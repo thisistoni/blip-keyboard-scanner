@@ -32,7 +32,9 @@ The test alone enables automatic insertion, independent of the saved Auto Insert
 - Build 27: canceling the real scanner returned to the empty native field without insertion. A scanned company profile opened its preview, and canceling preserved the configuration.
 - Build 27 scrolls the focused test field above the keyboard after presentation and allows interactive keyboard dismissal. Both behaviors were checked on the physical iPhone.
 - Build 27: a real camera scan with Safari configured and Auto Insert off returned to Blip and inserted the test value exactly once. Device preferences retained those choices; the extension trace shows one proxy write and consumption, followed by the native field receiving text. The normal last scan and history remained unchanged.
-- Repeat insertion, external-app switching on the latest build and the broader orientation/iPad/accessibility matrix remain unverified on hardware.
+- Build 27: repeating the real camera scan produced exactly one additional copy in the native field, with one new proxy write and consumption. Opening the scanner again and canceling retained those two results without another insertion. An unsupported profile QR displayed its warning and left the field, settings, normal last scan and history unchanged.
+- Build 27: letters, symbols and large-number layout cycling, number entry, deletion, globe switching out and back, and landscape letter entry/deletion passed on the physical iPhone. The test field and keyboard controls remained visible in landscape. This does not resolve the separately documented activation-spacing inconsistency.
+- External-app scan round trips on the latest build, iPad, older iOS and VoiceOver remain unverified on hardware.
 
 Tracks ANT-67. ANT-65 remains separate visual/feedback validation. This is part of the existing keyboard prototype PR; no merge or App Store submission is authorized yet.
 
