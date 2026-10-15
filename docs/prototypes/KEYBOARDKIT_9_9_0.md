@@ -43,6 +43,14 @@ Build 14 replaces the Scan page’s direct Test Scanner button with a real nativ
 
 ## Debug-only geometry investigation
 
+### Host disconnection crash found during combined validation
+
+Physical iPhone crash reports for build 27 on October 15 identified two delayed reads of a disconnected text-input host. KeyboardKit's queued `KeyboardContext.syncAfterAsync(with:)` and Blip's queued `settledLayout` diagnostic both reached `UIInputViewController.needsInputModeSwitchKey` and crashed in UIKit's `_UITextDocumentInterface._controllerState`. An earlier diagnostic crash reached the proxy's `returnKeyType`. The visible symptom was an unexpected fallback to the system keyboard.
+
+Build 28 snapshots the native globe requirement synchronously in `viewWillAppear`; the overridden getter serves that snapshot to KeyboardKit's deferred sync. Geometry diagnostics no longer inspect live text-input traits. Pending insertion is cancelled before disappearance, and delayed insertion, newline and text-change processing require a presented keyboard. This changes lifecycle handling, not keyboard appearance or height. Debug/Release builds and scan/session/profile checks pass.
+
+Five physical iPhone cycles of Chrome → system keyboard → Blip keyboard → Blip's native test field passed on build 28. The extension retained the same diagnostic process identifier throughout, and a subsequent crash-report copy contained no build 28 reports. This is observed transition stability; a fresh camera scan-return check is still pending.
+
 Build 12 adds numeric-only diagnostics after layout, appearance and host resume, plus an invisible, noninteractive background UIView probe for the SwiftUI panel. All instrumentation is under `#if DEBUG`. It does not change colors, sizing, constraints, content or safe-area handling. Records include frames/bounds, window and screen coordinate conversions, safe-area insets, ordinary/directional layout margins, window/screen dimensions and scale, and up to eight ancestor class/geometry entries. No proxy text, clipboard, scan values or full view descriptions are read or logged.
 
 The physical USB log relay connects successfully. Its 1,024-byte message limit truncated the initial records; compact per-view records fixed that. Build 13 additionally resamples the panel after its hosting ancestor moves, avoiding a stale initial probe position. User confirmed Spotlight was open with Blue selected and the strip visible. The supplied screenshot was inspected at its original 1320×2868 resolution; this is user-supplied visual evidence, not a successful automated device screenshot.

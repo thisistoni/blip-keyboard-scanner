@@ -7,7 +7,14 @@ final class KeyboardViewController: KeyboardInputViewController {
     private let presentation = BlipKeyboardPresentation()
     private var pendingInsertionWorkItem: DispatchWorkItem?
     private var isInsertingScan = false
+    private var isKeyboardPresented = false
+    private var cachedNeedsInputModeSwitchKey = true
     private let insertionLogger = Logger(subsystem: "com.antoniobeslic.Blip", category: "ScanInsertion")
+
+    // KeyboardKit 9.9.0 reads this from a queued context sync. On iOS 27,
+    // UIKit's getter can dereference a disconnected host after disappearance.
+    // Refresh synchronously during presentation; deferred readers use the snapshot.
+    override var needsInputModeSwitchKey: Bool { cachedNeedsInputModeSwitchKey }
 
     override func loadView() {
         // Let iOS draw the keyboard backdrop and its rounded system contour.
@@ -90,6 +97,8 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     override func viewWillAppear(_ animated: Bool) {
+        isKeyboardPresented = true
+        cachedNeedsInputModeSwitchKey = super.needsInputModeSwitchKey
 #if DEBUG
         BlipGeometryDiagnostics.beginActivation(controller: self)
         recordDebugGeometry(event: "willAppear")
@@ -156,12 +165,13 @@ final class KeyboardViewController: KeyboardInputViewController {
 #endif
 
     override func viewWillDisappear(_ animated: Bool) {
+        isKeyboardPresented = false
+        pendingInsertionWorkItem?.cancel()
+        pendingInsertionWorkItem = nil
 #if DEBUG
         recordDebugGeometry(event: "willDisappear")
 #endif
         super.viewWillDisappear(animated)
-        pendingInsertionWorkItem?.cancel()
-        pendingInsertionWorkItem = nil
     }
 
     override func textDidChange(_ textInput: UITextInput?) {
@@ -170,6 +180,11 @@ final class KeyboardViewController: KeyboardInputViewController {
         recordDebugGeometry(event: "textDidChange")
 #endif
         schedulePendingScanInsertion()
+    }
+
+    override func textDidChangeAsync(_ textInput: UITextInput?) {
+        guard isKeyboardPresented, viewIfLoaded?.window != nil else { return }
+        super.textDidChangeAsync(textInput)
     }
 
     fileprivate func cycleLayout() {
@@ -199,6 +214,7 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     private func schedulePendingScanInsertion() {
+        guard isKeyboardPresented, viewIfLoaded?.window != nil else { return }
 #if DEBUG
         if isTestField {
             KeyboardTestDiagnostics.record("schedule", source: "extension", details: [
@@ -220,6 +236,7 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     private func insertPendingScanIfReady() {
+        guard isKeyboardPresented, viewIfLoaded?.window != nil else { return }
         let proxy = textDocumentProxy
         let contentType = proxy.textContentType?.rawValue
         let isTest = contentType?.hasPrefix(KeyboardTestSession.contentTypePrefix) == true
@@ -280,6 +297,7 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     @objc private func extensionHostDidBecomeActive() {
+        guard isKeyboardPresented, viewIfLoaded?.window != nil else { return }
         insertionLogger.debug("Keyboard host became active")
 #if DEBUG
         recordDebugGeometry(event: "hostResume")
@@ -303,6 +321,7 @@ final class KeyboardViewController: KeyboardInputViewController {
             let activeWindow = view.window
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
                 guard let self, let activeWindow,
+                      self.isKeyboardPresented,
                       self.view.window === activeWindow else { return }
                 if let testContentType {
                     guard self.textDocumentProxy.textContentType?.rawValue == testContentType else { return }
@@ -766,7 +785,8 @@ private enum BlipGeometryDiagnostics {
 
     static func beginCapture(controller: KeyboardViewController, event: String) {
         let context = controller.state.keyboardContext
-        let proxy = controller.originalTextDocumentProxy
+        // Geometry callbacks also run after the host disconnects. Never inspect
+        // live text-input traits here; numeric view geometry and cached state suffice.
         captureViews = []
         capture = ["event": event, "activation": activation, "sequence": sequence,
             "capturedAt": Date().timeIntervalSince1970,
@@ -774,12 +794,9 @@ private enum BlipGeometryDiagnostics {
                 "orientation": String(describing: context.interfaceOrientation),
                 "screenSize": [Double(context.screenSize.width), Double(context.screenSize.height)],
                 "needsGlobe": context.needsInputModeSwitchKey,
-                "nativeNeedsGlobe": controller.needsInputModeSwitchKey,
+                "cachedNeedsGlobe": controller.needsInputModeSwitchKey,
                 "floating": context.isKeyboardFloating,
                 "keyboardType": String(describing: context.keyboardType),
-                "nativeKeyboardType": proxy.keyboardType?.rawValue ?? -1,
-                "nativeReturnKeyType": proxy.returnKeyType?.rawValue ?? -1,
-                "nativeAppearance": proxy.keyboardAppearance?.rawValue ?? -1,
                 "uiStyle": controller.traitCollection.userInterfaceStyle.rawValue,
                 "colorScheme": String(describing: context.colorScheme),
                 "appearance": SharedKeyboardState.keyboardAppearance.rawValue,
