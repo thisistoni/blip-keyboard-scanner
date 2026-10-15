@@ -53,7 +53,7 @@ struct AppRootView: View {
                 }
                 .tag(AppTab.history)
 
-            KeyboardLayoutSettingsView(setupStatus: setupStatus)
+            KeyboardLayoutSettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }

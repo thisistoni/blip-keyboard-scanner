@@ -2,8 +2,6 @@ import SwiftUI
 import UIKit
 
 struct KeyboardLayoutSettingsView: View {
-    let setupStatus: SetupVerificationStatus
-
     @State private var showingMailError = false
     @State private var showingStoreError = false
 
@@ -36,6 +34,18 @@ struct KeyboardLayoutSettingsView: View {
                     } label: {
                         Label("Company Profiles", systemImage: "doc.badge.gearshape")
                     }
+
+                    Button {
+                        SystemSettingsOpener.openAppSettings()
+                    } label: {
+                        HStack {
+                            Label("App Language", systemImage: "globe")
+                            Spacer()
+                            Image(systemName: "arrow.up.forward")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Section {
@@ -49,12 +59,6 @@ struct KeyboardLayoutSettingsView: View {
                         sendFeedback()
                     } label: {
                         Label("Send Feedback", systemImage: "paperplane")
-                    }
-
-                    NavigationLink {
-                        SetupDiagnosticsView(setupStatus: setupStatus)
-                    } label: {
-                        Label("Keyboard Setup Status", systemImage: setupStatus.isKeyboardEnabled ? "checkmark.circle" : "exclamationmark.circle")
                     }
 
                     Button {
@@ -518,56 +522,5 @@ private struct LayoutToggleRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-}
-
-private struct SetupDiagnosticRow: View {
-    let title: LocalizedStringKey
-    let value: String
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.trailing)
-                .textSelection(.enabled)
-        }
-    }
-}
-
-private struct SetupDiagnosticsView: View {
-    let setupStatus: SetupVerificationStatus
-
-    var body: some View {
-        List {
-            Section {
-                SetupDiagnosticRow(
-                    title: "Keyboard enabled",
-                    value: setupStatus.isKeyboardEnabled
-                        ? NSLocalizedString("Yes", comment: "Affirmative diagnostics value")
-                        : NSLocalizedString("No", comment: "Negative diagnostics value")
-                )
-
-                SetupDiagnosticRow(
-                    title: "Matched keyboard",
-                    value: setupStatus.snapshot.matchedKeyboard ?? NSLocalizedString("None", comment: "No diagnostics value")
-                )
-            }
-
-            Section {
-                Text(setupStatus.snapshot.rawKeyboardSummary)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .padding(.vertical, 4)
-            } header: {
-                Text("iOS Keyboard Entries")
-            } footer: {
-                Text("These are the keyboard entries iOS currently reports to Blip.")
-            }
-        }
-        .navigationTitle("Keyboard Status")
     }
 }

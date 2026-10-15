@@ -17,8 +17,8 @@ Blip is an iOS keyboard scanner for company workflows. It adds a custom keyboard
 - App Group handoff so the scanner app can queue a result for the keyboard to insert once.
 - Optional automatic insertion; the last scan stays available for an explicit keyboard tap.
 - Configurable scan suffix: none, tab, enter, or space.
-- Setup flow with keyboard detection, `Check Again`, settings shortcut, and diagnostics.
-- English and German app localization.
+- Setup flow with keyboard detection, `Check Again`, and a settings shortcut.
+- English and German app localization, with an App Language shortcut to iOS Settings.
 - System and Blip Blue keyboard themes, with optional key clicks and haptics.
 - A native keyboard test field that returns scans to Blip without changing the configured external destination.
 - Company profile sharing by file or QR code, with a preview before applying settings.
