@@ -119,7 +119,7 @@
 "Common barcodes plus QR codes for general company workflows." = "Common barcodes plus QR codes for general company workflows.";
 "Every format supported by this scanner, including QR, Data Matrix, PDF417, and Aztec." = "Every format supported by this scanner, including QR, Data Matrix, PDF417, and Aztec.";
 "Fast 1D formats for retail, warehouse, and product codes." = "Fast 1D formats for retail, warehouse, and product codes.";
-"QR code contents are inserted as plain text. Blip does not open links automatically." = "QR code contents are inserted as plain text. Blip does not open links automatically.";
+"Regular QR codes are inserted as text. Company profiles open a preview." = "Regular QR codes are inserted as text. Company profiles open a preview.";
 "Scan Formats" = "Scan Formats";
 "Tap Scan, scan the barcode or QR code, and Blip returns to the original app." = "Tap Scan, scan the barcode or QR code, and Blip returns to the original app.";
 "Blip sound on scan" = "Blip sound on scan";
@@ -280,3 +280,11 @@
 "Choose Blip with the globe key, then tap Scan. This test returns here." = "Choose Blip with the globe key, then tap Scan. This test returns here.";
 "Return to Keyboard Test" = "Return to Keyboard Test";
 "Keyboard Test" = "Keyboard Test";
+
+"Show QR Code" = "Show QR Code";
+"Company Profile QR Code" = "Company Profile QR Code";
+"This profile is too large for a readable QR code. Use file export and import instead." = "This profile is too large for a readable QR code. Use file export and import instead.";
+"This company profile QR version is not supported." = "This company profile QR version is not supported.";
+"The company profile QR code could not be created. Use file export instead." = "The company profile QR code could not be created. Use file export instead.";
+
+"Share Company Profile" = "Share Company Profile";

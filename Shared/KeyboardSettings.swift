@@ -653,15 +653,18 @@ enum SharedKeyboardState {
     }
 
     static var keyboardClickSound: Bool {
-        defaults?.object(forKey: Keys.keyboardClickSound) as? Bool ?? true
+        get { defaults?.object(forKey: Keys.keyboardClickSound) as? Bool ?? true }
+        set { defaults?.set(newValue, forKey: Keys.keyboardClickSound) }
     }
 
     static var keyboardHaptics: Bool {
-        defaults?.object(forKey: Keys.keyboardHaptics) as? Bool ?? true
+        get { defaults?.object(forKey: Keys.keyboardHaptics) as? Bool ?? true }
+        set { defaults?.set(newValue, forKey: Keys.keyboardHaptics) }
     }
 
     static var keyboardAppearance: KeyboardAppearance {
-        .resolved(rawValue: defaults?.string(forKey: Keys.keyboardAppearance))
+        get { .resolved(rawValue: defaults?.string(forKey: Keys.keyboardAppearance)) }
+        set { defaults?.set(newValue.rawValue, forKey: Keys.keyboardAppearance) }
     }
 
     static var canAccessAppGroup: Bool {

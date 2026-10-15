@@ -278,7 +278,7 @@ struct KeyboardLayoutSettingsView: View {
                 } header: {
                     Text("Scanner")
                 } footer: {
-                    Text("QR code contents are inserted as plain text. Blip does not open links automatically.")
+                    Text("Regular QR codes are inserted as text. Company profiles open a preview.")
                 }
 
                 Section {

@@ -119,7 +119,7 @@
 "Common barcodes plus QR codes for general company workflows." = "Gängige Barcodes plus QR-Codes für allgemeine Firmenabläufe.";
 "Every format supported by this scanner, including QR, Data Matrix, PDF417, and Aztec." = "Alle von diesem Scanner unterstützten Formate, inklusive QR, Data Matrix, PDF417 und Aztec.";
 "Fast 1D formats for retail, warehouse, and product codes." = "Schnelle 1D-Formate für Handel, Lager und Produktcodes.";
-"QR code contents are inserted as plain text. Blip does not open links automatically." = "QR-Code-Inhalte werden als normaler Text eingefügt. Blip öffnet Links nicht automatisch.";
+"Regular QR codes are inserted as text. Company profiles open a preview." = "Normale QR-Codes werden als Text eingefügt. Firmenprofile öffnen eine Vorschau.";
 "Scan Formats" = "Scan-Formate";
 "Tap Scan, scan the barcode or QR code, and Blip returns to the original app." = "Tippe auf Scan, scanne den Barcode oder QR-Code, und Blip kehrt zur ursprünglichen App zurück.";
 "Blip sound on scan" = "Blip-Sound beim Scannen";
@@ -280,3 +280,11 @@
 "Choose Blip with the globe key, then tap Scan. This test returns here." = "Wähle Blip mit der Globustaste und tippe auf Scan. Dieser Test kehrt hierher zurück.";
 "Return to Keyboard Test" = "Zurück zum Tastaturtest";
 "Keyboard Test" = "Tastaturtest";
+
+"Show QR Code" = "QR-Code anzeigen";
+"Company Profile QR Code" = "Firmenprofil als QR-Code";
+"This profile is too large for a readable QR code. Use file export and import instead." = "Dieses Profil ist zu groß für einen lesbaren QR-Code. Verwende stattdessen Datei-Export und -Import.";
+"This company profile QR version is not supported." = "Diese Firmenprofil-QR-Version wird nicht unterstützt.";
+"The company profile QR code could not be created. Use file export instead." = "Der Firmenprofil-QR-Code konnte nicht erstellt werden. Verwende stattdessen den Datei-Export.";
+
+"Share Company Profile" = "Firmenprofil teilen";

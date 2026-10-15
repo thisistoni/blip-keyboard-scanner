@@ -19,6 +19,9 @@ Blip is an iOS keyboard scanner for company workflows. It adds a custom keyboard
 - Configurable scan suffix: none, tab, enter, or space.
 - Setup flow with keyboard detection, `Check Again`, settings shortcut, and diagnostics.
 - English and German app localization.
+- System and Blip Blue keyboard themes, with optional key clicks and haptics.
+- A native keyboard test field that returns scans to Blip without changing the configured external destination.
+- Company profile sharing by file or QR code, with a preview before applying settings.
 
 ## How It Works
 
@@ -31,7 +34,7 @@ iOS keyboard extensions cannot access the camera directly, so Blip uses a contai
 5. Blip opens the configured automatic return target. For Safari, the user returns to the original tab manually.
 6. If automatic insertion is enabled, the keyboard inserts the matching pending scan through `textDocumentProxy`. Otherwise, the user taps `Insert Last Scan`.
 
-See [Architecture](docs/ARCHITECTURE.md) for more detail.
+See [Architecture](docs/ARCHITECTURE.md) for more detail and [Company Profiles](docs/COMPANY_PROFILES.md) for the shared configuration format.
 
 ## Repository Layout
 

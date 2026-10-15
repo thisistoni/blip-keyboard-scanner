@@ -281,7 +281,9 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     }
 
     private func updateScanSymbologies() {
-        barcodeRequest?.symbologies = scanFormatProfile.visionSymbologies
+        var symbologies = scanFormatProfile.visionSymbologies
+        if !symbologies.contains(.qr) { symbologies.append(.qr) }
+        barcodeRequest?.symbologies = symbologies
     }
 
     private func updateScanAreaRegion() {
@@ -489,6 +491,10 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             .first { observation in
                 guard let value = observation.payloadStringValue else { return false }
                 guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+                if observation.symbology == .qr,
+                   !BlipCompanyProfileQR.acceptsScannedQR(value, formatProfile: self.scanFormatProfile) {
+                    return false
+                }
                 return self.isObservationInsideActiveScanArea(
                     observation,
                     detectionRegionOfInterest: self.latestDetectionRegionOfInterest,
