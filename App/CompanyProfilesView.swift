@@ -241,6 +241,7 @@ private struct CompanyProfileQRCodeView: View {
                         ForEach(code.profile.includedSettings) { setting in
                             LabeledContent {
                                 Text(setting.value)
+                                    .foregroundStyle(.primary)
                                     .multilineTextAlignment(.trailing)
                                     .textSelection(.enabled)
                             } label: {

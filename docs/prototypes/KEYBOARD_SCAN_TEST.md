@@ -40,7 +40,8 @@ The test alone enables automatic insertion, independent of the saved Auto Insert
 - Build 28: a real camera scan with Auto Insert on returned to the same Chrome test page/field and inserted one code plus the configured newline, with Blip selected. The new pending token was consumed; no build 28 crash report appeared afterward.
 - Build 28 with Auto Insert off returned to an empty Chrome field with Blip still selected and a fresh, unconsumed token. Tapping Insert Last Scan inserted exactly one code plus the configured newline and consumed that token. No new crash report appeared after the camera return.
 - Build 28: a real camera scan with Safari configured and Auto Insert off returned to Blip's native test field and inserted the code exactly once. The extension recorded one proxy write and consumption; the native field then reported nonempty text as first responder. The actual field value was inspected after reconnecting device automation. Normal pending/last-scan values and decoded history entries were unchanged. The post-test crash inventory contained no new Blip reports.
-- Other external apps, iPad, older iOS and VoiceOver require further physical verification on this combined build.
+- Build 29: Brave and Firefox returned from the real camera to the test page and inserted one code plus newline. Firefox required its first-use Open confirmation. Safari showed manual instructions; an actual previous-app swipe returned to the original tab and empty field, and Insert wrote the scan once.
+- Physical iPad, older iOS and VoiceOver remain unverified. See the [combined validation summary](../RELEASE_1_0_4_QA.md) for current acceptance limits.
 
 Tracks ANT-67. ANT-65 remains separate visual/feedback validation. This is part of the existing keyboard prototype PR; no merge or App Store submission is authorized yet.
 
