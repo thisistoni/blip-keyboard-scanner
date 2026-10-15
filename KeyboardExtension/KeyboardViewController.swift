@@ -14,6 +14,10 @@ final class KeyboardViewController: KeyboardInputViewController {
         inputView = BlipInputView(frame: .zero, inputViewStyle: .keyboard)
         view = inputView
         view.backgroundColor = .clear
+#if DEBUG
+        BlipGeometryDiagnostics.controller = self
+        recordDebugGeometry(event: "loadView")
+#endif
     }
 
     override func viewDidLoad() {
@@ -32,6 +36,9 @@ final class KeyboardViewController: KeyboardInputViewController {
             press: .selectionChanged, release: .none, doubleTap: .none,
             longPress: .lightImpact, repeat: .selectionChanged)
         state.keyboardContext.isLiquidGlassEnabled = false
+#if DEBUG
+        recordDebugGeometry(event: "didLoad")
+#endif
         state.keyboardContext.settings.spaceLongPressBehavior = .moveInputCursor
         NotificationCenter.default.addObserver(self, selector: #selector(extensionHostDidBecomeActive),
             name: NSNotification.Name.NSExtensionHostDidBecomeActive, object: nil)
@@ -43,6 +50,9 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     override func viewWillSetupKeyboardView() {
+#if DEBUG
+        recordDebugGeometry(event: "beforeSetupKeyboardView")
+#endif
         setupKeyboardView { [unowned self] controller in
             BlipPremiumKeyboard(state: controller.state, services: controller.services,
                 presentation: self.presentation,
@@ -53,6 +63,9 @@ final class KeyboardViewController: KeyboardInputViewController {
                 },
                 insertScan: { [weak self] in self?.insertLastScanTapped() })
         }
+#if DEBUG
+        recordDebugGeometry(event: "afterSetupKeyboardView")
+#endif
     }
 
     override func viewWillSetupInitialKeyboardType() {
@@ -61,13 +74,26 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     override func viewWillSyncWithContext() {
+#if DEBUG
+        recordDebugGeometry(event: "beforeContextSync")
+#endif
         super.viewWillSyncWithContext()
         state.keyboardContext.keyboardType = .alphabetic
         state.keyboardContext.locale = Locale(identifier: SharedKeyboardState.keyboardLanguage == .german ? "de" : "en")
         refreshRecoveryButtonIfNeeded()
+#if DEBUG
+        recordDebugGeometry(event: "contextSyncQueued")
+        DispatchQueue.main.async { [weak self] in
+            self?.recordDebugGeometry(event: "contextSyncCompleted")
+        }
+#endif
     }
 
     override func viewWillAppear(_ animated: Bool) {
+#if DEBUG
+        BlipGeometryDiagnostics.beginActivation(controller: self)
+        recordDebugGeometry(event: "willAppear")
+#endif
         presentation.layout = SharedKeyboardState.defaultKeyboardLayout
         super.viewWillAppear(animated)
         SharedKeyboardState.recordKeyboardRuntime(hasFullAccess: hasFullAccess)
@@ -79,10 +105,30 @@ final class KeyboardViewController: KeyboardInputViewController {
         schedulePendingScanInsertion()
 #if DEBUG
         recordDebugGeometry(event: "didAppear")
+        let activation = BlipGeometryDiagnostics.activation
+        for delay in [0.1, 0.5, 1.5] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard BlipGeometryDiagnostics.activation == activation else { return }
+                self?.recordDebugGeometry(event: "appeared+\(delay)")
+            }
+        }
 #endif
     }
 
 #if DEBUG
+    override func viewWillLayoutSubviews() {
+        recordDebugGeometry(event: "beforeLayout")
+        super.viewWillLayoutSubviews()
+    }
+    override func updateViewConstraints() {
+        recordDebugGeometry(event: "beforeConstraints")
+        super.updateViewConstraints()
+        recordDebugGeometry(event: "afterConstraints")
+    }
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        recordDebugGeometry(event: "safeAreaChanged")
+    }
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         recordDebugGeometry(event: "afterLayout")
@@ -90,7 +136,10 @@ final class KeyboardViewController: KeyboardInputViewController {
             self?.recordDebugGeometry(event: "settledLayout")
         }
     }
-    private func recordDebugGeometry(event: String) {
+    fileprivate func recordDebugGeometry(event: String) {
+        guard isViewLoaded else { return }
+        BlipGeometryDiagnostics.beginCapture(controller: self, event: event)
+        defer { BlipGeometryDiagnostics.endCapture() }
         BlipGeometryDiagnostics.log(view, role: "extensionRoot", event: event)
         if let inputView { BlipGeometryDiagnostics.log(inputView, role: "inputView", event: event) }
         for child in children where child.isViewLoaded {
@@ -98,8 +147,8 @@ final class KeyboardViewController: KeyboardInputViewController {
         }
         var pending = [view!]
         while let item = pending.popLast() {
-            if item is BlipGeometryProbeView {
-                BlipGeometryDiagnostics.log(item, role: "swiftuiPanel", event: event)
+            if let probe = item as? BlipGeometryProbeView {
+                BlipGeometryDiagnostics.log(item, role: probe.role, event: event)
             }
             pending.append(contentsOf: item.subviews)
         }
@@ -107,6 +156,9 @@ final class KeyboardViewController: KeyboardInputViewController {
 #endif
 
     override func viewWillDisappear(_ animated: Bool) {
+#if DEBUG
+        recordDebugGeometry(event: "willDisappear")
+#endif
         super.viewWillDisappear(animated)
         pendingInsertionWorkItem?.cancel()
         pendingInsertionWorkItem = nil
@@ -114,6 +166,9 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         super.textDidChange(textInput)
+#if DEBUG
+        recordDebugGeometry(event: "textDidChange")
+#endif
         schedulePendingScanInsertion()
     }
 
@@ -454,6 +509,9 @@ private struct BlipPremiumKeyboard: View {
         .padding(.horizontal, 6)
         .padding(.top, 4)
         .padding(.bottom, 6)
+#if DEBUG
+        .background(BlipGeometryProbe(role: "toolbar").allowsHitTesting(false).accessibilityHidden(true))
+#endif
     }
 
     private var layout: KeyboardKit.KeyboardLayout {
@@ -580,22 +638,89 @@ private enum BlipGeometryDiagnostics {
     private static var lastReports: [String: String] = [:]
     private static var snapshots: [String: [String: Any]] = [:]
     private static var snapshotWriteScheduled = false
+    static weak var controller: KeyboardViewController?
+    static private(set) var activation = 0
+    private static let processID = UUID().uuidString
+    private static var sequence = 0
+    private static var capture: [String: Any]?
+    private static var captureViews: [[String: Any]] = []
+    private static var timeline: [[String: Any]] = []
+    private static var lastLayoutSignature: Data?
+
+    static func beginActivation(controller: KeyboardViewController) {
+        self.controller = controller
+        activation += 1
+        lastLayoutSignature = nil
+    }
+
+    static func beginCapture(controller: KeyboardViewController, event: String) {
+        let context = controller.state.keyboardContext
+        let proxy = controller.originalTextDocumentProxy
+        captureViews = []
+        capture = ["event": event, "activation": activation, "sequence": sequence,
+            "capturedAt": Date().timeIntervalSince1970,
+            "context": ["initialSetupComplete": controller.hasPerformedInitialSetup,
+                "orientation": String(describing: context.interfaceOrientation),
+                "screenSize": [Double(context.screenSize.width), Double(context.screenSize.height)],
+                "needsGlobe": context.needsInputModeSwitchKey,
+                "nativeNeedsGlobe": controller.needsInputModeSwitchKey,
+                "floating": context.isKeyboardFloating,
+                "keyboardType": String(describing: context.keyboardType),
+                "nativeKeyboardType": proxy.keyboardType?.rawValue ?? -1,
+                "nativeReturnKeyType": proxy.returnKeyType?.rawValue ?? -1,
+                "nativeAppearance": proxy.keyboardAppearance?.rawValue ?? -1,
+                "uiStyle": controller.traitCollection.userInterfaceStyle.rawValue,
+                "colorScheme": String(describing: context.colorScheme),
+                "appearance": SharedKeyboardState.keyboardAppearance.rawValue,
+                "layout": SharedKeyboardState.defaultKeyboardLayout.rawValue,
+                "additionalSafeArea": insets(controller.additionalSafeAreaInsets),
+                "preferredContentSize": [Double(controller.preferredContentSize.width), Double(controller.preferredContentSize.height)]]]
+    }
+
+    static func endCapture() {
+        guard var report = capture else { return }
+        capture = nil
+        report["views"] = captureViews
+        let signatureViews = captureViews.map { view -> [String: Any] in
+            var fields = view
+            fields.removeValue(forKey: "event")
+            return fields
+        }
+        let signatureObject: [String: Any] = ["context": report["context"]!, "views": signatureViews]
+        let signature = try? JSONSerialization.data(withJSONObject: signatureObject, options: [.sortedKeys])
+        let event = report["event"] as? String ?? ""
+        let isLayoutEvent = ["beforeLayout", "afterLayout", "settledLayout", "beforeConstraints", "afterConstraints"].contains(event)
+            || event.hasPrefix("probe.")
+        if isLayoutEvent, signature == lastLayoutSignature { return }
+        lastLayoutSignature = signature
+        sequence += 1
+        timeline.append(report)
+        if timeline.count > 80 { timeline.removeFirst(timeline.count - 80) }
+        scheduleSnapshotWrite()
+    }
+
+    private static func scheduleSnapshotWrite() {
+        guard !snapshotWriteScheduled else { return }
+        snapshotWriteScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            snapshotWriteScheduled = false
+            let defaults = UserDefaults(suiteName: SharedKeyboardState.appGroupIdentifier)
+            if let data = try? JSONSerialization.data(withJSONObject: snapshots, options: [.sortedKeys]) {
+                defaults?.set(data, forKey: "debugKeyboardGeometry")
+            }
+            let envelope: [String: Any] = ["schemaVersion": 2, "processID": processID,
+                "build": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "",
+                "records": timeline]
+            guard let data = try? JSONSerialization.data(withJSONObject: envelope, options: [.sortedKeys]) else { return }
+            defaults?.set(data, forKey: "debugKeyboardActivations")
+        }
+    }
 
     private static func saveSnapshot(_ report: [String: Any], key: String) {
         var snapshot = report
         snapshot["capturedAt"] = Date().timeIntervalSince1970
         snapshots[key] = snapshot
-        guard !snapshotWriteScheduled else { return }
-        snapshotWriteScheduled = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            snapshotWriteScheduled = false
-            guard let data = try? JSONSerialization.data(withJSONObject: snapshots, options: [.sortedKeys]) else { return }
-            UserDefaults(suiteName: SharedKeyboardState.appGroupIdentifier)?.set(data, forKey: "debugKeyboardGeometry")
-            guard let container = FileManager.default.containerURL(
-                forSecurityApplicationGroupIdentifier: SharedKeyboardState.appGroupIdentifier) else { return }
-            // DEBUG-only, bounded numeric layout records; readable through CoreDevice if syslog drops.
-            try? data.write(to: container.appendingPathComponent("BlipKeyboardGeometry.json"), options: .atomic)
-        }
+        scheduleSnapshotWrite()
     }
 
     private static func rect(_ value: CGRect) -> [Any] {
@@ -614,6 +739,20 @@ private enum BlipGeometryDiagnostics {
             let margins = item.directionalLayoutMargins
             var result: [String: Any] = ["class": String(describing: type(of: item)), "frame": rect(item.frame),
                 "bounds": rect(item.bounds), "hasWindow": item.window != nil,
+                "intrinsicSize": [Double(item.intrinsicContentSize.width), Double(item.intrinsicContentSize.height)],
+                "autoresizingMask": item.autoresizingMask.rawValue,
+                "translatesAutoresizingMask": item.translatesAutoresizingMaskIntoConstraints,
+                "verticalConstraints": item.constraints.filter { constraint in
+                    [.top, .bottom, .height, .centerY].contains(constraint.firstAttribute)
+                }.prefix(12).map { constraint in
+                    ["firstClass": constraint.firstItem.map { String(describing: type(of: $0)) } ?? "",
+                        "firstAttribute": constraint.firstAttribute.rawValue,
+                        "secondClass": constraint.secondItem.map { String(describing: type(of: $0)) } ?? "",
+                        "secondAttribute": constraint.secondAttribute.rawValue,
+                        "constant": Double(constraint.constant), "multiplier": Double(constraint.multiplier),
+                        "relation": constraint.relation.rawValue, "priority": Double(constraint.priority.rawValue),
+                        "active": constraint.isActive] as [String: Any]
+                },
                 "safeArea": insets(item.safeAreaInsets), "layoutMargins": insets(item.layoutMargins),
                 "directionalMargins": [Double(margins.top), Double(margins.leading), Double(margins.bottom), Double(margins.trailing)]]
             if let window {
@@ -631,6 +770,9 @@ private enum BlipGeometryDiagnostics {
             guard let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
                   let message = String(data: data, encoding: .utf8) else { return }
             let key = role + suffix + event
+            if capture != nil, suffix.isEmpty || (role == "extensionRoot" && suffix.hasPrefix(".parent")) {
+                captureViews.append(report)
+            }
             saveSnapshot(report, key: key)
             guard lastReports[key] != message else { return }
             lastReports[key] = message
@@ -654,8 +796,10 @@ private enum BlipGeometryDiagnostics {
 }
 
 private struct BlipGeometryProbe: UIViewRepresentable {
+    var role = "swiftuiPanel"
     func makeUIView(context: Context) -> BlipGeometryProbeView {
         let view = BlipGeometryProbeView()
+        view.role = role
         view.backgroundColor = .clear
         view.isUserInteractionEnabled = false
         view.accessibilityElementsHidden = true
@@ -665,6 +809,7 @@ private struct BlipGeometryProbe: UIViewRepresentable {
 }
 
 private final class BlipGeometryProbeView: UIView {
+    var role = "swiftuiPanel"
     override func layoutSubviews() {
         super.layoutSubviews()
         reportAfterLayout()
@@ -676,7 +821,8 @@ private final class BlipGeometryProbeView: UIView {
     private func reportAfterLayout() {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            BlipGeometryDiagnostics.log(self, role: "swiftuiPanel", event: "afterLayout")
+            guard self.window != nil else { return }
+            BlipGeometryDiagnostics.controller?.recordDebugGeometry(event: "probe.\(self.role).afterLayout")
         }
     }
 }
