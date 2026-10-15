@@ -1,6 +1,14 @@
 # Blip 1.0.4 device validation
 
-Current development build: **36**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
+Current release candidate: **37**, archived from `73fb163e276edcc4e0e864f094b3b96b3964975e`. The combined update remains in PR #3; it has not been submitted for App Review. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
+
+## Release candidate 37
+
+The owner approved shipping the combined update with the existing **700 ms** settling interval restored and no adjustable delay setting. The 400 ms work and the isolated event-driven research are not part of this release's timing behavior. Historical results below retain their actual build numbers.
+
+Signed Debug build, Release archive, strict signature verification, distribution export, localization/plist lint, and standalone scan/session/profile tests pass. App and extension version/build agree at **1.0.4 (37)**; MIT notices are present in both bundles. The archived app installed in place. Non-history shared preferences and all 19 decoded history records match the pre-install snapshot.
+
+The final archived-build physical smoke test is blocked, not passed. The previously running WebDriverAgent lost authorization (`XCTDaemonErrorDomain` code 41); a fresh runner failed with `Timed out while enabling automation mode` before tests executed. The owner was asked to unlock with the PIN/approve the automation prompt. App Review submission is held until this check can run.
 
 This is the current acceptance summary. The prototype documents also contain historical investigation results, which are not a claim that every later check is complete.
 
