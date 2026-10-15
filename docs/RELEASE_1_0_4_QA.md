@@ -1,6 +1,6 @@
 # Blip 1.0.4 device validation
 
-Current development build: **30**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
+Current development build: **31**. The combined update remains in PR #3; it has not been submitted to App Store Connect. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
 
 This is the current acceptance summary. The prototype documents also contain historical investigation results, which are not a claim that every later check is complete.
 
@@ -14,6 +14,7 @@ This is the current acceptance summary. The prototype documents also contain his
 | Scan-only mode | Disabling all three layouts left the Scan/Insert controls and system keyboard switch accessible. Scan opened the native test camera; a profile preview was recognized and Cancel preserved settings. |
 | Camera format filtering | Under Common Barcodes, a fully visible ordinary QR was ignored; the camera screenshot independently decoded to the expected plain value. Replacing it with a valid company profile opened Preview. Apply then restored the original German/layout/format settings. |
 | Keyboard switching | Globe switching out and back checked; five browser/system/Blip/native-field cycles passed after the build 28 lifecycle repair. |
+| Music during scanner opening | Build 30 reproduced the interruption: iOS media controls changed from Pause to Play after a fresh scanner open. Build 31 configures mixing before beep preloading and disables capture-session audio reconfiguration. With the same music resumed, the real scanner opened and media controls stayed on Pause (playing). |
 | Native scanner test | Real camera result inserted exactly once with Safari configured and automatic insertion disabled. Repeated scan and Cancel paths checked. Native testing preserved ordinary scan/history state. |
 | Chrome | Real camera return to the same test field; automatic insertion exactly once. With automatic insertion off, field stayed empty until Insert was tapped. Build 28. |
 | Brave | Real camera return to the same test field and one insertion, with Blip selected. Build 29. |
@@ -26,9 +27,11 @@ This is the current acceptance summary. The prototype documents also contain his
 | Accessibility display options | Increase Contrast: QR sheet and System keyboard remained readable. Largest standard text size (accessibility sizes off): Scan page and QR summary remained readable and scrollable; every profile value was reachable. Original text size and contrast restored. |
 | Stability | Device crash inventory after build 29 browser tests contained only the previously recorded build 4/27 reports. This does not establish crash-free behavior outside tested paths. |
 
-Debug and Release builds, strict code-signature verification, localization lint, and standalone scan/session/profile tests pass for build 29. Build 29 changed QR text contrast and bundle build numbers. Build 30 changes input/accent popup colors to use the ordinary letter-key style; the scan/session repair is unchanged from build 28. Debug and Release builds and strict signature verification pass for build 30. The earlier scan/profile checks retain their stated build numbers.
+Debug and Release builds, strict code-signature verification, localization lint, and standalone scan/session/profile tests pass for build 29. Build 29 changed QR text contrast and bundle build numbers. Build 30 changes input/accent popup colors to use the ordinary letter-key style; the scan/session repair is unchanged from build 28. Debug and Release builds and strict signature verification pass for build 30. Build 31 corrects audio-session ordering and video-only capture configuration; signed Debug/Release builds pass. The earlier scan/profile checks retain their stated build numbers.
 
 ## Still to verify
+
+- Music through an actual completed scan/beep, repeated open/cancel, and the sound-disabled variant on build 31. The scanner is open for the camera check; opening with sound enabled is already verified.
 
 - Final visual acceptance of the revised profile QR sheet.
 - Key-click/haptic on/off and silent-mode behavior by listening and feeling the physical phone.

@@ -1,6 +1,6 @@
 # Blip KeyboardKit prototype
 
-Development build **1.0.4 (30)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending the remaining physical checks. See the [current combined validation summary](../RELEASE_1_0_4_QA.md); the investigation sections below retain their original build-specific limits.
+Development build **1.0.4 (31)** on branch `codex/keyboardkit-premium`, based on `a29dded` / main. This prototype is not submitted to App Store Connect and remains unmerged pending the remaining physical checks. See the [current combined validation summary](../RELEASE_1_0_4_QA.md); the investigation sections below retain their original build-specific limits.
 
 ## Dependency and license
 

@@ -343,6 +343,8 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 let input = try AVCaptureDeviceInput(device: device)
 
                 self.session.beginConfiguration()
+                // Video-only scanning must not replace the beep's mixing policy.
+                self.session.automaticallyConfiguresApplicationAudioSession = false
                 self.session.sessionPreset = .high
 
                 guard self.session.canAddInput(input) else {
