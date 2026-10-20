@@ -1,6 +1,6 @@
 # Blip 1.0.4 device validation
 
-Current release candidate: **37**, archived from `73fb163e276edcc4e0e864f094b3b96b3964975e`. The combined update remains in PR #3; it has not been submitted for App Review. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
+Submitted release: **1.0.4 (37)**, archived from `73fb163e276edcc4e0e864f094b3b96b3964975e`, supplied by PR #3. App Store Connect shows **Waiting for Review**, verified on **20 October 2026**. Tests use a physical iPhone 16 Pro Max on iOS 27.0.1. No simulator is used.
 
 ## Release candidate 37
 
@@ -8,7 +8,16 @@ The owner approved shipping the combined update with the existing **700 ms** set
 
 Signed Debug build, Release archive, strict signature verification, distribution export, localization/plist lint, and standalone scan/session/profile tests pass. App and extension version/build agree at **1.0.4 (37)**; MIT notices are present in both bundles. The archived app installed in place. Non-history shared preferences and all 19 decoded history records match the pre-install snapshot.
 
-The final archived-build physical smoke test is blocked, not passed. The previously running WebDriverAgent lost authorization (`XCTDaemonErrorDomain` code 41); a fresh runner failed with `Timed out while enabling automation mode` before tests executed. The owner was asked to unlock with the PIN/approve the automation prompt. App Review submission is held until this check can run.
+The final archived-build physical smoke test passed on 20 October after restarting phone automation. The installed app inventory confirmed **1.0.4 (37)**. Real camera scans verified:
+
+- Brave with Auto Insert on: the exact value appeared once in the original Google field; the matching pending request was consumed.
+- Brave with Auto Insert off: the field remained empty and the result remained unconsumed after returning. Explicit Insert entered the exact value once. The configured Enter suffix submitted the Google search as expected.
+- Blip's native test field: the scan returned to Blip and inserted once with Brave still configured and Auto Insert off.
+- With the QR display blank, opening the native scanner and cancelling left the field unchanged. Refocusing did not insert again.
+
+All saved configuration preferences match the current pre-test snapshot after restoring Auto Insert. The pre-test history was empty; the two ordinary browser scans added two test records. Native scans did not add ordinary history records. Temporary scan/result identifiers changed as expected. Phone automation settings were restored and the runner stopped. Private device screenshots, accessibility captures and preference comparisons are retained outside the repository.
+
+The earlier 15 October automation failures occurred before this final smoke test and did not validate device behavior. The submitted runtime source is unchanged from the archived commit; subsequent commits update release records only.
 
 This is the current acceptance summary. The prototype documents also contain historical investigation results, which are not a claim that every later check is complete.
 
@@ -28,7 +37,7 @@ This is the current acceptance summary. The prototype documents also contain his
 | Native scanner test | Real camera result inserted exactly once with Safari configured and automatic insertion disabled. Repeated scan and Cancel paths checked. Native testing preserved ordinary scan/history state. |
 | Chrome | Real camera return to the same test field; automatic insertion exactly once. With automatic insertion off, field stayed empty until Insert was tapped. Build 28. |
 | Brave | Real camera return to the same test field and one insertion, with Blip selected. Build 29. |
-| Faster automatic insertion | Build 36: two real QR scans returned to the same Brave Google field and inserted the exact value once. Each matching request had one proxy write and was consumed; the last scheduling event to write measured about 417 ms. With Auto Insert off, a third scan left the field empty and request unconsumed; explicit Insert entered the value once. These checks ran over Wi-Fi. |
+| Insertion timing experiment, not shipped | Build 36: two real QR scans returned to the same Brave Google field and inserted the exact value once. Each matching request had one proxy write and was consumed; the last scheduling event to write measured about 417 ms. With Auto Insert off, a third scan left the field empty and request unconsumed; explicit Insert entered the value once. These checks ran over Wi-Fi. Build 37 restores 700 ms. |
 | Flashlight default | Build 35: saved OFF → manually ON → cancel/reopen started OFF; saved ON → manually OFF → cancel/reopen started ON. Shared preferences retained the saved default during both overrides. Build 36: a completed Brave scan with the flashlight manually ON left the saved default OFF; the next scanner started OFF. |
 | Firefox | Real camera return and one insertion after the first-use iOS Open Firefox confirmation. Build 29. |
 | Safari | Real camera scan showed the manual instructions. A home-indicator swipe returned to the original tab and empty field; Insert entered the result once. Build 29. |
