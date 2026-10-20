@@ -31,7 +31,6 @@
 "Keyboard" = "Tastatur";
 "Keyboard Profile" = "Tastaturprofil";
 "Keyboard Type" = "Tastaturtyp";
-"Keyboard enabled" = "Tastatur aktiviert";
 "Keyboard return target" = "Rückkehrziel der Tastatur";
 "Language" = "Sprache";
 "Large Numbers" = "Große Zahlen";
@@ -102,12 +101,10 @@
 "return" = "return";
 "space" = "Leerzeichen";
 "After enabling Blip and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Blip so it can refresh the keyboard state." = "Nachdem du Blip und Vollen Zugriff erlaubt hast, tippe auf Erneut prüfen. Falls iOS die Tastatur immer noch nicht meldet, schließe Blip vollständig und öffne die App neu, damit der Tastaturstatus aktualisiert wird.";
-"Best company setup" = "Beste Firmeneinrichtung";
 "Check Again" = "Erneut prüfen";
 "How It Works" = "So funktioniert es";
 "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button." = "Tippe in Safari oder einer anderen App in ein Textfeld und wechsle unten links über die Tastaturtaste zu Blip.";
 "Inserted where you started" = "Wird dort eingefügt, wo du gestartet bist";
-"Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan." = "Entferne nicht benötigte Tastaturen in den iOS-Tastatureinstellungen, damit Mitarbeiter nicht versehentlich zu einer Tastatur ohne Scan wechseln.";
 "Scan from the keyboard" = "Über die Tastatur scannen";
 "Still seeing setup?" = "Siehst du weiterhin die Einrichtung?";
 "Tap Scan, scan the barcode, and Blip returns to the original app." = "Tippe auf Scan, scanne den Barcode, und Blip kehrt zur ursprünglichen App zurück.";
@@ -119,7 +116,7 @@
 "Common barcodes plus QR codes for general company workflows." = "Gängige Barcodes plus QR-Codes für allgemeine Firmenabläufe.";
 "Every format supported by this scanner, including QR, Data Matrix, PDF417, and Aztec." = "Alle von diesem Scanner unterstützten Formate, inklusive QR, Data Matrix, PDF417 und Aztec.";
 "Fast 1D formats for retail, warehouse, and product codes." = "Schnelle 1D-Formate für Handel, Lager und Produktcodes.";
-"QR code contents are inserted as plain text. Blip does not open links automatically." = "QR-Code-Inhalte werden als normaler Text eingefügt. Blip öffnet Links nicht automatisch.";
+"Regular QR codes are inserted as text. Company profiles open a preview." = "Normale QR-Codes werden als Text eingefügt. Firmenprofile öffnen eine Vorschau.";
 "Scan Formats" = "Scan-Formate";
 "Tap Scan, scan the barcode or QR code, and Blip returns to the original app." = "Tippe auf Scan, scanne den Barcode oder QR-Code, und Blip kehrt zur ursprünglichen App zurück.";
 "Blip sound on scan" = "Blip-Sound beim Scannen";
@@ -167,7 +164,6 @@
 "Install or configure Mail to send feedback from Blip." = "Installiere oder konfiguriere Mail, um Feedback aus Blip zu senden.";
 "Install or configure Mail, or copy the scan and send it with another email app." = "Installiere oder konfiguriere Mail, oder kopiere den Scan und sende ihn mit einer anderen E-Mail-App.";
 "Inserted by keyboard" = "Über Tastatur eingefügt";
-"iOS Keyboard Entries" = "iOS-Tastatureinträge";
 "iOS keeps keyboards and apps separate. Full Access lets the Blip keyboard extension and scanner app share the scan result through the app group." = "iOS trennt Tastaturen und Apps. Voller Zugriff erlaubt der Blip-Tastaturerweiterung und der Scanner-App, das Scanergebnis über die App-Gruppe zu teilen.";
 "Keep History" = "Verlauf behalten";
 "Keep scans from the last 24 hours." = "Scans der letzten 24 Stunden behalten.";
@@ -175,11 +171,8 @@
 "Keep scans from the last 7 days." = "Scans der letzten 7 Tage behalten.";
 "Keep scans until you delete them." = "Scans behalten, bis du sie löschst.";
 "Keyboard Scan" = "Tastatur-Scan";
-"Keyboard Setup Status" = "Tastaturstatus";
-"Keyboard Status" = "Tastaturstatus";
 "Keyboard language" = "Tastatursprache";
 "Legal & Support" = "Rechtliches & Support";
-"Matched keyboard" = "Erkannte Tastatur";
 "Maximum default zoom for tiny or distant codes." = "Maximaler Standardzoom für sehr kleine oder entfernte Codes.";
 "More" = "Mehr";
 "No cloud sync" = "Keine Cloud-Synchronisierung";
@@ -210,14 +203,12 @@
 "Sound, flashlight, zoom, and scan area" = "Sound, Taschenlampe, Zoom und Scanbereich";
 "Successful real scans will appear here." = "Erfolgreiche echte Scans erscheinen hier.";
 "The profile contains an invalid value for %@." = "Das Profil enthält einen ungültigen Wert für %@.";
-"These are the keyboard entries iOS currently reports to Blip." = "Das sind die Tastatureinträge, die iOS Blip aktuell meldet.";
 "This profile matches the current settings." = "Dieses Profil entspricht den aktuellen Einstellungen.";
 "This removes local scan history from this device." = "Dadurch wird der lokale Scanverlauf von diesem Gerät entfernt.";
 "Try a different search term." = "Versuche einen anderen Suchbegriff.";
 "Unknown" = "Unbekannt";
 "Unknown format" = "Unbekanntes Format";
 "Use the normal camera view." = "Normale Kameraansicht verwenden.";
-"Use this when iOS Settings does not seem to match what Blip detects." = "Nutze das, wenn die iOS-Einstellungen nicht zu dem passen, was Blip erkennt.";
 "Why Full Access is needed" = "Warum voller Zugriff nötig ist";
 "You can turn history off, choose how long it is kept, delete one item, or clear everything." = "Du kannst den Verlauf deaktivieren, die Aufbewahrungsdauer wählen, einzelne Einträge löschen oder alles löschen.";
 "Blip Sound" = "Blip-Sound";
@@ -265,3 +256,31 @@
 "Automatically returns to your open browser tab after scanning." = "Kehrt nach dem Scannen automatisch zu deinem geöffneten Browser-Tab zurück.";
 "Automatically returns to the selected browser after scanning." = "Kehrt nach dem Scannen automatisch zum ausgewählten Browser zurück.";
 "Automatically opens your Custom Return URL after scanning." = "Öffnet nach dem Scannen automatisch deine eigene Rückkehr-URL.";
+
+"Key Clicks" = "Tastentöne";
+"Key Haptics" = "Tastenhaptik";
+"Keyboard Appearance" = "Tastaturdesign";
+"Appearance" = "Design";
+"System" = "System";
+"Blip Blue" = "Blip-Blau";
+"Keyboard Feedback" = "Tastaturfeedback";
+
+"Test the Blip keyboard" = "Blip-Tastatur testen";
+"Scan result" = "Scan-Ergebnis";
+"External return target" = "Externes Rückkehrziel";
+"Choose Blip with the globe key, then tap Scan. This test returns here." = "Wähle Blip mit der Globustaste und tippe auf Scan. Dieser Test kehrt hierher zurück.";
+"Return to Keyboard Test" = "Zurück zum Tastaturtest";
+"Keyboard Test" = "Tastaturtest";
+
+"Show QR Code" = "QR-Code anzeigen";
+"Company Profile QR Code" = "Firmenprofil als QR-Code";
+"This profile is too large for a readable QR code. Use file export and import instead." = "Dieses Profil ist zu groß für einen lesbaren QR-Code. Verwende stattdessen Datei-Export und -Import.";
+"This company profile QR version is not supported." = "Diese Firmenprofil-QR-Version wird nicht unterstützt.";
+"The company profile QR code could not be created. Use file export instead." = "Der Firmenprofil-QR-Code konnte nicht erstellt werden. Verwende stattdessen den Datei-Export.";
+
+"Share Company Profile" = "Firmenprofil teilen";
+
+"Keyboard Settings" = "Tastatureinstellungen";
+"Scanner Settings" = "Scanner-Einstellungen";
+"Return & Insertion" = "Rückkehr & Einfügen";
+"App Language" = "App-Sprache";

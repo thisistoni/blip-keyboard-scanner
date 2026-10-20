@@ -10,6 +10,10 @@ settings:
     SWIFT_VERSION: "5.0"
     IPHONEOS_DEPLOYMENT_TARGET: "16.0"
     ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "NO"
+packages:
+  KeyboardKit:
+    url: https://github.com/KeyboardKit/KeyboardKit.git
+    exactVersion: 9.9.0
 targets:
   Blip:
     type: application
@@ -26,6 +30,8 @@ targets:
       - target: BlipKeyboardExtension
         embed: true
   BlipKeyboardExtension:
+    dependencies:
+      - package: KeyboardKit
     type: app-extension
     platform: iOS
     sources:

@@ -34,6 +34,9 @@
 		E54A46DB412041B7F6EE7942 /* SystemSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */; };
 		ED860D2D15741BE25855EFDA /* ScanHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */; };
 		FD047880801250BBA16B80FE /* SupportEmail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F4AAFBA4E577FB1CC1547E2 /* SupportEmail.swift */; };
+		B11B00000000000000000001 /* KeyboardKit in Frameworks */ = {isa = PBXBuildFile; productRef = B11B00000000000000000002 /* KeyboardKit */; };
+		B11B00000000000000000005 /* KeyboardKit-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = B11B00000000000000000004 /* KeyboardKit-LICENSE.txt */; };
+		B11B00000000000000000006 /* KeyboardKit-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = B11B00000000000000000004 /* KeyboardKit-LICENSE.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,7 +93,17 @@
 		EF1998ECC1E46ECFC99560FC /* CompanyProfilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyProfilesView.swift; sourceTree = "<group>"; };
 		EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanHistory.swift; sourceTree = "<group>"; };
 		F734A33224949622F8071EFB /* blip.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = blip.mp3; sourceTree = "<group>"; };
+		B11B00000000000000000004 /* KeyboardKit-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "KeyboardKit-LICENSE.txt"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B11B00000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (B11B00000000000000000001 /* KeyboardKit in Frameworks */,);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		041D7D6CC5534A1C2E2BB06E /* Products */ = {
@@ -115,6 +128,7 @@
 			children = (
 				83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */,
 				7636556798B59B570DF3FDEC /* KeyboardSettings.swift */,
+				B11B00000000000000000004 /* KeyboardKit-LICENSE.txt */,
 				EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */,
 				EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */,
 			);
@@ -175,6 +189,7 @@
 			buildConfigurationList = 4EE449065301D05407DE8686 /* Build configuration list for PBXNativeTarget "BlipKeyboardExtension" */;
 			buildPhases = (
 				4B3548926874B12A90294B4F /* Sources */,
+				B11B00000000000000000003 /* Frameworks */,
 				332C9285D806B9ECDAB1888A /* Resources */,
 			);
 			buildRules = (
@@ -183,6 +198,7 @@
 			);
 			name = BlipKeyboardExtension;
 			packageProductDependencies = (
+				B11B00000000000000000002 /* KeyboardKit */,
 			);
 			productName = BlipKeyboardExtension;
 			productReference = 6F6828F175B2EA6283AE2569 /* BlipKeyboardExtension.appex */;
@@ -241,6 +257,7 @@
 			productRefGroup = 041D7D6CC5534A1C2E2BB06E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
+			packageReferences = (B11B00000000000000000007 /* KeyboardKit */,);
 			targets = (
 				E6DB53EB56234A16885B866A /* Blip */,
 				2DBFED85946D74879F32AC31 /* BlipKeyboardExtension */,
@@ -254,6 +271,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C002F8AE24097E721454CBEC /* PrivacyInfo.xcprivacy in Resources */,
+				B11B00000000000000000005 /* KeyboardKit-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -264,6 +282,7 @@
 				AAA60C90D4EC9D200F3E16E4 /* Assets.xcassets in Resources */,
 				BF2638979D1D4921030654F8 /* Localizable.strings in Resources */,
 				D0DE4492D022484817C7D82F /* PrivacyInfo.xcprivacy in Resources */,
+				B11B00000000000000000006 /* KeyboardKit-LICENSE.txt in Resources */,
 				016F2660FD3B3C42CFB3B88B /* blip.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -327,6 +346,21 @@
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B11B00000000000000000007 /* KeyboardKit */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/KeyboardKit/KeyboardKit.git";
+			requirement = {kind = exactVersion; version = 9.9.0; };
+		};
+/* End XCRemoteSwiftPackageReference section */
+/* Begin XCSwiftPackageProductDependency section */
+		B11B00000000000000000002 /* KeyboardKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B11B00000000000000000007 /* KeyboardKit */;
+			productName = KeyboardKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		163CC58C30ACED6969E8E007 /* Debug */ = {

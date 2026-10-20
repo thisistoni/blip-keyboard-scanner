@@ -31,7 +31,6 @@
 "Keyboard" = "Keyboard";
 "Keyboard Profile" = "Keyboard Profile";
 "Keyboard Type" = "Keyboard Type";
-"Keyboard enabled" = "Keyboard enabled";
 "Keyboard return target" = "Keyboard return target";
 "Language" = "Language";
 "Large Numbers" = "Large Numbers";
@@ -102,12 +101,10 @@
 "return" = "return";
 "space" = "space";
 "After enabling Blip and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Blip so it can refresh the keyboard state." = "After enabling Blip and Allow Full Access, tap Check Again. If iOS still does not report the keyboard, fully close and reopen Blip so it can refresh the keyboard state.";
-"Best company setup" = "Best company setup";
 "Check Again" = "Check Again";
 "How It Works" = "How It Works";
 "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button." = "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button.";
 "Inserted where you started" = "Inserted where you started";
-"Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan." = "Remove unused keyboards in iOS Keyboard settings so employees do not accidentally switch to a keyboard without Scan.";
 "Scan from the keyboard" = "Scan from the keyboard";
 "Still seeing setup?" = "Still seeing setup?";
 "Tap Scan, scan the barcode, and Blip returns to the original app." = "Tap Scan, scan the barcode, and Blip returns to the original app.";
@@ -119,7 +116,7 @@
 "Common barcodes plus QR codes for general company workflows." = "Common barcodes plus QR codes for general company workflows.";
 "Every format supported by this scanner, including QR, Data Matrix, PDF417, and Aztec." = "Every format supported by this scanner, including QR, Data Matrix, PDF417, and Aztec.";
 "Fast 1D formats for retail, warehouse, and product codes." = "Fast 1D formats for retail, warehouse, and product codes.";
-"QR code contents are inserted as plain text. Blip does not open links automatically." = "QR code contents are inserted as plain text. Blip does not open links automatically.";
+"Regular QR codes are inserted as text. Company profiles open a preview." = "Regular QR codes are inserted as text. Company profiles open a preview.";
 "Scan Formats" = "Scan Formats";
 "Tap Scan, scan the barcode or QR code, and Blip returns to the original app." = "Tap Scan, scan the barcode or QR code, and Blip returns to the original app.";
 "Blip sound on scan" = "Blip sound on scan";
@@ -167,7 +164,6 @@
 "Install or configure Mail to send feedback from Blip." = "Install or configure Mail to send feedback from Blip.";
 "Install or configure Mail, or copy the scan and send it with another email app." = "Install or configure Mail, or copy the scan and send it with another email app.";
 "Inserted by keyboard" = "Inserted by keyboard";
-"iOS Keyboard Entries" = "iOS Keyboard Entries";
 "iOS keeps keyboards and apps separate. Full Access lets the Blip keyboard extension and scanner app share the scan result through the app group." = "iOS keeps keyboards and apps separate. Full Access lets the Blip keyboard extension and scanner app share the scan result through the app group.";
 "Keep History" = "Keep History";
 "Keep scans from the last 24 hours." = "Keep scans from the last 24 hours.";
@@ -175,11 +171,8 @@
 "Keep scans from the last 7 days." = "Keep scans from the last 7 days.";
 "Keep scans until you delete them." = "Keep scans until you delete them.";
 "Keyboard Scan" = "Keyboard Scan";
-"Keyboard Setup Status" = "Keyboard Setup Status";
-"Keyboard Status" = "Keyboard Status";
 "Keyboard language" = "Keyboard language";
 "Legal & Support" = "Legal & Support";
-"Matched keyboard" = "Matched keyboard";
 "Maximum default zoom for tiny or distant codes." = "Maximum default zoom for tiny or distant codes.";
 "More" = "More";
 "No cloud sync" = "No cloud sync";
@@ -210,14 +203,12 @@
 "Sound, flashlight, zoom, and scan area" = "Sound, flashlight, zoom, and scan area";
 "Successful real scans will appear here." = "Successful real scans will appear here.";
 "The profile contains an invalid value for %@." = "The profile contains an invalid value for %@.";
-"These are the keyboard entries iOS currently reports to Blip." = "These are the keyboard entries iOS currently reports to Blip.";
 "This profile matches the current settings." = "This profile matches the current settings.";
 "This removes local scan history from this device." = "This removes local scan history from this device.";
 "Try a different search term." = "Try a different search term.";
 "Unknown" = "Unknown";
 "Unknown format" = "Unknown format";
 "Use the normal camera view." = "Use the normal camera view.";
-"Use this when iOS Settings does not seem to match what Blip detects." = "Use this when iOS Settings does not seem to match what Blip detects.";
 "Why Full Access is needed" = "Why Full Access is needed";
 "You can turn history off, choose how long it is kept, delete one item, or clear everything." = "You can turn history off, choose how long it is kept, delete one item, or clear everything.";
 "Blip Sound" = "Blip Sound";
@@ -265,3 +256,31 @@
 "Automatically returns to your open browser tab after scanning." = "Automatically returns to your open browser tab after scanning.";
 "Automatically returns to the selected browser after scanning." = "Automatically returns to the selected browser after scanning.";
 "Automatically opens your Custom Return URL after scanning." = "Automatically opens your Custom Return URL after scanning.";
+
+"Key Clicks" = "Key Clicks";
+"Key Haptics" = "Key Haptics";
+"Keyboard Appearance" = "Keyboard Appearance";
+"Appearance" = "Appearance";
+"System" = "System";
+"Blip Blue" = "Blip Blue";
+"Keyboard Feedback" = "Keyboard Feedback";
+
+"Test the Blip keyboard" = "Test the Blip keyboard";
+"Scan result" = "Scan result";
+"External return target" = "External return target";
+"Choose Blip with the globe key, then tap Scan. This test returns here." = "Choose Blip with the globe key, then tap Scan. This test returns here.";
+"Return to Keyboard Test" = "Return to Keyboard Test";
+"Keyboard Test" = "Keyboard Test";
+
+"Show QR Code" = "Show QR Code";
+"Company Profile QR Code" = "Company Profile QR Code";
+"This profile is too large for a readable QR code. Use file export and import instead." = "This profile is too large for a readable QR code. Use file export and import instead.";
+"This company profile QR version is not supported." = "This company profile QR version is not supported.";
+"The company profile QR code could not be created. Use file export instead." = "The company profile QR code could not be created. Use file export instead.";
+
+"Share Company Profile" = "Share Company Profile";
+
+"Keyboard Settings" = "Keyboard Settings";
+"Scanner Settings" = "Scanner Settings";
+"Return & Insertion" = "Return & Insertion";
+"App Language" = "App Language";
