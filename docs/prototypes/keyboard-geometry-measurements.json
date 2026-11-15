@@ -1,0 +1,222 @@
+{
+  "build": "1.0.4 (13)",
+  "device": "iPhone 16 Pro Max",
+  "context": "Spotlight, Blip Blue, user confirmed gray strip visible",
+  "units": "points; rectangles x,y,width,height; insets top,left,bottom,right",
+  "settled": [
+    {
+      "time": "Oct 12 23:12:20.703054",
+      "role": "extensionRoot",
+      "event": "settledLayout",
+      "appearance": "blipBlue",
+      "geometry": {
+        "frame": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "bounds": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inWindow": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inScreen": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "safeArea": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutMargins": [
+          0,
+          20,
+          0,
+          20
+        ],
+        "directionalMargins": [
+          0,
+          20,
+          0,
+          20
+        ]
+      }
+    },
+    {
+      "time": "Oct 12 23:12:20.703460",
+      "role": "inputView",
+      "event": "settledLayout",
+      "appearance": "blipBlue",
+      "geometry": {
+        "frame": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "bounds": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inWindow": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inScreen": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "safeArea": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutMargins": [
+          0,
+          20,
+          0,
+          20
+        ],
+        "directionalMargins": [
+          0,
+          20,
+          0,
+          20
+        ]
+      }
+    },
+    {
+      "time": "Oct 12 23:12:20.703750",
+      "role": "hostingView",
+      "event": "settledLayout",
+      "appearance": "blipBlue",
+      "geometry": {
+        "frame": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "bounds": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inWindow": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inScreen": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "safeArea": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutMargins": [
+          0,
+          20,
+          0,
+          20
+        ],
+        "directionalMargins": [
+          0,
+          20,
+          0,
+          20
+        ]
+      }
+    },
+    {
+      "time": "Oct 12 23:12:20.704123",
+      "role": "swiftuiPanel",
+      "event": "settledLayout",
+      "appearance": "blipBlue",
+      "geometry": {
+        "frame": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "bounds": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inWindow": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "inScreen": [
+          0,
+          0,
+          440,
+          256
+        ],
+        "safeArea": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "layoutMargins": [
+          8,
+          8,
+          8,
+          8
+        ],
+        "directionalMargins": [
+          8,
+          8,
+          8,
+          8
+        ]
+      }
+    }
+  ],
+  "referenceScreenshot": {
+    "pixels": [
+      1320,
+      2868
+    ],
+    "scale": 3,
+    "centerContainerTopY": 1824,
+    "centerBlueTopY": 1875,
+    "centerBlueBottomY": 2643,
+    "topBandPixels": 51,
+    "topBandPoints": 17,
+    "blueHeightPoints": 256
+  },
+  "coordinateLimit": "Remote extension window reports local origin 0; inScreen conversion is not the final physical hosted placement."
+}

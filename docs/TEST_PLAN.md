@@ -26,6 +26,9 @@ Use a physical iPhone for the full workflow. The simulator cannot validate camer
 - Confirm `Barcodes + QR` detects QR codes and common 1D barcodes.
 - Confirm `All Supported Formats` detects QR, Data Matrix, PDF417, Aztec, and common 1D barcodes where test labels are available.
 - Toggle flashlight while the camera preview is live.
+- With music playing in another app, cold-launch Blip and open the scanner with Blip sound enabled. Music must keep playing before any code is scanned.
+- Complete a scan and verify the beep mixes with the music; repeat opening/canceling the scanner.
+- Repeat the music test with Blip sound disabled.
 
 ## Wedge Flow
 

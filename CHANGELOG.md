@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- Improve scan return and one-time insertion in supported browser targets.
+- Make automatic insertion optional and provide an explicit Insert Last Scan action.
+- Explain Safari's manual return path in the app.
+
 ## Unreleased
 
 - Replace private bundle-identifier app launching with public URL-scheme return handling.

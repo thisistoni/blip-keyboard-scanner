@@ -1,11 +1,14 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import CoreImage.CIFilterBuiltins
+import UIKit
 
 struct CompanyProfilesView: View {
     @State private var exportURL: URL?
     @State private var isImporting = false
     @State private var pendingImport: PendingCompanyProfile?
     @State private var alertMessage: String?
+    @State private var profileQRCode: CompanyProfileQRCode?
 
     var body: some View {
         List {
@@ -27,6 +30,12 @@ struct CompanyProfilesView: View {
                 } label: {
                     Label("Import Company Profile", systemImage: "square.and.arrow.down")
                 }
+
+                Button {
+                    prepareQRCode()
+                } label: {
+                    Label("Show QR Code", systemImage: "qrcode")
+                }
             } footer: {
                 Text("Profiles contain Blip configuration only. Scan history is never included.")
             }
@@ -36,9 +45,13 @@ struct CompanyProfilesView: View {
                 ProfileIncludedRow(title: "Enabled keyboard layouts", systemImage: "keyboard")
                 ProfileIncludedRow(title: "Opening layout", systemImage: "rectangle.and.pencil.and.ellipsis")
                 ProfileIncludedRow(title: "Scan suffix", systemImage: "return")
+                ProfileIncludedRow(title: "Insert Scans Automatically", systemImage: "text.insert")
                 ProfileIncludedRow(title: "Scan formats", systemImage: "barcode.viewfinder")
                 ProfileIncludedRow(title: "Return Target", systemImage: "arrowshape.turn.up.backward")
                 ProfileIncludedRow(title: "Sound, flashlight, zoom, and scan area", systemImage: "camera.viewfinder")
+                ProfileIncludedRow(title: "Keyboard Appearance", systemImage: "paintpalette")
+                ProfileIncludedRow(title: "Key Clicks", systemImage: "speaker.wave.2")
+                ProfileIncludedRow(title: "Key Haptics", systemImage: "hand.tap")
             }
         }
         .navigationTitle("Company Profiles")
@@ -59,6 +72,9 @@ struct CompanyProfilesView: View {
                     apply(pendingImport.profile)
                 }
             )
+        }
+        .sheet(item: $profileQRCode) { code in
+            CompanyProfileQRCodeView(code: code)
         }
         .alert("Company Profile", isPresented: Binding(
             get: { alertMessage != nil },
@@ -81,6 +97,14 @@ struct CompanyProfilesView: View {
                 .appendingPathExtension("blipprofile")
             try BlipCompanyProfile.current.exportData().write(to: url, options: .atomic)
             exportURL = url
+        } catch {
+            alertMessage = error.localizedDescription
+        }
+    }
+
+    private func prepareQRCode() {
+        do {
+            profileQRCode = try CompanyProfileQRCode(profile: .current)
         } catch {
             alertMessage = error.localizedDescription
         }
@@ -114,12 +138,12 @@ struct CompanyProfilesView: View {
     }
 }
 
-private struct PendingCompanyProfile: Identifiable {
+struct PendingCompanyProfile: Identifiable {
     let id = UUID()
     let profile: BlipCompanyProfile
 }
 
-private struct CompanyProfilePreview: View {
+struct CompanyProfilePreview: View {
     let profile: BlipCompanyProfile
     let onCancel: () -> Void
     let onApply: () -> Void
@@ -139,7 +163,7 @@ private struct CompanyProfilePreview: View {
                     Section {
                         ForEach(changes) { change in
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(change.title)
+                                Text(LocalizedStringKey(change.title))
                                     .font(.subheadline.weight(.semibold))
 
                                 VStack(alignment: .leading, spacing: 4) {
@@ -165,6 +189,80 @@ private struct CompanyProfilePreview: View {
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Apply", action: onApply)
+                }
+            }
+        }
+    }
+}
+
+private struct CompanyProfileQRCode: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let profile: BlipCompanyProfile
+
+    init(profile: BlipCompanyProfile) throws {
+        let filter = CIFilter.qrCodeGenerator()
+        filter.message = try BlipCompanyProfileQR.encode(profile)
+        filter.correctionLevel = "M"
+        guard let output = filter.outputImage else { throw BlipCompanyProfileQRError.cannotRender }
+        // Bound matrix density in addition to byte count; preserve a four-module quiet zone.
+        guard output.extent.width <= 129 else { throw BlipCompanyProfileQRError.tooLarge }
+        let quietZone = output.extent.insetBy(dx: -4, dy: -4)
+        let white = CIImage(color: .white).cropped(to: quietZone)
+        let printable = output.composited(over: white).transformed(by: .init(scaleX: 8, y: 8))
+        guard let cgImage = CIContext().createCGImage(printable, from: printable.extent) else {
+            throw BlipCompanyProfileQRError.cannotRender
+        }
+        image = UIImage(cgImage: cgImage)
+        self.profile = profile
+    }
+}
+
+private struct CompanyProfileQRCodeView: View {
+    @Environment(\.dismiss) private var dismiss
+    let code: CompanyProfileQRCode
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 28) {
+                    Image(uiImage: code.image)
+                        .resizable()
+                        .interpolation(.none)
+                        .scaledToFit()
+                        .frame(maxWidth: 280)
+                        .accessibilityLabel("Company Profile QR Code")
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Included Settings")
+                            .font(.headline)
+                            .padding(.bottom, 12)
+
+                        ForEach(code.profile.includedSettings) { setting in
+                            LabeledContent {
+                                Text(setting.value)
+                                    .foregroundStyle(.primary)
+                                    .multilineTextAlignment(.trailing)
+                                    .textSelection(.enabled)
+                            } label: {
+                                Text(LocalizedStringKey(setting.title))
+                            }
+                            .padding(.vertical, 12)
+                            Divider()
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(24)
+                .frame(maxWidth: 540)
+                .frame(maxWidth: .infinity)
+            }
+            .background(Color(.systemBackground))
+            .navigationTitle("Share Company Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
                 }
             }
         }

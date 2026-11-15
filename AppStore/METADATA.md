@@ -25,13 +25,14 @@ Turn your iPhone or iPad keyboard into a barcode and QR scanner for Safari, brow
 
 Blip adds a barcode and QR scanner directly to your iPhone and iPad keyboard workflow.
 
-Tap Scan from the Blip keyboard, scan a barcode or QR code in the Blip app, and return to your selected target app so the scan can be inserted into the active text field.
+Tap Scan from the Blip keyboard and scan a barcode or QR code. Blip opens your selected browser target and can insert the scan automatically, or you can tap Insert Last Scan. Safari requires returning to your original tab manually.
 
 Features:
 
 - Custom iOS keyboard with a clean Scan button.
 - Barcode and QR scanning powered by the device camera.
-- Return targets for Safari, Chrome, Edge, Firefox, Brave, and custom URL schemes.
+- Automatic return targets for Chrome, Edge, Firefox, Brave, and custom URL schemes; manual Safari fallback.
+- Optional automatic insertion or an explicit Insert Last Scan tap.
 - English and German keyboard layouts.
 - Flexible keyboard configuration: letters, numbers and symbols, big-number pad, or scan-only.
 - Configurable scan suffix: none, tab, enter, or space.
@@ -64,13 +65,14 @@ Mach deine iPhone- oder iPad-Tastatur zum Barcode- und QR-Scanner für Safari, B
 
 Blip bringt einen Barcode- und QR-Scanner direkt in deinen iPhone- und iPad-Tastaturablauf.
 
-Tippe in der Blip-Tastatur auf Scan, scanne einen Barcode oder QR-Code in der Blip-App und kehre zum gewählten Rückkehrziel zurück, damit der Scan in das aktive Textfeld eingefügt wird.
+Tippe in der Blip-Tastatur auf Scan und scanne einen Barcode oder QR-Code. Blip öffnet das gewählte Browser-Rückkehrziel und kann den Scan automatisch einfügen. Alternativ tippst du auf „Letzten Scan einfügen“. Bei Safari kehrst du manuell zum ursprünglichen Tab zurück.
 
 Funktionen:
 
 - Eigene iOS-Tastatur mit klarer Scan-Taste.
 - Barcode- und QR-Scanner mit der Gerätekamera.
-- Rückkehrziele für Safari, Chrome, Edge, Firefox, Brave und eigene URL-Schemes.
+- Automatische Rückkehr zu Chrome, Edge, Firefox, Brave oder über eigene URL-Schemes; Safari als manuelle Option.
+- Optionales automatisches Einfügen oder manuelles Einfügen über „Letzten Scan einfügen“.
 - Englische und deutsche Tastaturlayouts.
 - Flexible Tastaturkonfiguration: Buchstaben, Zahlen und Symbole, große Zahlentastatur oder nur Scan.
 - Konfigurierbarer Scan-Suffix: keiner, Tab, Enter oder Leerzeichen.
@@ -100,11 +102,13 @@ Answer the age-rating questionnaire honestly:
 
 ### Version
 
-`1.0`
+`1.0.1`
 
 ### What's New
 
-Initial release.
+English (U.S.): Improved scan return and insertion. Safari now shows clear manual-return instructions, and you can choose automatic or manual insertion.
+
+German (Germany): Verbesserte Rückkehr und Einfügen nach dem Scannen. Für Safari gibt es jetzt eine klare Anleitung zur manuellen Rückkehr. Das Einfügen ist wahlweise automatisch oder manuell möglich.
 
 ### App Review Contact
 

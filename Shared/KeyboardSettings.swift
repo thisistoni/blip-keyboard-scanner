@@ -1,6 +1,45 @@
 import CoreGraphics
 import Foundation
 
+#if DEBUG
+enum KeyboardTestDiagnostics {
+    static func record(_ event: String, source: String, details: [String: Any] = [:]) {
+        guard let defaults = UserDefaults(suiteName: SharedKeyboardState.appGroupIdentifier) else { return }
+        let key = "debugKeyboardTestEvents." + source
+        var rows = defaults.array(forKey: key) as? [[String: Any]] ?? []
+        var row = details
+        row["event"] = event
+        row["time"] = Date().timeIntervalSince1970
+        if let session = SharedKeyboardState.keyboardTestSession {
+            row["phase"] = session.phase.rawValue
+            row["sessionID"] = session.id
+            row["hasResult"] = session.code != nil
+            row["hasRequest"] = session.requestIdentifier != nil
+        } else { row["phase"] = "none" }
+        rows.append(row)
+        defaults.set(Array(rows.suffix(40)), forKey: key)
+    }
+}
+#endif
+
+enum KeyboardAppearance: String, CaseIterable, Identifiable {
+    case system
+    case blipBlue
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .system: NSLocalizedString("System", comment: "System keyboard appearance")
+        case .blipBlue: NSLocalizedString("Blip Blue", comment: "Blue keyboard appearance")
+        }
+    }
+
+    static func resolved(rawValue: String?) -> Self {
+        rawValue.flatMap(Self.init(rawValue:)) ?? .system
+    }
+}
+
 enum KeyboardLanguage: String, CaseIterable, Identifiable {
     case english
     case german
@@ -407,7 +446,7 @@ enum ReturnTarget: String, CaseIterable, Identifiable {
     var detail: String {
         switch self {
         case .safari:
-            NSLocalizedString("Return to Safari after a keyboard-launched scan.", comment: "Safari return target detail")
+            NSLocalizedString("Use iOS's previous-app control to return to Safari without opening a new tab.", comment: "Safari return target detail")
         case .chrome:
             NSLocalizedString("Return to Google Chrome after a keyboard-launched scan.", comment: "Chrome return target detail")
         case .edge:
@@ -421,35 +460,12 @@ enum ReturnTarget: String, CaseIterable, Identifiable {
         }
     }
 
-    func urlCandidates(customURLString: String) -> [URL] {
-        switch self {
-        case .safari:
-            return compactURLs([
-                "x-web-search://",
-                "x-safari-https://"
-            ])
-        case .chrome:
-            return compactURLs(["googlechrome://"])
-        case .edge:
-            return compactURLs(["microsoft-edge://"])
-        case .firefox:
-            return compactURLs(["firefox://"])
-        case .brave:
-            return compactURLs(["brave://"])
-        case .custom:
-            let trimmed = customURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return [] }
-
-            if trimmed.contains("://") {
-                return compactURLs([trimmed])
-            }
-
-            return compactURLs([trimmed + "://"])
-        }
+    var usesSystemPreviousAppReturn: Bool {
+        self == .safari
     }
 
-    private func compactURLs(_ strings: [String]) -> [URL] {
-        strings.compactMap(URL.init(string:))
+    func shouldAutomaticallyInsertScan(userEnabled: Bool) -> Bool {
+        self != .safari && userEnabled
     }
 }
 
@@ -466,17 +482,94 @@ struct KeyboardSetupSnapshot: Equatable {
     }
 }
 
+struct PendingScanInsertion: Equatable {
+    let identifier: String
+    let code: String
+
+    init?(identifier: String, activeIdentifier: String, consumedIdentifier: String, code: String, automaticInsertionEnabled: Bool = true) {
+        guard automaticInsertionEnabled,
+              !identifier.isEmpty,
+              activeIdentifier.isEmpty || activeIdentifier == identifier,
+              identifier != consumedIdentifier,
+              !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return nil }
+
+        self.identifier = identifier
+        self.code = code
+    }
+}
+
+struct KeyboardTestSession: Codable, Equatable {
+    enum Phase: String, Codable { case editing, launching, scanning, returning, ready }
+    static let contentTypePrefix = "com.antoniobeslic.Blip.keyboard-test."
+    let id: String
+    var phase: Phase = .editing
+    var requestIdentifier: String?
+    var code: String?
+
+    var contentType: String { Self.contentTypePrefix + id }
+
+    func isOwned(ownerID: String?, leaseUntil: TimeInterval, now: TimeInterval) -> Bool {
+        ownerID == id && leaseUntil > now
+    }
+
+    mutating func launch(requestID: String, contentType: String?) -> Bool {
+        guard phase == .editing, !id.isEmpty, contentType == self.contentType else { return false }
+        requestIdentifier = requestID
+        code = nil
+        phase = .launching
+        return true
+    }
+
+    mutating func accept(_ request: KeyboardScanRequest) -> Bool {
+        guard phase == .launching, request.launchedFromKeyboard,
+              request.testSessionID == id, requestIdentifier == request.id else { return false }
+        phase = .scanning
+        return true
+    }
+
+    mutating func finish(requestID: String, code: String?) -> Bool {
+        guard phase == .scanning, requestIdentifier == requestID else { return false }
+        self.code = code?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? code : nil
+        phase = .returning
+        return true
+    }
+
+    mutating func resume() -> Bool {
+        guard phase == .returning else { return false }
+        if code != nil { phase = .ready }
+        else { consume() }
+        return true
+    }
+
+    func insertion(contentType: String?) -> PendingScanInsertion? {
+        guard phase == .ready, contentType == self.contentType,
+              let requestIdentifier, let code else { return nil }
+        // Only the explicitly tagged cooperating field can receive this result.
+        return PendingScanInsertion(identifier: requestIdentifier, activeIdentifier: requestIdentifier,
+            consumedIdentifier: "", code: code)
+    }
+
+    mutating func consume() {
+        phase = .editing
+        requestIdentifier = nil
+        code = nil
+    }
+}
+
 struct KeyboardScanRequest: Equatable, Identifiable {
     let id: String
     let source: String
+    let testSessionID: String?
 
     var launchedFromKeyboard: Bool {
         source == "keyboard"
     }
 
-    init(id: String = UUID().uuidString, source: String = "app") {
+    init(id: String = UUID().uuidString, source: String = "app", testSessionID: String? = nil) {
         self.id = id
         self.source = source
+        self.testSessionID = testSessionID
     }
 
     init?(url: URL) {
@@ -488,6 +581,8 @@ struct KeyboardScanRequest: Equatable, Identifiable {
 
         self.id = requestID?.isEmpty == false ? requestID! : UUID().uuidString
         self.source = source
+        let test = items.first { $0.name == "test" }?.value
+        self.testSessionID = test?.isEmpty == false ? test : nil
     }
 
     var url: URL {
@@ -499,6 +594,9 @@ struct KeyboardScanRequest: Equatable, Identifiable {
             URLQueryItem(name: "id", value: id),
         ]
 
+        if let testSessionID {
+            components.queryItems?.append(URLQueryItem(name: "test", value: testSessionID))
+        }
         return components.url ?? URL(string: "blip://scan?source=\(source)&id=\(id)")!
     }
 }
@@ -510,15 +608,20 @@ enum SharedKeyboardState {
     static let keyboardDisplayName = "Blip"
 
     enum Keys {
+        static let keyboardTestSession = "keyboardTestSession"
+        static let keyboardTestOwner = "keyboardTestOwner"
+        static let keyboardTestLease = "keyboardTestLease"
         static let selectedLayout = "selectedLayout"
         static let keyboardLanguage = "keyboardLanguage"
         static let keyboardType = "keyboardType"
         static let enabledKeyboardLayoutSlots = "enabledKeyboardLayoutSlots"
         static let startupKeyboardLayoutSlot = "startupKeyboardLayoutSlot"
         static let insertSuffix = "insertSuffix"
+        static let autoInsertScans = "autoInsertScans"
         static let lastScannedCode = "lastScannedCode"
         static let pendingScannedCode = "pendingScannedCode"
         static let pendingScanIdentifier = "pendingScanIdentifier"
+        static let pendingScanAutoInsert = "pendingScanAutoInsert"
         static let consumedScanIdentifier = "consumedScanIdentifier"
         static let activeScanRequestIdentifier = "activeScanRequestIdentifier"
         static let keyboardWasActivated = "keyboardWasActivated"
@@ -530,6 +633,9 @@ enum SharedKeyboardState {
         static let scannerFlashlightMode = "scannerFlashlightMode"
         static let scanFormatProfile = "scanFormatProfile"
         static let playScanSound = "playScanSound"
+        static let keyboardClickSound = "keyboardClickSound"
+        static let keyboardHaptics = "keyboardHaptics"
+        static let keyboardAppearance = "keyboardAppearance"
         static let returnTarget = "returnTarget"
         static let customReturnURL = "customReturnURL"
         static let scanHistoryItems = "scanHistoryItems"
@@ -544,6 +650,21 @@ enum SharedKeyboardState {
 
     static var appStorageDefaults: UserDefaults {
         defaults ?? .standard
+    }
+
+    static var keyboardClickSound: Bool {
+        get { defaults?.object(forKey: Keys.keyboardClickSound) as? Bool ?? true }
+        set { defaults?.set(newValue, forKey: Keys.keyboardClickSound) }
+    }
+
+    static var keyboardHaptics: Bool {
+        get { defaults?.object(forKey: Keys.keyboardHaptics) as? Bool ?? true }
+        set { defaults?.set(newValue, forKey: Keys.keyboardHaptics) }
+    }
+
+    static var keyboardAppearance: KeyboardAppearance {
+        get { .resolved(rawValue: defaults?.string(forKey: Keys.keyboardAppearance)) }
+        set { defaults?.set(newValue.rawValue, forKey: Keys.keyboardAppearance) }
     }
 
     static var canAccessAppGroup: Bool {
@@ -746,6 +867,18 @@ enum SharedKeyboardState {
         }
     }
 
+    static var autoInsertScans: Bool {
+        get {
+            guard let defaults, defaults.object(forKey: Keys.autoInsertScans) != nil else {
+                return true
+            }
+            return defaults.bool(forKey: Keys.autoInsertScans)
+        }
+        set {
+            defaults?.set(newValue, forKey: Keys.autoInsertScans)
+        }
+    }
+
     static var lastScannedCode: String {
         get {
             defaults?.string(forKey: Keys.lastScannedCode) ?? ""
@@ -761,6 +894,19 @@ enum SharedKeyboardState {
 
     static var pendingScanIdentifier: String {
         defaults?.string(forKey: Keys.pendingScanIdentifier) ?? ""
+    }
+
+    static var pendingInsertion: PendingScanInsertion? {
+        PendingScanInsertion(
+            identifier: pendingScanIdentifier,
+            activeIdentifier: activeScanRequestIdentifier,
+            consumedIdentifier: consumedScanIdentifier,
+            code: pendingScannedCode,
+            automaticInsertionEnabled: autoInsertScans && (
+                defaults?.object(forKey: Keys.pendingScanAutoInsert) == nil ||
+                defaults?.bool(forKey: Keys.pendingScanAutoInsert) == true
+            )
+        )
     }
 
     static var activeScanRequestIdentifier: String {
@@ -865,13 +1011,22 @@ enum SharedKeyboardState {
         }
     }
 
-    static func queuePendingInsertion(_ code: String, requestIdentifier: String? = nil) {
+    static func queuePendingInsertion(_ code: String, requestIdentifier: String? = nil, autoInsert: Bool = true) {
         guard !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let identifier = requestIdentifier?.isEmpty == false ? requestIdentifier! : UUID().uuidString
         defaults?.set(code, forKey: Keys.lastScannedCode)
         defaults?.set(code, forKey: Keys.pendingScannedCode)
+        defaults?.set(autoInsert, forKey: Keys.pendingScanAutoInsert)
         defaults?.set(identifier, forKey: Keys.pendingScanIdentifier)
+    }
+
+    static func markPendingInsertionAttempted(identifier: String) {
+        guard !identifier.isEmpty, pendingScanIdentifier == identifier else { return }
+        consumedScanIdentifier = identifier
+        if activeScanRequestIdentifier == identifier {
+            activeScanRequestIdentifier = ""
+        }
     }
 
     static func recordKeyboardRuntime(hasFullAccess: Bool) {
@@ -885,6 +1040,94 @@ enum SharedKeyboardState {
 
         defaults?.set(token, forKey: Keys.verifiedSetupToken)
         defaults?.set(hasFullAccess, forKey: Keys.verifiedSetupHasFullAccess)
+    }
+
+    static var keyboardTestSession: KeyboardTestSession? {
+        guard let owner = defaults?.string(forKey: Keys.keyboardTestOwner), !owner.isEmpty,
+              let data = defaults?.data(forKey: Keys.keyboardTestSession + "." + owner),
+              let session = try? JSONDecoder().decode(KeyboardTestSession.self, from: data),
+              session.isOwned(ownerID: defaults?.string(forKey: Keys.keyboardTestOwner),
+                leaseUntil: defaults?.double(forKey: Keys.keyboardTestLease) ?? 0,
+                now: Date().timeIntervalSince1970) else { return nil }
+        return session
+    }
+
+    private static func saveKeyboardTest(_ session: KeyboardTestSession) {
+        guard let data = try? JSONEncoder().encode(session) else { return }
+        // Each generation has its own slot: a delayed writer cannot overwrite a newer test.
+        defaults?.set(data, forKey: Keys.keyboardTestSession + "." + session.id)
+    }
+
+    static func beginKeyboardTest(id: String) {
+        cancelKeyboardTest()
+        saveKeyboardTest(KeyboardTestSession(id: id))
+        defaults?.set(Date().timeIntervalSince1970 + 600, forKey: Keys.keyboardTestLease)
+        defaults?.set(id, forKey: Keys.keyboardTestOwner)
+    }
+
+    static func renewKeyboardTest(id: String) {
+        guard defaults?.string(forKey: Keys.keyboardTestOwner) == id else { return }
+        // Only the containing app renews ownership; the extension cannot resurrect a cancelled scope.
+        defaults?.set(Date().timeIntervalSince1970 + 600, forKey: Keys.keyboardTestLease)
+    }
+
+    static func cancelKeyboardTest(id: String? = nil) {
+        guard id == nil || defaults?.string(forKey: Keys.keyboardTestOwner) == id else { return }
+        let owner = defaults?.string(forKey: Keys.keyboardTestOwner)
+        let requestID = keyboardTestSession?.requestIdentifier
+        defaults?.set("", forKey: Keys.keyboardTestOwner)
+        defaults?.set(0, forKey: Keys.keyboardTestLease)
+        if let owner { defaults?.removeObject(forKey: Keys.keyboardTestSession + "." + owner) }
+        if let requestID, activeScanRequestIdentifier == requestID { activeScanRequestIdentifier = "" }
+    }
+
+    static func keyboardScanRequest(contentType: String?) -> KeyboardScanRequest {
+        let requestID = UUID().uuidString
+        var testID: String?
+        if let contentType, contentType.hasPrefix(KeyboardTestSession.contentTypePrefix) {
+            let id = String(contentType.dropFirst(KeyboardTestSession.contentTypePrefix.count))
+            if !id.isEmpty { testID = id }
+        }
+        // Invalid/stale tagged fields fail closed in the app, never falling back to a browser.
+        if var session = keyboardTestSession,
+           session.launch(requestID: requestID, contentType: contentType) {
+            saveKeyboardTest(session)
+            testID = session.id
+        }
+        activeScanRequestIdentifier = requestID
+        return KeyboardScanRequest(id: requestID, source: "keyboard", testSessionID: testID)
+    }
+
+    static func acceptKeyboardTestRequest(_ request: KeyboardScanRequest, ownerID: String) -> Bool {
+        guard var session = keyboardTestSession, session.id == ownerID, session.accept(request) else { return false }
+        saveKeyboardTest(session)
+        return true
+    }
+
+    static func finishKeyboardTest(id: String, requestID: String, code: String?) -> Bool {
+        guard var session = keyboardTestSession, session.id == id,
+              session.finish(requestID: requestID, code: code) else { return false }
+        saveKeyboardTest(session)
+        return true
+    }
+
+    static func resumeKeyboardTest(id: String) -> Bool {
+        guard var session = keyboardTestSession, session.id == id else { return false }
+        let requestID = session.requestIdentifier
+        guard session.resume() else { return false }
+        saveKeyboardTest(session)
+        if session.phase == .editing, let requestID, activeScanRequestIdentifier == requestID {
+            activeScanRequestIdentifier = ""
+        }
+        return true
+    }
+
+    static func consumeKeyboardTest(requestID: String, contentType: String?) {
+        guard var session = keyboardTestSession,
+              session.insertion(contentType: contentType)?.identifier == requestID else { return }
+        session.consume()
+        saveKeyboardTest(session)
+        if activeScanRequestIdentifier == requestID { activeScanRequestIdentifier = "" }
     }
 
     static func scanURL(requestIdentifier: String = UUID().uuidString) -> URL {

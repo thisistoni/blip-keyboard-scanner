@@ -54,12 +54,14 @@ Before pressing Submit for Review, install the exact archive/TestFlight build an
 
 1. Fresh install shows setup if the keyboard is not enabled.
 2. Enabling Blip and Allow Full Access lets the app reach the ready state.
-3. Safari text field > Blip keyboard > Scan > camera opens.
+3. Chrome and Brave text fields > Blip keyboard > Scan > camera opens.
 4. Barcode and QR code scan correctly.
-5. Return target opens and the scan inserts once.
-6. Cancel from scanner returns to the selected target app.
-7. History can be cleared and the scan page no longer shows stale last-scan data.
-8. German localization uses `Rückkehrziel` where return target is shown.
+5. The automatic return target opens and the scan inserts once when Auto Insert is on.
+6. With Auto Insert off, the target opens and `Insert Last Scan` inserts once.
+7. Safari shows manual-return guidance; return to the original tab and use `Insert Last Scan`.
+8. Cancel from scanner returns to the selected automatic target app.
+9. History can be cleared and the scan page no longer shows stale last-scan data.
+10. German localization uses `Rückkehrziel` where return target is shown.
 
 ## Do Not Submit Until
 

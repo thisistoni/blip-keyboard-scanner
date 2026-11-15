@@ -30,3 +30,6 @@ fastlane/report.xml
 *.p12
 *.key
 *.xcconfig.local
+
+# Pin the app's exact KeyboardKit dependency for reproducible builds.
+!Blip.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved

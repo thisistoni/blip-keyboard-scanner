@@ -35,6 +35,10 @@ enum ScreenshotAutomation {
         }
 
         SharedKeyboardState.keyboardLanguage = arguments[languageIndex + 1] == "de" ? .german : .english
+        if scene == .scan {
+            SharedKeyboardState.returnTarget = .chrome
+            SharedKeyboardState.autoInsertScans = true
+        }
     }
 
     static let historyItems: [ScanHistoryItem] = [
@@ -67,14 +71,6 @@ enum ScreenshotAutomation {
 
 struct AppStoreScreenshotRootView: View {
     let scene: AppStoreScreenshotScene
-
-    private let setupStatus = SetupVerificationStatus(
-        snapshot: KeyboardSetupSnapshot(
-            isEnabled: true,
-            rawKeyboards: ["com.antoniobeslic.Blip.Keyboard"],
-            matchedKeyboard: "com.antoniobeslic.Blip.Keyboard"
-        )
-    )
 
     var body: some View {
         switch scene {
@@ -112,7 +108,7 @@ struct AppStoreScreenshotRootView: View {
                 }
                 .tag(AppStoreScreenshotScene.history)
 
-            KeyboardLayoutSettingsView(setupStatus: setupStatus)
+            KeyboardLayoutSettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape")
                 }

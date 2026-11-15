@@ -2,16 +2,33 @@ import UIKit
 
 @MainActor
 enum SourceAppReturnController {
-    static func openReturnTarget(_ target: ReturnTarget, customURLString: String) {
-        openFirstAvailableURL(from: target.urlCandidates(customURLString: customURLString))
+    static func openBrowserReturnTarget(_ target: ReturnTarget, completion: @escaping @Sendable (Bool) -> Void) {
+        let scheme: String
+        switch target {
+        case .chrome: scheme = "googlechrome://"
+        case .edge: scheme = "microsoft-edge://"
+        case .firefox: scheme = "firefox://"
+        case .brave: scheme = "brave://"
+        case .safari, .custom:
+            completion(false)
+            return
+        }
+
+        guard let url = URL(string: scheme) else {
+            completion(false)
+            return
+        }
+
+        UIApplication.shared.open(url, options: [:], completionHandler: completion)
     }
 
-    private static func openFirstAvailableURL(from urls: [URL], index: Int = 0) {
-        guard urls.indices.contains(index) else { return }
+    static func openCustomReturnURL(_ customURLString: String) {
+        let trimmed = customURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
 
-        UIApplication.shared.open(urls[index], options: [:]) { success in
-            guard !success else { return }
-            openFirstAvailableURL(from: urls, index: index + 1)
-        }
+        let normalized = trimmed.contains("://") ? trimmed : trimmed + "://"
+        guard let url = URL(string: normalized) else { return }
+
+        UIApplication.shared.open(url, options: [:])
     }
 }

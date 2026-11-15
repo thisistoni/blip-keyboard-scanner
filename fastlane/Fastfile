@@ -94,6 +94,9 @@ platform :ios do
     repo_root = File.expand_path("..", __dir__)
     output_root = File.join(repo_root, "AppStore", "Screenshots", "final")
     derived_data = File.join(repo_root, "fastlane", "DerivedData")
+    scenes = ENV.fetch("BLIP_SCREENSHOT_SCENES", "").split(",").reject(&:empty?)
+    scenes = SCREENSHOT_SCENES if scenes.empty?
+    UI.user_error!("Unknown screenshot scene") unless (scenes - SCREENSHOT_SCENES).empty?
 
     if ENV["BLIP_SCREENSHOT_CLEAN"] == "1"
       # The keyboard-in-Safari images are captures of the real extension and
@@ -131,7 +134,7 @@ platform :ios do
       run_simctl("install", udid, app_path) unless ENV["BLIP_SCREENSHOT_SKIP_INSTALL"] == "1"
 
       SCREENSHOT_LANGUAGES.each do |locale, language|
-        SCREENSHOT_SCENES.each do |scene|
+        scenes.each do |scene|
           capture_scene(
             udid: udid,
             family: family,
@@ -153,6 +156,6 @@ platform :ios do
       File.join(repo_root, "scripts", "make_screenshot_previews.swift"),
       "composed", "composed-previews"
     )
-    UI.success("Generated #{SCREENSHOT_SCENES.length * SCREENSHOT_LANGUAGES.length * SCREENSHOT_DEVICES.length} screenshots in #{output_root}")
+    UI.success("Generated #{scenes.length * SCREENSHOT_LANGUAGES.length * SCREENSHOT_DEVICES.length} screenshots in #{output_root}")
   end
 end

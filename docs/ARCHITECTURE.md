@@ -24,6 +24,10 @@ flowchart LR
 
 The keyboard extension cannot access the camera. It opens the containing app, the app scans with `AVCaptureSession` and Vision, then the result is stored in the app group. When the keyboard becomes active again, it consumes the matching pending scan id and inserts once.
 
+## Scanner Audio
+
+The optional scan beep uses `playback` with `mixWithOthers`. Configure that policy before creating and preloading the audio player: `prepareToPlay()` activates the audio session even before a scan completes. The video-only capture session disables automatic audio-session configuration so it cannot replace the mixing policy. Scanner opening and beep playback should preserve music from another app.
+
 ## App Group
 
 Both targets use:

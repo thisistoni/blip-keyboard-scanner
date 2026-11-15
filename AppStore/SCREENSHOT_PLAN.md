@@ -21,7 +21,7 @@ Use PNG. Capture both English and German localizations if you plan to ship both 
 
 ### 1. Keyboard Scan Entry
 
-Show Safari or a clean web form with the Blip keyboard open and the Scan button visible.
+Show a clean web form with the Blip keyboard open and the Scan button visible.
 
 English caption: `Scan from the keyboard`
 
@@ -35,13 +35,13 @@ English caption: `Scan barcodes and QR codes`
 
 German caption: `Barcodes und QR-Codes scannen`
 
-### 3. Inserted Result
+### 3. Chrome Return Workflow
 
-Show the selected target app after return, with the scanned value inserted into the original field.
+Show Chrome selected as the return target in Blip's scan screen. Use wording that allows automatic insertion or a manual tap. Do not imply that Safari returns automatically.
 
-English caption: `Inserted where you started`
+English caption: `Back to Chrome` / `Insert automatically or with a tap.`
 
-German caption: `Dort eingefügt, wo du gestartet bist`
+German caption: `Zurück zu Chrome` / `Automatisch oder per Tipp einfügen.`
 
 ### 4. Keyboard Configuration
 
@@ -87,7 +87,7 @@ German caption: `Datenschutzfreundlich gedacht`
 
 Skip for the first submission unless you want extra polish. If you make one later, keep it under 30 seconds and show:
 
-1. Open Safari text field.
+1. Open a Chrome text field.
 2. Switch to Blip keyboard.
 3. Tap Scan.
 4. Scan demo code.

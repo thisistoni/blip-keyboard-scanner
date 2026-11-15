@@ -14,3 +14,12 @@
 - Instructions/documentation-only changes need diff and path review, not an app build, screenshot run, or simulator session. For native changes, build only the destinations/configurations needed to verify the change unless a release requires more.
 - Check free space before large builds. At completion, remove task-owned temporary builds and redundant build copies; report retained cache paths and sizes. Keep at most the reusable development cache plus explicitly needed install/release deliverables.
 - Before deleting generated output, verify that it contains no tracked source or modified package checkout. Preserve signing files, release `.xcarchive`/dSYM artifacts, release records, and approved screenshots; an ignored `build/` directory can contain archives and must not be removed wholesale.
+
+## Release completion
+
+- Treat an authorized “ship it” request as including repository cleanup, not just App Store submission.
+- Prefer a focused release PR targeting `main`. If PRs are stacked, review and merge dependencies first, retarget remaining PRs to `main`, and merge after required checks pass. Do not bypass repository protections.
+- Verify that remote `main` contains the exact submitted app source. Record the archive's source commit, version, and build in `AppStore/Releases/<version>.md`; create and push an annotated `v<version>` tag at that source commit, not a later documentation commit.
+- After verifying the merges and release tag, delete merged release branches locally and remotely. Preserve unrelated edits and worktree files; report any local checkout that cannot safely be updated or removed.
+- Update the relevant Linear issues with source/PR/tag links, verification limits, and the verified App Store state. Submission, approval, and public availability are distinct; keep outstanding customer validation open.
+- Before reporting completion, verify remote `main`, merged PR states, published tag, and branch cleanup. Explicitly name any remaining blocker rather than leaving release housekeeping implicit.

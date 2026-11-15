@@ -13,11 +13,15 @@ Blip is an iOS keyboard scanner for company workflows. It adds a custom keyboard
 - Scan-format profiles for common barcodes, barcodes plus QR, or all supported formats.
 - Flashlight toggle and default flashlight preference.
 - Optional Blip scan sound.
-- Configurable return targets: Safari, Chrome, Edge, Firefox, Brave, or custom URL scheme.
+- Automatic return targets: Chrome, Edge, Firefox, Brave, or a custom URL scheme. Safari is a manual fallback.
 - App Group handoff so the scanner app can queue a result for the keyboard to insert once.
+- Optional automatic insertion; the last scan stays available for an explicit keyboard tap.
 - Configurable scan suffix: none, tab, enter, or space.
-- Setup flow with keyboard detection, `Check Again`, settings shortcut, and diagnostics.
-- English and German app localization.
+- Setup flow with keyboard detection, `Check Again`, and a settings shortcut.
+- English and German app localization, with an App Language shortcut to iOS Settings.
+- System and Blip Blue keyboard themes, with optional key clicks and haptics.
+- A native keyboard test field that returns scans to Blip without changing the configured external destination.
+- Company profile sharing by file or QR code, with a preview before applying settings.
 
 ## How It Works
 
@@ -27,10 +31,10 @@ iOS keyboard extensions cannot access the camera directly, so Blip uses a contai
 2. The keyboard opens `blip://scan`.
 3. The containing app scans the barcode or QR code.
 4. The scan result is saved in the shared App Group with a request id.
-5. Blip returns to the configured target app.
-6. When the keyboard becomes active again, it inserts the matching pending scan through `textDocumentProxy`.
+5. Blip opens the configured automatic return target. For Safari, the user returns to the original tab manually.
+6. If automatic insertion is enabled, the keyboard inserts the matching pending scan through `textDocumentProxy`. Otherwise, the user taps `Insert Last Scan`.
 
-See [Architecture](docs/ARCHITECTURE.md) for more detail.
+See [Architecture](docs/ARCHITECTURE.md) for more detail and [Company Profiles](docs/COMPANY_PROFILES.md) for the shared configuration format.
 
 ## Repository Layout
 
@@ -91,10 +95,11 @@ Third-party asset credits are tracked in [Third-Party Notices](THIRD_PARTY_NOTIC
 The important workflow must be tested on a physical iPhone:
 
 - enable keyboard and Allow Full Access
-- open the keyboard from Safari or another target app
+- open the keyboard from a supported automatic return target
 - scan from the keyboard
 - return to the selected target app
 - insert exactly once into the original field
+- with automatic insertion off, use `Insert Last Scan`; test Safari's manual return separately
 
 See [Test Plan](docs/TEST_PLAN.md).
 
