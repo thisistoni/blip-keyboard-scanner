@@ -35,7 +35,8 @@ enum BarcodeSelectionTrackerTests {
         selectionAbandonedAfterLongEmptyPeriod()
         lateReappearanceRestartsLoneTimer()
         sameValueDifferentSymbologyIsDistinct()
-        emptyFrameRestartsSingleConfirmation()
+        intermittentlyDecodedCodeIsStillAccepted()
+        differentLoneCodeDuringConfirmationIsOffered()
         tapFinishesOnce()
         print("BarcodeSelectionTrackerTests passed")
     }
@@ -170,15 +171,23 @@ enum BarcodeSelectionTrackerTests {
         precondition(decisions.allSatisfy { $0 == .choose([ean, digits]) })
     }
 
-    static func emptyFrameRestartsSingleConfirmation() {
+    static func intermittentlyDecodedCodeIsStillAccepted() {
+        // A worn code that Vision only decodes every other frame must not be
+        // starved: frames without any other code count towards confirmation.
         var tracker = BarcodeSelectionTracker()
-        let decisions = run(&tracker, [[ean], [ean], [], [ean], [ean], [ean]])
-        precondition(decisions[0...4].allSatisfy { $0 == .waiting })
-        precondition(decisions[5] == .accept(ean))
-        // A different lone code also restarts confirmation.
-        var other = BarcodeSelectionTracker()
-        let switched = run(&other, [[ean], [ean], [qr], [qr], [qr]])
-        precondition(switched == [.waiting, .waiting, .waiting, .waiting, .accept(qr)])
+        precondition(run(&tracker, [[ean], [], [ean]]) == [.waiting, .waiting, .accept(ean)])
+        var once = BarcodeSelectionTracker()
+        precondition(run(&once, [[ean], [], []]) == [.waiting, .waiting, .accept(ean)])
+    }
+
+    static func differentLoneCodeDuringConfirmationIsOffered() {
+        // Two codes decoded in alternating frames are still two codes.
+        var tracker = BarcodeSelectionTracker()
+        let decisions = run(&tracker, [[ean], [qr], [qr]])
+        precondition(decisions[0] == .waiting)
+        precondition(decisions[1] == .choose([ean, qr]))
+        precondition(decisions[2] == .choose([ean, qr]))
+        precondition(!tracker.isFinished)
     }
 
     static func tapFinishesOnce() {
