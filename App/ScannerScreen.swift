@@ -891,10 +891,19 @@ private struct ScannerPresentation: View {
 
         scannedCode = result.value.hasPrefix(BlipCompanyProfileQR.marker)
             ? NSLocalizedString("Company Profile", comment: "Recognized profile scan") : result.value
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        let pause = result.isManualEntry ? Self.manualEntryResultPause : Self.cameraResultPause
+        DispatchQueue.main.asyncAfter(deadline: .now() + pause) {
             onCode(result)
         }
     }
+
+    /// How long the "Scanned" pill shows before a camera result is handed on.
+    /// Short, because the tracker has already waited 0.3 s to confirm a lone
+    /// code. Company-profile QR codes use it too: their preview opens from the
+    /// cover's dismissal, which does not depend on this pause.
+    private static let cameraResultPause: TimeInterval = 0.1
+    /// Manual entry (no camera) keeps its previous pause.
+    private static let manualEntryResultPause: TimeInterval = 0.25
 
     private func finishBatch() {
         guard isBatchActive, scannedCode == nil, !batchScan.collection.isEmpty else { return }
