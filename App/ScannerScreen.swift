@@ -698,7 +698,7 @@ private struct ScannerPresentation: View {
                 if isBatchActive {
                     BatchScanPanel(
                         entries: batchScan.collection.entries,
-                        status: batchScan.status(selectableCodeCount: selectableCodeCount),
+                        status: batchScan.status,
                         finishTitle: batchScan.finishTitle(insertsIntoKeyboard: session.source == .keyboard),
                         finishHint: batchScan.finishHint(insertsIntoKeyboard: session.source == .keyboard),
                         zoomFactor: currentZoomFactor,
@@ -796,7 +796,7 @@ private struct ScannerPresentation: View {
                 defaultZoomFactor: defaultZoomLevel.factor,
                 scanArea: scanArea,
                 continuesScanning: isBatchActive,
-                acceptsMoreCodes: !batchScan.collection.isFull,
+                batchCapacity: batchScan.collection.maximumCount - batchScan.collection.count,
                 isTorchAvailable: $isTorchAvailable,
                 isTorchOn: $isTorchOn,
                 statusMessage: $scannerStatusMessage,
@@ -850,7 +850,7 @@ private struct ScannerPresentation: View {
 
             Spacer()
 
-            // In batch mode the hint and zoom level are shown in the batch panel.
+            // Batch mode has no choice to make; its zoom level is in the batch panel.
             if !isBatchActive, scannedCode == nil, selectableCodeCount > 0 {
                 // Taps fall through this overlay to the outlined codes in the camera view.
                 ScanStatusPill(

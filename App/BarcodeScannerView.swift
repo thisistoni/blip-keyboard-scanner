@@ -17,11 +17,11 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     let flashlightMode: ScannerFlashlightMode
     let defaultZoomFactor: Double
     let scanArea: ScannerScanArea
-    /// Batch scans keep scanning after each accepted code.
+    /// Batch scans keep scanning and add every code in view.
     var continuesScanning = false
-    /// Batch scans only: false while the list is full; frames are still analysed
-    /// so codes in view stay blocked, but nothing is accepted or offered.
-    var acceptsMoreCodes = true
+    /// Batch scans only: how many more codes the list can take. At 0 frames are
+    /// still analysed so codes in view stay blocked, but nothing is added.
+    var batchCapacity = Int.max
     @Binding var isTorchAvailable: Bool
     @Binding var isTorchOn: Bool
     @Binding var statusMessage: String?
@@ -49,7 +49,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         controller.defaultZoomFactor = defaultZoomFactor
         controller.scanArea = scanArea
         controller.continuesScanning = continuesScanning
-        controller.acceptsMoreCodes = acceptsMoreCodes
+        controller.batchCapacity = batchCapacity
         controller.setTorch(on: flashlightMode == .on)
         tapRelay?.controller = controller
         return controller
@@ -61,7 +61,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         uiViewController.defaultZoomFactor = defaultZoomFactor
         uiViewController.scanArea = scanArea
         uiViewController.continuesScanning = continuesScanning
-        uiViewController.acceptsMoreCodes = acceptsMoreCodes
+        uiViewController.batchCapacity = batchCapacity
         uiViewController.setTorch(on: flashlightMode == .on)
         tapRelay?.controller = uiViewController
     }
@@ -214,27 +214,28 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             updateScanAreaRegion()
         }
     }
-    /// Batch scanning: accepted codes do not end scanning. Changing it starts a
-    /// fresh selection (only done while no batch code is collected).
+    /// Batch scanning: every code in view is added and scanning continues.
+    /// Changing it starts afresh (only done while no batch code is collected).
     var continuesScanning = false {
         didSet {
             guard oldValue != continuesScanning else { return }
             let continues = continuesScanning
             visionQueue.async { [weak self] in
                 guard let self, !self.didScan else { return }
-                self.selectionTracker = BarcodeSelectionTracker(continuesAfterAccept: continues)
+                self.selectionTracker = BarcodeSelectionTracker()
+                self.batchTracker = continues ? BarcodeBatchTracker() : nil
                 self.lastKnownCandidateRects.removeAll()
                 self.presentCandidates([])
             }
         }
     }
-    /// Batch scanning: false while the list is full.
-    var acceptsMoreCodes = true {
+    /// Batch scanning: how many more codes the list can take.
+    var batchCapacity = Int.max {
         didSet {
-            guard oldValue != acceptsMoreCodes else { return }
-            let accepts = acceptsMoreCodes
+            guard oldValue != batchCapacity else { return }
+            let capacity = batchCapacity
             visionQueue.async { [weak self] in
-                self?.isCollectionPaused = !accepts
+                self?.remainingBatchCapacity = capacity
             }
         }
     }
@@ -259,11 +260,15 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private var latestDetectionRegionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
     private var latestAcceptanceRegionOfInterest: CGRect?
 
-    // Multi-code selection. The tracker, frame metadata, `didScan` and
-    // `isCollectionPaused` are only touched on `visionQueue`; the overlay and
-    // accessibility state on main.
+    // Multi-code selection. The trackers, frame metadata, `didScan` and
+    // `remainingBatchCapacity` are only touched on `visionQueue`; the overlay
+    // and accessibility state on main.
     private var selectionTracker = BarcodeSelectionTracker()
-    private var isCollectionPaused = false
+    /// Set while batch scanning; then `selectionTracker` is unused.
+    private var batchTracker: BarcodeBatchTracker?
+    /// Counted down as codes are delivered and reset from SwiftUI as the list
+    /// changes, so a frame never delivers more codes than the list can take.
+    private var remainingBatchCapacity = Int.max
     private var latestFrameTimestamp: TimeInterval = 0
     private var latestBufferIsPortrait = true
     private var lastKnownCandidateRects: [BarcodeCandidateKey: CGRect] = [:]
@@ -686,31 +691,27 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             )
         }
 
-        if isCollectionPaused {
-            selectionTracker.observeWithoutAccepting(frameCandidates, at: latestFrameTimestamp)
-            lastKnownCandidateRects.removeAll()
-            presentCandidates([])
+        if var batch = batchTracker {
+            // Batch: every code is confirmed on its own and added; no choice.
+            // A full list (capacity 0) still feeds frames so codes in view stay
+            // blocked, and ready codes beyond the capacity wait.
+            let added = batch.process(frameCandidates, at: latestFrameTimestamp, capacity: max(remainingBatchCapacity, 0))
+            batchTracker = batch
+            remainingBatchCapacity -= added.count
+            presentBatchOutlines(frameRects, tracker: batch)
+            // One delivery per code, in order; each gets its sound and row.
+            for key in added {
+                deliverResult(for: key, highlightingSelection: false)
+            }
             return
         }
 
         let decision = selectionTracker.process(frameCandidates, at: latestFrameTimestamp)
         switch decision {
         case .waiting:
-            if selectionTracker.continuesAfterAccept {
-                // Batch: codes already in the list keep their "added" outline
-                // while they stay in view, also while a new code confirms.
-                presentVisibleAddedCodes(frameRects)
-            } else {
-                lastKnownCandidateRects.removeAll()
-                presentCandidates([])
-            }
+            lastKnownCandidateRects.removeAll()
+            presentCandidates([])
         case .accept(let key):
-            if selectionTracker.continuesAfterAccept {
-                // Batch: the accepted code is marked as added right away.
-                presentVisibleAddedCodes(frameRects)
-                deliverResult(for: key, highlightingSelection: false)
-                return
-            }
             didScan = true
             lastKnownCandidateRects.removeAll()
             presentCandidates([])
@@ -724,23 +725,30 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         }
     }
 
-    /// Vision queue, batch only. Outlines the added codes reported within the
-    /// tracker's retention window, at their last known position.
-    private func presentVisibleAddedCodes(_ frameRects: [BarcodeCandidateKey: CGRect]) {
+    /// Vision queue, batch only. Added codes reported within the retention
+    /// window keep a dashed "added" outline; codes still confirming get a thin
+    /// neutral one. Neither can be tapped.
+    private func presentBatchOutlines(_ frameRects: [BarcodeCandidateKey: CGRect], tracker: BarcodeBatchTracker) {
         lastKnownCandidateRects.merge(frameRects) { _, newRect in newRect }
-        let visible = selectionTracker.visibleAddedKeys
-            .sorted { ($0.value, $0.symbology) < ($1.value, $1.symbology) }
-            .compactMap { key in lastKnownCandidateRects[key].map { (key, $0) } }
+        let added = tracker.visibleAddedKeys.sorted { ($0.value, $0.symbology) < ($1.value, $1.symbology) }
+        var styles: [BarcodeCandidateKey: BarcodeCandidateOverlayView.Style] = [:]
+        for key in added { styles[key] = .added }
+        for key in tracker.confirmingKeys { styles[key] = .confirming }
+        let visible = (tracker.confirmingKeys + added).compactMap { key in
+            lastKnownCandidateRects[key].map { (key, $0) }
+        }
         lastKnownCandidateRects = Dictionary(uniqueKeysWithValues: visible)
-        presentCandidates(visible)
+        presentCandidates(visible, styles: styles)
     }
 
     /// Runs on `visionQueue`. Hops to main with Vision-space rects for the overlay.
-    private func presentCandidates(_ candidates: [(BarcodeCandidateKey, CGRect)]) {
+    private func presentCandidates(
+        _ candidates: [(BarcodeCandidateKey, CGRect)],
+        styles: [BarcodeCandidateKey: BarcodeCandidateOverlayView.Style] = [:]
+    ) {
         guard !candidates.isEmpty || isPresentingCandidates else { return }
         isPresentingCandidates = !candidates.isEmpty
         let bufferIsPortrait = latestBufferIsPortrait
-        let addedKeys = selectionTracker.addedKeys
 
         DispatchQueue.main.async { [weak self] in
             guard let self, let previewLayer = self.previewLayer else { return }
@@ -753,7 +761,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                             bufferIsPortrait: bufferIsPortrait
                         )
                     ),
-                    isAdded: addedKeys.contains(key)
+                    style: styles[key] ?? .selectable
                 )
             }
             self.candidateOverlay.update(displayed)
@@ -765,14 +773,9 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     /// Main thread. The tap is resolved on `visionQueue` so it cannot race an auto-accept.
     private func selectCandidate(_ key: BarcodeCandidateKey) {
         visionQueue.async { [weak self] in
-            guard let self, !self.didScan, !self.isCollectionPaused,
+            // Batch scans have no choice to make and nothing to tap.
+            guard let self, !self.didScan, self.batchTracker == nil,
                   self.selectionTracker.select(key) else { return }
-            if self.selectionTracker.continuesAfterAccept {
-                // Batch: the code is added and scanning continues; the next frame
-                // marks its outline as added.
-                self.deliverResult(for: key, highlightingSelection: false)
-                return
-            }
             self.didScan = true
             self.isPresentingCandidates = false
             self.lastKnownCandidateRects.removeAll()
@@ -786,7 +789,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             codeFormat: key.symbology,
             isManualEntry: false
         )
-        let continues = selectionTracker.continuesAfterAccept
+        let continues = batchTracker != nil
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
@@ -810,7 +813,11 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             let element = candidateAccessibilityElements[candidate.key]
                 ?? BarcodeCandidateAccessibilityElement(accessibilityContainer: view as Any)
             let label = "\(candidate.key.value), \(ScanHistoryItem.displayName(forCodeFormat: candidate.key.symbology))"
-            if candidate.isAdded {
+            switch candidate.style {
+            case .confirming:
+                // Not added yet and not interactive; announced once it is added.
+                continue
+            case .added:
                 element.accessibilityLabel = String(
                     format: NSLocalizedString("%@, added", comment: "Outlined code already in the batch list; %@ is the code and its format"),
                     label
@@ -818,7 +825,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 element.accessibilityHint = nil
                 element.accessibilityTraits = .staticText
                 element.onActivate = nil
-            } else {
+            case .selectable:
                 element.accessibilityLabel = label
                 element.accessibilityHint = NSLocalizedString("Uses this code.", comment: "Selectable scanned code accessibility hint")
                 element.accessibilityTraits = .button

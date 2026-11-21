@@ -58,19 +58,18 @@ enum BarcodeSelectionTrackerTests {
         loneFallbackNeedsSeveralSightings()
         differentLoneCodeDuringConfirmationIsOffered()
         tapFinishesOnce()
-        singleModeNeverReportsAddedKeys()
+        singleModeSelectFinishesOnce()
         batchAddsCodeOnceWhileItStaysInView()
+        batchTwoCodesInViewAreBothAddedInFirstSightingOrder()
+        batchCodesReadyInTheSameFrameKeepFirstSightingOrder()
+        batchThreeCodesAreAllAddedOnce()
+        batchSingleMisreadIsNeverAdded()
         batchReaddsCodeAfterItLeftAndCameBack()
         batchShortAbsenceDoesNotReadd()
-        batchFlickeringCodeIsNotAddedTwice()
+        batchFlickeringAddedCodeIsNotAddedTwice()
         batchMovingToNextCodeAddsIt()
-        batchTapAddsCodeAndKeepsScanning()
-        batchNextItemBesideLoneAddedCodeIsAutoAdded()
-        batchTappedLabelCodeKeepsNeighbourTapOnly()
-        batchTwoNewCodesBesideLoneAddedCodeAreAChoice()
-        batchFlickerOfAddedCodeWhileNextConfirms()
-        batchHandCoverFallbackKeepsScanning()
-        batchPausedFramesKeepCodesBlocked()
+        batchCapacityLimitsAddsAndKeepsTheRestPending()
+        batchFullListKeepsCodesInViewBlocked()
         print("BarcodeSelectionTrackerTests passed")
     }
 
@@ -239,11 +238,6 @@ enum BarcodeSelectionTrackerTests {
         // A worn code simply waits for its second decode, however late.
         precondition(once.process([ean], at: 6) == .accept(ean))
 
-        // Batch mode follows the same rule.
-        var batch = batchTracker()
-        precondition(accepts(run(&batch, [[ean]] + Array(repeating: [], count: 150))).isEmpty)
-        precondition(batch.addedKeys.isEmpty)
-        precondition(batch.process([ean], at: 6) == .accept(ean))
 
         // The second sighting before the interval is enough once time has passed.
         var early = BarcodeSelectionTracker()
@@ -255,10 +249,6 @@ enum BarcodeSelectionTrackerTests {
         var tracker = BarcodeSelectionTracker()
         precondition(tracker.process([ean, code128], at: 0) == .choose([ean, code128]))
         precondition(tracker.select(code128))
-        var batch = batchTracker()
-        precondition(batch.process([ean, code128], at: 0) == .choose([ean, code128]))
-        precondition(batch.select(ean))
-        precondition(batch.addedKeys == [ean])
     }
 
     static func loneFallbackNeedsSeveralSightings() {
@@ -291,11 +281,10 @@ enum BarcodeSelectionTrackerTests {
 
     // MARK: - Single mode stays unchanged
 
-    static func singleModeNeverReportsAddedKeys() {
+    static func singleModeSelectFinishesOnce() {
         var tracker = BarcodeSelectionTracker()
         _ = run(&tracker, Array(repeating: [ean], count: confirmFrames))
         precondition(tracker.isFinished)
-        precondition(tracker.addedKeys.isEmpty)
         // `select` on a single-scan tracker is exactly `finishBySelection`.
         var tapped = BarcodeSelectionTracker()
         _ = run(&tapped, [[ean, code128]])
@@ -304,198 +293,167 @@ enum BarcodeSelectionTrackerTests {
         precondition(!tapped.select(ean))
     }
 
-    // MARK: - Batch mode
-
-    static func batchTracker() -> BarcodeSelectionTracker {
-        BarcodeSelectionTracker(continuesAfterAccept: true)
-    }
-
     static func accepts(_ decisions: [BarcodeSelectionDecision]) -> [BarcodeCandidateKey] {
         decisions.compactMap { if case let .accept(key) = $0 { key } else { nil } }
     }
 
+    // MARK: - Batch mode: every code in view is added, no choice
+
+    /// Feeds frames at `interval` from `start`; returns the codes added per frame.
+    static func feed(
+        _ tracker: inout BarcodeBatchTracker,
+        _ frames: [[BarcodeCandidateKey]],
+        start: TimeInterval = 0,
+        interval: TimeInterval = frame,
+        capacity: Int = .max
+    ) -> [[BarcodeCandidateKey]] {
+        frames.enumerated().map { index, keys in
+            tracker.process(keys, at: start + Double(index) * interval, capacity: capacity)
+        }
+    }
+
     static func batchAddsCodeOnceWhileItStaysInView() {
-        var tracker = batchTracker()
-        // Five seconds of the same code in view.
-        let decisions = run(&tracker, Array(repeating: [ean], count: 150))
-        precondition(accepts(decisions) == [ean], "a code in view must be added once: \(accepts(decisions))")
-        precondition((acceptTime(decisions) ?? 99) < confirm + frame * 1.5)
-        precondition(!tracker.isFinished)
+        var tracker = BarcodeBatchTracker()
+        let added = feed(&tracker, Array(repeating: [ean], count: 150))
+        precondition(added.flatMap { $0 } == [ean], "a code in view must be added once: \(added)")
+        guard let index = added.firstIndex(where: { !$0.isEmpty }) else { preconditionFailure() }
+        let time = Double(index) * frame
+        precondition(time > confirm - frame / 2 && time < confirm + frame * 1.5, "added at \(time)")
         precondition(tracker.addedKeys == [ean])
+        precondition(tracker.visibleAddedKeys == [ean])
+        precondition(tracker.confirmingKeys.isEmpty)
+    }
+
+    static func batchTwoCodesInViewAreBothAddedInFirstSightingOrder() {
+        var tracker = BarcodeBatchTracker()
+        // The EAN is seen first, the QR joins a few frames later; both stay.
+        let frames = [[ean], [ean], [ean]] + Array(repeating: [qr, ean], count: 40)
+        let added = feed(&tracker, frames)
+        precondition(added.flatMap { $0 } == [ean, qr], "\(added)")
+        precondition(tracker.confirmingKeys.isEmpty)
+        // While the QR confirms, it is reported as confirming.
+        var confirming = BarcodeBatchTracker()
+        _ = feed(&confirming, [[ean, qr]])
+        precondition(confirming.confirmingKeys == [ean, qr])
+    }
+
+    static func batchCodesReadyInTheSameFrameKeepFirstSightingOrder() {
+        var tracker = BarcodeBatchTracker()
+        precondition(tracker.process([ean], at: 0).isEmpty)
+        precondition(tracker.process([code128], at: 0.05).isEmpty)
+        // Both have two sightings and 0.3 s in this frame; Vision lists them in
+        // the other order, the result follows first sighting.
+        precondition(tracker.process([code128, ean], at: 0.36) == [ean, code128])
+        precondition(tracker.addedKeys == [ean, code128])
+    }
+
+    static func batchThreeCodesAreAllAddedOnce() {
+        var tracker = BarcodeBatchTracker()
+        let added = feed(&tracker, Array(repeating: [ean, qr, code128], count: 120))
+        precondition(added.flatMap { $0 } == [ean, qr, code128], "\(added)")
+        precondition(added.filter { !$0.isEmpty }.count == 1, "all three become ready in one frame")
+        precondition(tracker.visibleAddedKeys == [ean, qr, code128])
+    }
+
+    static func batchSingleMisreadIsNeverAdded() {
+        var tracker = BarcodeBatchTracker()
+        // One read of a stray code among frames of another code.
+        var frames = Array(repeating: [ean], count: 90)
+        frames[20] = [ean, qr]
+        let added = feed(&tracker, frames)
+        precondition(added.flatMap { $0 } == [ean], "\(added)")
+        // Later single stray reads, each after the retention window, never add it.
+        for time in [3.5, 4.2, 5.0, 6.1] {
+            precondition(tracker.process([ean, qr], at: time).isEmpty, "stray read at \(time) added")
+            precondition(tracker.process([ean], at: time + 0.45).isEmpty)
+        }
+        precondition(!tracker.addedKeys.contains(qr))
+        // Two reads within the window are a real code again.
+        precondition(tracker.process([ean, qr], at: 7).isEmpty)
+        precondition(tracker.process([ean, qr], at: 7.35) == [qr])
     }
 
     static func batchReaddsCodeAfterItLeftAndCameBack() {
-        var tracker = batchTracker()
-        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
+        var tracker = BarcodeBatchTracker()
+        precondition(feed(&tracker, Array(repeating: [ean], count: confirmFrames)).flatMap { $0 } == [ean])
         // The item is taken away for longer than the re-entry interval...
         let start = Double(confirmFrames) * frame
         let away = BarcodeRescanGuard.reentryAbsenceInterval + 0.1
         let empty = Int((away / frame).rounded(.up))
-        _ = run(&tracker, Array(repeating: [], count: empty), start: start)
+        _ = feed(&tracker, Array(repeating: [], count: empty), start: start)
         precondition(tracker.addedKeys.isEmpty)
         // ...and shown again: a second, intentional copy is added.
-        let back = run(&tracker, Array(repeating: [ean], count: confirmFrames), start: start + Double(empty) * frame)
-        precondition(accepts(back) == [ean], "returning code must be added again: \(back)")
+        let back = feed(&tracker, Array(repeating: [ean], count: confirmFrames), start: start + Double(empty) * frame)
+        precondition(back.flatMap { $0 } == [ean], "returning code must be added again: \(back)")
     }
 
     static func batchShortAbsenceDoesNotReadd() {
-        var tracker = batchTracker()
-        let seen = run(&tracker, Array(repeating: [ean], count: confirmFrames))
-        precondition(accepts(seen) == [ean])
+        var tracker = BarcodeBatchTracker()
+        precondition(feed(&tracker, Array(repeating: [ean], count: confirmFrames)).flatMap { $0 } == [ean])
         // Away for clearly less than the re-entry interval, then back for 3 s.
         let lastSeen = Double(confirmFrames - 1) * frame
         let gap = BarcodeRescanGuard.reentryAbsenceInterval - 0.3
         _ = tracker.process([], at: lastSeen + 0.1)
-        let back = run(&tracker, Array(repeating: [ean], count: 90), start: lastSeen + gap)
-        precondition(accepts(back).isEmpty, "a short absence must not re-add: \(back)")
+        let back = feed(&tracker, Array(repeating: [ean], count: 90), start: lastSeen + gap)
+        precondition(back.flatMap { $0 }.isEmpty, "a short absence must not re-add: \(back)")
     }
 
-    static func batchFlickeringCodeIsNotAddedTwice() {
-        var tracker = batchTracker()
-        // A worn code that Vision decodes only now and then, with dropouts of up
-        // to 1.2 s, stays in view for 10 s.
-        var decisions: [BarcodeSelectionDecision] = []
-        var time: TimeInterval = 0
+    static func batchFlickeringAddedCodeIsNotAddedTwice() {
+        var tracker = BarcodeBatchTracker()
+        precondition(feed(&tracker, Array(repeating: [ean], count: confirmFrames)).flatMap { $0 } == [ean])
+        // The added code stays in view for 10 s but Vision drops it for up to 1.2 s.
+        var time = Double(confirmFrames) * frame
         var index = 0
         let dropouts: [TimeInterval] = [0.1, 0.4, 1.2, 0.2, 0.9, 1.2, 0.05, 0.6]
         while time < 10 {
-            decisions.append(tracker.process([ean], at: time))
+            precondition(tracker.process([ean], at: time).isEmpty, "flicker re-added at \(time)")
             time += dropouts[index % dropouts.count]
             index += 1
         }
-        precondition(accepts(decisions) == [ean], "flicker must not double-add: \(accepts(decisions))")
     }
 
     static func batchMovingToNextCodeAddsIt() {
-        var tracker = batchTracker()
-        // First item, then the camera moves on: the first code leaves the view
-        // before the second appears, so the fast single-code path is used.
+        var tracker = BarcodeBatchTracker()
         let first = Array(repeating: [ean], count: confirmFrames)
         let second = Array(repeating: [code128], count: confirmFrames)
-        let decisions = run(&tracker, first + [[]] + second)
-        precondition(accepts(decisions) == [ean, code128], "\(decisions)")
-        let secondStart = first.count + 1
-        let secondAccept = acceptTime(Array(decisions[secondStart...]))
-        precondition((secondAccept ?? 99) < confirm + frame * 1.5, "next code must use the fast path")
+        let added = feed(&tracker, first + [[]] + second)
+        precondition(added.flatMap { $0 } == [ean, code128], "\(added)")
         precondition(tracker.addedKeys == [ean, code128])
     }
 
-    static func batchTapAddsCodeAndKeepsScanning() {
-        var tracker = batchTracker()
-        precondition(tracker.process([ean, code128], at: 0) == .choose([ean, code128]))
-        precondition(tracker.select(ean))
-        // The tapped code cannot be tapped again while it stays in view.
-        precondition(!tracker.select(ean))
-        precondition(tracker.addedKeys == [ean])
-        // Both codes stay outlined (the added one is marked by `addedKeys`) and
-        // the other one is never auto-added while the first is still visible.
-        var time = frame
-        while time < 3 {
-            let decision = tracker.process([ean, code128], at: time)
-            precondition(decision == .choose([ean, code128]), "remaining code must stay a choice: \(decision)")
-            time += frame
+    static func batchCapacityLimitsAddsAndKeepsTheRestPending() {
+        var tracker = BarcodeBatchTracker()
+        // Room for two, counted down as codes are added (as the scanner does):
+        // the third ready code is not added and not blocked.
+        var remaining = 2
+        var added: [BarcodeCandidateKey] = []
+        for index in 0..<confirmFrames {
+            let now = tracker.process([ean, qr, code128], at: Double(index) * frame, capacity: remaining)
+            remaining -= now.count
+            added += now
         }
-        precondition(tracker.select(code128))
-        precondition(tracker.addedKeys == [ean, code128])
-        // Everything visible was added: nothing left to offer, nothing re-added.
-        let rest = run(&tracker, Array(repeating: [ean, code128], count: 60), start: 3)
-        precondition(rest.allSatisfy { $0 == .waiting }, "\(rest)")
-        precondition(!tracker.isFinished)
-    }
-
-    static func batchNextItemBesideLoneAddedCodeIsAutoAdded() {
-        var tracker = batchTracker()
-        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
-        // The added EAN (previous item) is still in view when the next item's
-        // code appears beside it: no choice, the new code is confirmed and added.
+        precondition(added == [ean, qr], "\(added)")
+        precondition(tracker.addedKeys == [ean, qr])
+        precondition(tracker.confirmingKeys == [code128])
+        // Full: nothing is added while frames keep coming.
         let start = Double(confirmFrames) * frame
-        let decisions = run(&tracker, Array(repeating: [ean, qr], count: confirmFrames + 3), start: start)
-        precondition(!decisions.contains { if case .choose = $0 { true } else { false } }, "\(decisions)")
-        precondition(accepts(decisions) == [qr], "\(decisions)")
-        precondition((acceptTime(decisions) ?? 99) < confirm + frame * 1.5)
-        precondition(tracker.addedKeys == [ean, qr])
-        // ...and so on for a third item, with both earlier codes still visible.
-        let third = run(&tracker, Array(repeating: [ean, qr, code128], count: confirmFrames + 3),
-                        start: start + Double(confirmFrames + 3) * frame)
-        precondition(accepts(third) == [code128], "\(third)")
-        // The visible added codes are reported for their "added" outlines.
-        precondition(tracker.visibleAddedKeys == [ean, qr, code128])
+        let full = feed(&tracker, Array(repeating: [ean, qr, code128], count: 60), start: start, capacity: 0)
+        precondition(full.flatMap { $0 }.isEmpty)
+        // A slot frees up (an entry was deleted): the waiting code is added, the
+        // added ones still in view are not added again.
+        let resumed = tracker.process([ean, qr, code128], at: start + 2.1, capacity: 1)
+        precondition(resumed == [code128], "\(resumed)")
     }
 
-    static func batchTappedLabelCodeKeepsNeighbourTapOnly() {
-        var tracker = batchTracker()
-        // One label with two codes, seen together: a choice.
-        precondition(tracker.process([ean, code128], at: 0) == .choose([ean, code128]))
-        precondition(tracker.select(ean))
-        // Both stay in view for 3 s: the neighbour is never added on its own.
-        let decisions = run(&tracker, Array(repeating: [ean, code128], count: 90), start: frame)
-        precondition(accepts(decisions).isEmpty, "\(decisions)")
-        precondition(decisions.allSatisfy { $0 == .choose([ean, code128]) })
-        // Even after the selection was abandoned and both come back together.
-        _ = run(&tracker, Array(repeating: [ean], count: 40), start: 3.1)
-        let back = run(&tracker, Array(repeating: [ean, code128], count: 30), start: 4.5)
-        precondition(accepts(back).isEmpty, "\(back)")
-    }
-
-    static func batchTwoNewCodesBesideLoneAddedCodeAreAChoice() {
-        var tracker = batchTracker()
-        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
-        let decisions = run(&tracker, Array(repeating: [ean, qr, code128], count: 30), start: Double(confirmFrames) * frame)
-        precondition(accepts(decisions).isEmpty, "\(decisions)")
-        precondition(decisions.allSatisfy { $0 == .choose([ean, qr, code128]) }, "\(decisions)")
-        precondition(tracker.select(code128))
-    }
-
-    static func batchFlickerOfAddedCodeWhileNextConfirms() {
-        var tracker = batchTracker()
-        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
-        // The added EAN drops in and out while the new QR confirms.
-        let frames: [[BarcodeCandidateKey]] = (0..<(confirmFrames + 3)).map { index in
-            switch index % 3 {
-            case 0: [qr]
-            case 1: [ean, qr]
-            default: [ean]
-            }
-        }
-        let decisions = run(&tracker, frames, start: Double(confirmFrames) * frame)
-        precondition(accepts(decisions) == [qr], "\(decisions)")
-        precondition(!decisions.contains { if case .choose = $0 { true } else { false } })
-        precondition(tracker.addedKeys == [ean, qr])
-    }
-
-    static func batchHandCoverFallbackKeepsScanning() {
-        var tracker = batchTracker()
-        _ = run(&tracker, [[ean, code128], [ean, code128]])
-        // Only the EAN stays visible: it is added after the fallback interval.
-        var acceptedAt: TimeInterval?
-        var time = 0.1
-        while time < 2 {
-            let decision = tracker.process([ean], at: time)
-            if case .accept(let key) = decision {
-                precondition(key == ean && acceptedAt == nil, "only one add expected")
-                acceptedAt = time
-            }
-            time += frame
-        }
-        guard let acceptedAt else { preconditionFailure("covered neighbour must fall back to auto-add") }
-        precondition(acceptedAt - 0.1 >= BarcodeSelectionTracker.multiToSingleFallbackInterval - 0.0001)
-        // Uncovering the Code 128 offers it rather than adding it on its own.
-        let uncovered = tracker.process([ean, code128], at: time)
-        precondition(uncovered == .choose([ean, code128]), "\(uncovered)")
-    }
-
-    static func batchPausedFramesKeepCodesBlocked() {
-        var tracker = batchTracker()
-        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
+    static func batchFullListKeepsCodesInViewBlocked() {
+        var tracker = BarcodeBatchTracker()
+        precondition(feed(&tracker, Array(repeating: [ean], count: confirmFrames)).flatMap { $0 } == [ean])
         // The batch is full for 5 s while the EAN stays in view.
-        var time = Double(confirmFrames) * frame
-        while time < 5 {
-            tracker.observeWithoutAccepting([ean], at: time)
-            time += frame
-        }
+        let start = Double(confirmFrames) * frame
+        _ = feed(&tracker, Array(repeating: [ean], count: 150), start: start, capacity: 0)
         precondition(tracker.addedKeys == [ean])
         // Collection resumes: the EAN, still in view, is not added again.
-        let resumed = run(&tracker, Array(repeating: [ean], count: 30), start: time)
-        precondition(accepts(resumed).isEmpty, "\(resumed)")
+        let resumed = feed(&tracker, Array(repeating: [ean], count: 30), start: start + 5)
+        precondition(resumed.flatMap { $0 }.isEmpty, "\(resumed)")
     }
 }

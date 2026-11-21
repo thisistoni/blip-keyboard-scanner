@@ -29,9 +29,9 @@ Use a physical iPhone for the full workflow. The simulator cannot validate camer
 - With music playing in another app, cold-launch Blip and open the scanner with Blip sound enabled. Music must keep playing before any code is scanned.
 - Complete a scan and verify the beep mixes with the music; repeat opening/canceling the scanner.
 - Repeat the music test with Blip sound disabled.
-- With a label carrying several codes, confirm every code is outlined, the hint appears, and tapping an outline returns that code. A single code must still scan without a tap, and covering the other codes with a hand must fall back to automatic scanning after about a second.
+- In Single scan mode, with a label carrying several codes, confirm every code is outlined, the hint appears, and tapping an outline returns that code. A single code must still scan without a tap, and covering the other codes with a hand must fall back to automatic scanning after about a second.
 
-- In Batch scan mode (Settings or the scanner's Scan Mode menu), scan several items: each code is added once while it stays in view, the list numbers them, a code taken away for about two seconds and shown again is added again, and the finish button inserts all codes joined with the Batch Separator followed by the Scan Suffix once.
+- In Batch scan mode (Settings or the scanner's Scan Mode menu), scan several items: there is no choice and nothing to tap; every code in view is added without a tap (several codes at once are all added, each with its own beep and row), a code still confirming shows a thin white outline and an added code a dashed green one with a check, each code is added once while it stays in view, the list numbers them, a code taken away for about two seconds and shown again is added again, and the finish button inserts all codes joined with the Batch Separator followed by the Scan Suffix once.
 
 The multi-code and batch re-scan logic, and the batch list, have standalone test executables:
 

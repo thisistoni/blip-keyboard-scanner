@@ -10,12 +10,20 @@ import UIKit
 /// so outlines follow the code smoothly instead of jumping. Taps are resolved
 /// against the rect that is drawn.
 final class BarcodeCandidateOverlayView: UIView {
+    enum Style {
+        /// Single scans: one of several codes, tap to choose (yellow brackets).
+        case selectable
+        /// Batch scans: already in the list (green dashed outline with a check).
+        case added
+        /// Batch scans: being confirmed (thin neutral outline, not tappable).
+        case confirming
+    }
+
     struct Candidate {
         let key: BarcodeCandidateKey
         /// Code bounds in this view's (and the preview layer's) coordinates.
         let rect: CGRect
-        /// Batch scans only: the code is already in the list and cannot be tapped.
-        var isAdded = false
+        var style: Style = .selectable
     }
 
     /// Tap targets are at least this large, even for tiny codes far away.
@@ -61,7 +69,7 @@ final class BarcodeCandidateOverlayView: UIView {
         var drawn: [Candidate] = []
         for candidate in incoming {
             let rect = smoothedRect(for: candidate)
-            drawn.append(Candidate(key: candidate.key, rect: rect, isAdded: candidate.isAdded))
+            drawn.append(Candidate(key: candidate.key, rect: rect, style: candidate.style))
 
             let outline: OutlineLayers
             let isNew: Bool
@@ -78,7 +86,7 @@ final class BarcodeCandidateOverlayView: UIView {
             outline.container.frame = bounds
             outline.apply(
                 outlineRect: Self.outlineRect(for: rect),
-                isAdded: candidate.isAdded,
+                style: candidate.style,
                 animated: !isNew && !reduceMotion,
                 duration: Self.glideDuration
             )
@@ -104,7 +112,7 @@ final class BarcodeCandidateOverlayView: UIView {
             smoothedRects[candidateKey] = nil
         }
         if let outline = outlines[key], let rect = candidates.first(where: { $0.key == key })?.rect {
-            outline.apply(outlineRect: Self.outlineRect(for: rect), isAdded: false, animated: false, duration: 0)
+            outline.apply(outlineRect: Self.outlineRect(for: rect), style: .selectable, animated: false, duration: 0)
             outline.markChosen()
         }
         candidates = candidates.filter { $0.key == key }
@@ -115,7 +123,7 @@ final class BarcodeCandidateOverlayView: UIView {
     /// targets resolve to the code whose centre is nearest. A tap just outside
     /// every target still picks the nearest code within `nearMissDistance`.
     func candidate(at point: CGPoint) -> BarcodeCandidateKey? {
-        let selectable = candidates.filter { !$0.isAdded }
+        let selectable = candidates.filter { $0.style == .selectable }
         let byDistance = { (lhs: Candidate, rhs: Candidate) in
             Self.distance(lhs.rect, point) < Self.distance(rhs.rect, point)
         }
@@ -219,19 +227,27 @@ final class BarcodeCandidateOverlayView: UIView {
             container.addSublayer(badge)
         }
 
-        func apply(outlineRect rect: CGRect, isAdded: Bool, animated: Bool, duration: CFTimeInterval) {
+        func apply(outlineRect rect: CGRect, style: Style, animated: Bool, duration: CFTimeInterval) {
             let radius = min(BarcodeCandidateOverlayView.cornerRadius, rect.height / 3)
             let fillPath = UIBezierPath(roundedRect: rect, cornerRadius: radius).cgPath
             let bracketPath = Self.bracketPath(in: rect, radius: radius)
 
-            if isAdded {
+            switch style {
+            case .added:
                 fill.fillColor = UIColor.systemGreen.withAlphaComponent(0.22).cgColor
                 fill.strokeColor = UIColor.systemGreen.cgColor
                 fill.lineWidth = BarcodeCandidateOverlayView.lineWidth - 1
                 fill.lineDashPattern = [6, 4]
                 brackets.isHidden = true
                 badge.isHidden = false
-            } else {
+            case .confirming:
+                fill.fillColor = UIColor.white.withAlphaComponent(0.10).cgColor
+                fill.strokeColor = UIColor.white.withAlphaComponent(0.8).cgColor
+                fill.lineWidth = 1.5
+                fill.lineDashPattern = nil
+                brackets.isHidden = true
+                badge.isHidden = true
+            case .selectable:
                 fill.fillColor = UIColor.white.withAlphaComponent(0.14).cgColor
                 fill.strokeColor = UIColor.white.withAlphaComponent(0.35).cgColor
                 fill.lineWidth = 1

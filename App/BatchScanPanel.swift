@@ -312,8 +312,14 @@ final class BatchScanModel: ObservableObject {
     @Published private(set) var collection = BatchScanCollection()
     @Published private var notice: BatchScanPanelStatus?
     private var noticeToken = UUID()
+    /// Earliest uptime for the next scan sound.
+    private var nextSoundTime: TimeInterval = 0
 
     private static let noticeDuration: TimeInterval = 2.0
+    /// Several codes can be added from one camera frame. The sound player
+    /// restarts one short clip, so back-to-back plays would merge into a single
+    /// beep; spacing them keeps one audible beep (and haptic) per code.
+    private static let soundSpacing: TimeInterval = 0.15
 
     /// Adds a decoded code. Returns false when the batch is already full.
     @discardableResult
@@ -323,7 +329,7 @@ final class BatchScanModel: ObservableObject {
             announce(Self.limitMessage)
             return false
         }
-        ScanSoundPlayer.shared.playIfEnabled(playScanSound)
+        playSound(playScanSound)
         show(BatchScanPanelStatus(
             message: String(format: NSLocalizedString("Added %@", comment: "Batch status after a code was added; %@ is the code"), result.value),
             systemImage: "checkmark.circle.fill",
@@ -360,21 +366,25 @@ final class BatchScanModel: ObservableObject {
         notice = nil
     }
 
-    func status(selectableCodeCount: Int) -> BatchScanPanelStatus? {
+    var status: BatchScanPanelStatus? {
         if collection.isFull {
             return BatchScanPanelStatus(message: Self.limitMessage, systemImage: "exclamationmark.triangle.fill", tint: .orange)
         }
-        if let notice {
-            return notice
+        return notice
+    }
+
+    private func playSound(_ isEnabled: Bool) {
+        guard isEnabled else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        let playAt = max(now, nextSoundTime)
+        nextSoundTime = playAt + Self.soundSpacing
+        guard playAt > now else {
+            ScanSoundPlayer.shared.playIfEnabled(true)
+            return
         }
-        if selectableCodeCount > 0 {
-            return BatchScanPanelStatus(
-                message: NSLocalizedString("Tap the code you want to use.", comment: "Hint when several codes are visible"),
-                systemImage: "hand.tap.fill",
-                tint: .yellow
-            )
+        DispatchQueue.main.asyncAfter(deadline: .now() + (playAt - now)) {
+            ScanSoundPlayer.shared.playIfEnabled(true)
         }
-        return nil
     }
 
     func finishTitle(insertsIntoKeyboard: Bool) -> String {
