@@ -366,6 +366,10 @@ struct ScannerScreen: View {
                 return
             }
             ScanSoundPlayer.shared.playIfEnabled(playScanSound)
+            // A test scan is a real scan: it belongs in History like any other.
+            if !result.isManualEntry {
+                ScanHistoryStore.record(historyItem(value: result.value, codeFormat: result.codeFormat, for: session))
+            }
 #if DEBUG
             KeyboardTestDiagnostics.record("cameraFinished", source: "app")
 #endif
@@ -389,13 +393,17 @@ struct ScannerScreen: View {
     private func handleScannedBatch(_ batch: BatchScanCollection, for session: ScannerSession) {
         guard !batch.isEmpty else { return }
         let separator = BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma
+        let batchHistory = batch.entries.map {
+            historyItem(value: $0.value, codeFormat: $0.codeFormat, scannedAt: $0.scannedAt, for: session)
+        }
 
         // The keyboard test field gets the joined text back like a single test
-        // scan: no history, clipboard or return to another app.
+        // scan: recorded in History, but no clipboard or return to another app.
         if let testID = session.testSessionID {
             if SharedKeyboardState.finishKeyboardTest(
                 id: testID, requestID: session.requestID, code: batch.joinedText(separator: separator)
             ) {
+                ScanHistoryStore.record(contentsOf: batchHistory)
                 restoreTestField = true
             } else {
                 // Typically the test ended when Blip went to the background; say
@@ -408,9 +416,7 @@ struct ScannerScreen: View {
 
         deliverScan(
             text: batch.joinedText(separator: separator),
-            history: batch.entries.map {
-                historyItem(value: $0.value, codeFormat: $0.codeFormat, scannedAt: $0.scannedAt, for: session)
-            },
+            history: batchHistory,
             for: session
         )
     }
@@ -421,7 +427,8 @@ struct ScannerScreen: View {
             codeFormat: codeFormat,
             scannedAt: scannedAt,
             source: session.source.historySource,
-            returnTargetRawValue: session.source == .keyboard ? session.returnTarget.rawValue : nil,
+            // A keyboard test returns to Blip's own test field, not to the return target.
+            returnTargetRawValue: session.source == .keyboard && session.testSessionID == nil ? session.returnTarget.rawValue : nil,
             insertionStatus: session.source == .keyboard ? .queuedForKeyboardInsertion : .notQueued
         )
     }

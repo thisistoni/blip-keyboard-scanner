@@ -327,7 +327,11 @@
 "Discard and Switch" = "Discard and Switch";
 "Keep Scanning" = "Keep Scanning";
 "Separator: %@" = "Separator: %@";
-"Used whenever you scan in Batch mode, including when you switch to Batch in the scanner." = "Used whenever you scan in Batch mode, including when you switch to Batch in the scanner.";
+"Separator and duplicates apply whenever you scan in Batch mode, including when you switch to Batch in the scanner." = "Separator and duplicates apply whenever you scan in Batch mode, including when you switch to Batch in the scanner.";
+"Camera" = "Camera";
+"Codes" = "Codes";
+"Separator" = "Separator";
+"Single and Batch Scan" = "Single and Batch Scan";
 "Added again: %@" = "Added again: %@";
 "Added again, %d codes." = "Added again, %d codes.";
 "This code contains the separator." = "This code contains the separator.";

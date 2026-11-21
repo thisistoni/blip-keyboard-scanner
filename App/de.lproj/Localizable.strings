@@ -327,7 +327,11 @@
 "Discard and Switch" = "Verwerfen und wechseln";
 "Keep Scanning" = "Weiterscannen";
 "Separator: %@" = "Trennzeichen: %@";
-"Used whenever you scan in Batch mode, including when you switch to Batch in the scanner." = "Gilt immer, wenn du im Modus „Mehrfach“ scannst – auch wenn du im Scanner zu „Mehrfach“ wechselst.";
+"Separator and duplicates apply whenever you scan in Batch mode, including when you switch to Batch in the scanner." = "Trennzeichen und Duplikate gelten immer, wenn du im Modus „Mehrfach“ scannst – auch wenn du im Scanner zu „Mehrfach“ wechselst.";
+"Camera" = "Kamera";
+"Codes" = "Codes";
+"Separator" = "Trennzeichen";
+"Single and Batch Scan" = "Einzel- und Mehrfachscan";
 "Added again: %@" = "Erneut hinzugefügt: %@";
 "Added again, %d codes." = "Erneut hinzugefügt, %d Codes.";
 "This code contains the separator." = "Dieser Code enthält das Trennzeichen.";

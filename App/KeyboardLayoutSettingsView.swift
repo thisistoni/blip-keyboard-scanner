@@ -348,7 +348,9 @@ private struct ScannerSettingsPage: View {
 
     var body: some View {
         List {
-            scannerSection
+            cameraSection
+            scanningSection
+            batchSection
             historySection
         }
         .navigationTitle("Scanner Settings")
@@ -358,20 +360,10 @@ private struct ScannerSettingsPage: View {
         }
     }
 
-    private var scannerSection: some View {
+    /// How the camera starts when the scanner opens.
+    private var cameraSection: some View {
         Section {
             Toggle("Flashlight by default", isOn: flashlightEnabledByDefault)
-            Toggle("Blip sound on scan", isOn: $playScanSound)
-
-            Picker("Scan Formats", selection: scanFormatProfile) {
-                ForEach(ScanFormatProfile.allCases) { profile in
-                    Text(profile.title).tag(profile)
-                }
-            }
-
-            Text(scanFormatProfile.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
 
             Picker("Default Zoom", selection: scannerZoomLevel) {
                 ForEach(ScannerZoomLevel.allCases) { zoomLevel in
@@ -392,7 +384,35 @@ private struct ScannerSettingsPage: View {
             Text(scannerScanArea.wrappedValue.detail)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+        } header: {
+            Text("Camera")
+        }
+    }
 
+    /// What is recognised and how a scan is confirmed.
+    private var scanningSection: some View {
+        Section {
+            Picker("Scan Formats", selection: scanFormatProfile) {
+                ForEach(ScanFormatProfile.allCases) { profile in
+                    Text(profile.title).tag(profile)
+                }
+            }
+
+            Text(scanFormatProfile.wrappedValue.detail)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Blip sound on scan", isOn: $playScanSound)
+        } header: {
+            Text("Codes")
+        } footer: {
+            Text("Regular QR codes are inserted as text. Company profiles open a preview.")
+        }
+    }
+
+    /// One code per scan or a list, and how the list is handed over.
+    private var batchSection: some View {
+        Section {
             Picker("Scan Mode", selection: scannerScanMode) {
                 ForEach(ScannerScanMode.allCases) { mode in
                     Text(mode.title).tag(mode)
@@ -404,7 +424,7 @@ private struct ScannerSettingsPage: View {
                 .foregroundStyle(.secondary)
 
             // Always shown: the scanner's toolbar can switch to Batch whatever the default.
-            Picker("Batch Separator", selection: batchSeparator) {
+            Picker("Separator", selection: batchSeparator) {
                 ForEach(BatchSeparator.allCases) { separator in
                     Text(separator.title).tag(separator)
                 }
@@ -414,19 +434,15 @@ private struct ScannerSettingsPage: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            Text("Used whenever you scan in Batch mode, including when you switch to Batch in the scanner.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-
             Toggle("Skip Duplicate Codes", isOn: $batchSkipDuplicates)
 
             Text("In Batch mode, a code that is already in the list is not added again. Leave this off to count identical items by scanning each one.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         } header: {
-            Text("Scanner")
+            Text("Single and Batch Scan")
         } footer: {
-            Text("Regular QR codes are inserted as text. Company profiles open a preview.")
+            Text("Separator and duplicates apply whenever you scan in Batch mode, including when you switch to Batch in the scanner.")
         }
     }
 
