@@ -64,7 +64,7 @@ struct KeyboardLayoutSettingsView: View {
                     Button {
                         rateBlip()
                     } label: {
-                        Label("Rate Blip", systemImage: "star.fill")
+                        Label("Rate Blip", systemImage: "star")
                     }
                 } header: {
                     Text("Help & Feedback")
@@ -108,7 +108,7 @@ struct KeyboardLayoutSettingsView: View {
     }
 }
 
-private struct KeyboardSettingsPage: View {
+struct KeyboardSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.keyboardLanguage, store: SharedKeyboardState.appStorageDefaults)
     private var keyboardLanguageRawValue = SharedKeyboardState.keyboardLanguage.rawValue
 
@@ -262,7 +262,7 @@ private struct KeyboardSettingsPage: View {
     }
 }
 
-private struct ScannerSettingsPage: View {
+struct ScannerSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.scannerFlashlightMode, store: SharedKeyboardState.appStorageDefaults)
     private var scannerFlashlightModeRawValue = ScannerFlashlightMode.off.rawValue
 
@@ -370,20 +370,20 @@ private struct ScannerSettingsPage: View {
                     Text(zoomLevel.title).tag(zoomLevel)
                 }
             }
+            .explainedBelow()
 
             Text(scannerZoomLevel.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
 
             Picker("Scan Area", selection: scannerScanArea) {
                 ForEach(ScannerScanArea.allCases) { area in
                     Text(area.title).tag(area)
                 }
             }
+            .explainedBelow()
 
             Text(scannerScanArea.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
         } header: {
             Text("Camera")
         }
@@ -397,10 +397,10 @@ private struct ScannerSettingsPage: View {
                     Text(profile.title).tag(profile)
                 }
             }
+            .explainedBelow()
 
             Text(scanFormatProfile.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
 
             Toggle("Blip sound on scan", isOn: $playScanSound)
         } header: {
@@ -418,10 +418,10 @@ private struct ScannerSettingsPage: View {
                     Text(mode.title).tag(mode)
                 }
             }
+            .explainedBelow()
 
             Text(scannerScanMode.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
 
             // Always shown: the scanner's toolbar can switch to Batch whatever the default.
             Picker("Separator", selection: batchSeparator) {
@@ -429,16 +429,16 @@ private struct ScannerSettingsPage: View {
                     Text(separator.title).tag(separator)
                 }
             }
+            .explainedBelow()
 
             Text(batchSeparator.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
 
             Toggle("Skip Duplicate Codes", isOn: $batchSkipDuplicates)
+                .explainedBelow()
 
             Text("In Batch mode, a code that is already in the list is not added again. Leave this off to count identical items by scanning each one.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
         } header: {
             Text("Single and Batch Scan")
         } footer: {
@@ -453,10 +453,10 @@ private struct ScannerSettingsPage: View {
                     Text(retention.title).tag(retention)
                 }
             }
+            .explainedBelow()
 
             Text(historyRetention.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
         } header: {
             Text("History")
         } footer: {
@@ -465,7 +465,7 @@ private struct ScannerSettingsPage: View {
     }
 }
 
-private struct ReturnInsertionSettingsPage: View {
+struct ReturnInsertionSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
@@ -533,11 +533,11 @@ private struct ReturnInsertionSettingsPage: View {
                         .tag(target)
                 }
             }
+            .listRowSeparator(returnTarget.wrappedValue != .safari ? .hidden : .automatic, edges: .bottom)
 
             if returnTarget.wrappedValue != .safari {
                 Text(automaticReturnDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .settingExplanation()
 
                 Toggle("Insert Scans Automatically", isOn: $autoInsertScans)
             }
@@ -578,6 +578,25 @@ private struct ReturnInsertionSettingsPage: View {
         } header: {
             Text("Scan Suffix")
         }
+    }
+}
+
+private extension View {
+    /// A setting whose explanation follows as its own row: no line between them.
+    func explainedBelow() -> some View {
+        listRowSeparator(.hidden, edges: .bottom)
+    }
+
+    /// The explanation of the setting above, pulled up so both read as one row.
+    func settingExplanation() -> some View {
+        font(.footnote)
+            .foregroundStyle(.secondary)
+            // Top-aligned in the row: a one-line text would otherwise be
+            // centred in the minimum row height, away from its setting.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.top, -12)
+            .padding(.bottom, -4)
+            .listRowSeparator(.hidden, edges: .top)
     }
 }
 

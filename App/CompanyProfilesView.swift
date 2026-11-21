@@ -196,7 +196,7 @@ struct CompanyProfilePreview: View {
     }
 }
 
-private struct CompanyProfileQRCode: Identifiable {
+struct CompanyProfileQRCode: Identifiable {
     let id = UUID()
     let image: UIImage
     let profile: BlipCompanyProfile
@@ -219,7 +219,7 @@ private struct CompanyProfileQRCode: Identifiable {
     }
 }
 
-private struct CompanyProfileQRCodeView: View {
+struct CompanyProfileQRCodeView: View {
     @Environment(\.dismiss) private var dismiss
     let code: CompanyProfileQRCode
 

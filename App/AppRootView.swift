@@ -94,7 +94,7 @@ struct SetupVerificationStatus: Equatable {
     }
 }
 
-private struct SetupFlowView: View {
+struct SetupFlowView: View {
     let status: SetupVerificationStatus
     let onCheckAgain: () -> Void
 

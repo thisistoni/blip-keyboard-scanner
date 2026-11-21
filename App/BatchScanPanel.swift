@@ -578,6 +578,16 @@ final class BatchScanModel: ObservableObject {
         return wasInList ? nil : removal.entry.value
     }
 
+#if DEBUG
+    /// Fills the list for the review scene, without sound, haptics or notices.
+    func seedForReview(_ entries: [BatchScanEntry]) {
+        guard collection.isEmpty else { return }
+        for entry in entries {
+            _ = collection.append(entry)
+        }
+    }
+#endif
+
     func removeAll() {
         collection.removeAll()
         lastRemoval = nil

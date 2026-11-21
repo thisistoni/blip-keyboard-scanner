@@ -8,6 +8,18 @@ enum AppStoreScreenshotScene: String {
     case settings
     case profiles
     case privacy
+
+    // Review-only scenes: not part of the App Store screenshot lane. They show
+    // screens that otherwise need a camera, a keyboard round trip or taps.
+    case batch
+    case historyBatch
+    case keyboardSettings
+    case scannerSettings
+    case returnSettings
+    case setup
+    case profilePreview
+    case profileQR
+    case guidance
 }
 
 enum ScreenshotAutomation {
@@ -24,7 +36,12 @@ enum ScreenshotAutomation {
     }()
 
     static var usesSimulatedCamera: Bool {
-        scene == .scanner
+        scene == .scanner || scene == .batch
+    }
+
+    /// The batch review scene opens the scanner in Batch mode with a filled list.
+    static var showsBatchReview: Bool {
+        scene == .batch
     }
 
     static func prepareIfNeeded() {
@@ -69,13 +86,87 @@ enum ScreenshotAutomation {
     ]
 }
 
+extension ScreenshotAutomation {
+    static let reviewBatchEntries: [BatchScanEntry] = [
+        BatchScanEntry(value: "4012345678901", codeFormat: "VNBarcodeSymbologyEAN13"),
+        BatchScanEntry(value: "https://example.com/products/blip-keyboard-scanner?ref=label&lot=2026-0714", codeFormat: "VNBarcodeSymbologyQR"),
+        BatchScanEntry(value: "4012345678901", codeFormat: "VNBarcodeSymbologyEAN13"),
+        BatchScanEntry(value: "BLIP-WH-2026-0714", codeFormat: "VNBarcodeSymbologyCode128"),
+        BatchScanEntry(value: "LOT,2026,0714", codeFormat: "VNBarcodeSymbologyCode128"),
+    ]
+
+    static let reviewHistoryItems: [ScanHistoryItem] = {
+        func codes(_ entries: [BatchScanEntry]) -> [ScanHistoryBatchCode] {
+            entries.map { ScanHistoryBatchCode(value: $0.value, codeFormat: $0.codeFormat) }
+        }
+        let eans = (1...12).map { BatchScanEntry(value: "40123456789\(String(format: "%02d", $0))", codeFormat: "VNBarcodeSymbologyEAN13") }
+        return [
+            ScanHistoryItem(
+                value: reviewBatchEntries.map(\.value).joined(separator: ","),
+                codeFormat: nil,
+                scannedAt: Date(timeIntervalSinceNow: -60),
+                source: .keyboard,
+                returnTargetRawValue: ReturnTarget.chrome.rawValue,
+                insertionStatus: .queuedForKeyboardInsertion,
+                batchCodes: codes(reviewBatchEntries)
+            ),
+            ScanHistoryItem(
+                value: eans.map(\.value).joined(separator: "\n"),
+                codeFormat: "VNBarcodeSymbologyEAN13",
+                scannedAt: Date(timeIntervalSinceNow: -900),
+                source: .keyboard,
+                returnTargetRawValue: nil,
+                insertionStatus: .queuedForKeyboardInsertion,
+                batchCodes: codes(eans)
+            ),
+            ScanHistoryItem(
+                value: "https://example.com/products/blip-keyboard-scanner?ref=label&lot=2026-0714&station=warehouse-north-dock-12",
+                codeFormat: "VNBarcodeSymbologyQR",
+                scannedAt: Date(timeIntervalSinceNow: -2_000),
+                source: .keyboard,
+                returnTargetRawValue: ReturnTarget.safari.rawValue,
+                insertionStatus: .queuedForKeyboardInsertion
+            ),
+        ] + historyItems
+    }()
+
+    static var reviewProfile: BlipCompanyProfile {
+        var profile = BlipCompanyProfile.current
+        profile.scannerScanMode = SharedKeyboardState.scannerScanMode == .batch ? "single" : "batch"
+        profile.batchSeparator = SharedKeyboardState.batchSeparator == .newline ? "comma" : "newline"
+        profile.batchSkipDuplicates = !SharedKeyboardState.batchSkipDuplicates
+        return profile
+    }
+}
+
 struct AppStoreScreenshotRootView: View {
     let scene: AppStoreScreenshotScene
 
     var body: some View {
         switch scene {
-        case .scan, .scanner, .history, .settings:
+        case .scan, .scanner, .history, .settings, .batch:
             appTabs
+        case .historyBatch:
+            HistoryView(screenshotItems: ScreenshotAutomation.reviewHistoryItems)
+        case .keyboardSettings:
+            NavigationStack { KeyboardSettingsPage() }
+        case .scannerSettings:
+            NavigationStack { ScannerSettingsPage() }
+        case .returnSettings:
+            NavigationStack { ReturnInsertionSettingsPage() }
+        case .setup:
+            SetupFlowView(status: .current, onCheckAgain: {})
+        case .profilePreview:
+            CompanyProfilePreview(profile: ScreenshotAutomation.reviewProfile, onCancel: {}, onApply: {})
+        case .profileQR:
+            if let code = try? CompanyProfileQRCode(profile: .current) {
+                CompanyProfileQRCodeView(code: code)
+            }
+        case .guidance:
+            KeyboardReturnGuidanceView(
+                guidance: KeyboardReturnGuidance(target: .safari, hasPendingScan: true),
+                onClose: {}
+            )
         case .profiles:
             NavigationStack {
                 CompanyProfilesView()
@@ -95,12 +186,12 @@ struct AppStoreScreenshotRootView: View {
         TabView(selection: selectedTab) {
             ScannerScreen(
                 externalLaunchRequest: nil,
-                automaticallyPresentScanner: scene == .scanner
+                automaticallyPresentScanner: ScreenshotAutomation.usesSimulatedCamera
             )
             .tabItem {
                 Label("Scan", systemImage: "barcode.viewfinder")
             }
-            .tag(scene == .scanner ? AppStoreScreenshotScene.scanner : .scan)
+            .tag(ScreenshotAutomation.usesSimulatedCamera ? scene : .scan)
 
             HistoryView(screenshotItems: ScreenshotAutomation.historyItems)
                 .tabItem {

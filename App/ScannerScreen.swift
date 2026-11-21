@@ -83,6 +83,13 @@ struct ScannerScreen: View {
         ScannerZoomLevel(rawValue: scannerZoomLevelRawValue) ?? .x1
     }
 
+    private var defaultScanMode: ScannerScanMode {
+#if DEBUG
+        if ScreenshotAutomation.showsBatchReview { return .batch }
+#endif
+        return ScannerScanMode(rawValue: scannerScanModeRawValue) ?? .single
+    }
+
     private var scannerScanArea: ScannerScanArea {
         ScannerScanArea(rawValue: scannerScanAreaRawValue) ?? .fullFrame
     }
@@ -150,7 +157,7 @@ struct ScannerScreen: View {
                     defaultZoomLevel: scannerZoomLevel,
                     scanArea: scannerScanArea,
                     defaultFlashlightMode: ScannerFlashlightMode(rawValue: scannerFlashlightModeRawValue) ?? .off,
-                    defaultScanMode: ScannerScanMode(rawValue: scannerScanModeRawValue) ?? .single,
+                    defaultScanMode: defaultScanMode,
                     batchSeparator: BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma,
                     batchSkipsDuplicates: batchSkipDuplicates,
                     hasCollectedCodes: $openScannerHasCollectedCodes
@@ -284,13 +291,20 @@ struct ScannerScreen: View {
         activeSession = nil
     }
 
+    private var screenshotSessionSource: ScannerSession.Source {
+#if DEBUG
+        if ScreenshotAutomation.showsBatchReview { return .keyboard }
+#endif
+        return .app
+    }
+
     private func presentScannerForScreenshotIfNeeded() {
         guard automaticallyPresentScanner, !didAutomaticallyPresentScanner else { return }
         didAutomaticallyPresentScanner = true
         activeSession = ScannerSession(
             id: "app-store-screenshot",
             requestID: "app-store-screenshot",
-            source: .app,
+            source: screenshotSessionSource,
             scanFormatProfile: scanFormatProfile,
             returnTarget: returnTarget,
             customReturnURL: customReturnURL
@@ -534,18 +548,23 @@ private struct ScannerWorkflowGuideView: View {
                 message: "Blip attempts to insert the scan and copies it for Paste if needed."
             )
 
+            ScannerWorkflowGuideRow(
+                systemImage: ScannerScanMode.batch.systemImage,
+                title: "Scan several codes at once",
+                message: "Switch to Batch with the stack button at the top of the scanner to collect a list and insert it in one go."
+            )
         }
         .padding(.vertical, 4)
     }
 }
 
-private struct KeyboardReturnGuidance: Identifiable {
+struct KeyboardReturnGuidance: Identifiable {
     let id = UUID()
     let target: ReturnTarget
     let hasPendingScan: Bool
 }
 
-private struct KeyboardReturnGuidanceView: View {
+struct KeyboardReturnGuidanceView: View {
     let guidance: KeyboardReturnGuidance
     let onClose: () -> Void
 
@@ -577,27 +596,35 @@ private struct KeyboardReturnGuidanceView: View {
 
                 VStack(alignment: .leading, spacing: 18) {
                     if guidance.target == .safari {
-                        Label("Return to your original Safari tab and text field with iOS's previous-app control.", systemImage: "arrow.backward.circle.fill")
+                        KeyboardReturnGuidanceStep(
+                            text: Text("Return to your original Safari tab and text field with iOS's previous-app control."),
+                            systemImage: "arrow.backward.circle.fill"
+                        )
                     } else {
-                        Label {
-                            Text(
+                        KeyboardReturnGuidanceStep(
+                            text: Text(
                                 String(
                                     format: NSLocalizedString("Tap the previous-app control in the top-left to return to %@.", comment: "Previous app return instruction"),
                                     guidance.target.title
                                 )
-                            )
-                        } icon: {
-                            Image(systemName: "arrow.backward.circle.fill")
-                        }
+                            ),
+                            systemImage: "arrow.backward.circle.fill"
+                        )
                     }
 
                     Divider()
 
-                    Label("Or swipe right across the Home indicator at the very bottom of the screen.", systemImage: "hand.draw.fill")
+                    KeyboardReturnGuidanceStep(
+                        text: Text("Or swipe right across the Home indicator at the very bottom of the screen."),
+                        systemImage: "hand.draw.fill"
+                    )
 
                     if guidance.target == .safari, guidance.hasPendingScan {
                         Divider()
-                        Label("Tap Insert Last Scan on the Blip keyboard.", systemImage: "keyboard")
+                        KeyboardReturnGuidanceStep(
+                            text: Text("Tap Insert Last Scan on the Blip keyboard."),
+                            systemImage: "keyboard"
+                        )
                     }
                 }
                 .font(.headline)
@@ -621,6 +648,23 @@ private struct KeyboardReturnGuidanceView: View {
                     Button("Close", action: onClose)
                 }
             }
+        }
+    }
+}
+
+/// One step on the return screen. The icons differ in width; a fixed column
+/// keeps the texts on one edge.
+private struct KeyboardReturnGuidanceStep: View {
+    let text: Text
+    let systemImage: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Image(systemName: systemImage)
+                .frame(width: 28)
+                .accessibilityHidden(true)
+            text
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -695,14 +739,10 @@ private struct ScannerSession: Identifiable, Equatable {
         )
     }
 
+    /// Where the scan returns to is named by the Target pill below the bar;
+    /// a longer title is cut off next to the mode and flashlight buttons.
     var title: String {
-        if testSessionID != nil { return NSLocalizedString("Return to Keyboard Test", comment: "Scanner test return title") }
-        return switch source {
-        case .app:
-            NSLocalizedString("Scanner", comment: "Scanner title")
-        case .keyboard:
-            String(format: NSLocalizedString("Return to %@", comment: "Scanner return target title"), returnTarget.title)
-        }
+        NSLocalizedString("Scanner", comment: "Scanner title")
     }
 }
 
@@ -771,7 +811,7 @@ private struct ScannerPresentation: View {
     /// The screenshot camera and the manual-entry fallback always scan a single code.
     private var supportsBatch: Bool {
 #if DEBUG
-        if ScreenshotAutomation.usesSimulatedCamera { return false }
+        if ScreenshotAutomation.usesSimulatedCamera { return ScreenshotAutomation.showsBatchReview }
 #endif
         return BarcodeScannerView.isScannerAvailable
     }
@@ -845,6 +885,9 @@ private struct ScannerPresentation: View {
                     isTorchOn = flashlightMode == .on
                     currentZoomFactor = defaultZoomLevel.factor
                     scannerStatusMessage = nil
+                    if ScreenshotAutomation.showsBatchReview {
+                        batchScan.seedForReview(ScreenshotAutomation.reviewBatchEntries)
+                    }
                 }
 #endif
             }

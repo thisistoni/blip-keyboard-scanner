@@ -59,7 +59,6 @@
 "Return" = "Return";
 "Return Target" = "Rückkehrziel";
 "Return to" = "Zurück zu";
-"Return to %@" = "Zurück zu %@";
 "Return to Brave after a keyboard-launched scan." = "Nach einem Scan über die Tastatur zu Brave zurückkehren.";
 "Return to Firefox after a keyboard-launched scan." = "Nach einem Scan über die Tastatur zu Firefox zurückkehren.";
 "Return to Google Chrome after a keyboard-launched scan." = "Nach einem Scan über die Tastatur zu Google Chrome zurückkehren.";
@@ -202,7 +201,7 @@
 "Send Feedback" = "Feedback senden";
 "Support Page" = "Support-Seite";
 "Sound, flashlight, zoom, and scan area" = "Sound, Taschenlampe, Zoom und Scanbereich";
-"Successful real scans will appear here." = "Erfolgreiche echte Scans erscheinen hier.";
+"Your scans will appear here." = "Deine Scans erscheinen hier.";
 "The profile contains an invalid value for %@." = "Das Profil enthält einen ungültigen Wert für %@.";
 "This profile matches the current settings." = "Dieses Profil entspricht den aktuellen Einstellungen.";
 "This removes local scan history from this device." = "Dadurch wird der lokale Scanverlauf von diesem Gerät entfernt.";
@@ -270,7 +269,6 @@
 "Scan result" = "Scan-Ergebnis";
 "External return target" = "Externes Rückkehrziel";
 "Choose Blip with the globe key, then tap Scan. This test returns here." = "Wähle Blip mit der Globustaste und tippe auf Scan. Dieser Test kehrt hierher zurück.";
-"Return to Keyboard Test" = "Zurück zum Tastaturtest";
 "Keyboard Test" = "Tastaturtest";
 
 "Show QR Code" = "QR-Code anzeigen";
@@ -350,3 +348,5 @@
 "Copy All" = "Alle kopieren";
 "Show all %d codes" = "Alle %d Codes anzeigen";
 "Show Less" = "Weniger anzeigen";
+"Scan several codes at once" = "Mehrere Codes auf einmal scannen";
+"Switch to Batch with the stack button at the top of the scanner to collect a list and insert it in one go." = "Tippe oben im Scanner auf das Stapel-Symbol und wähle „Mehrfach“, um eine Liste zu sammeln und in einem Schritt einzufügen.";

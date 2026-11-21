@@ -119,6 +119,7 @@ struct HistoryView: View {
         } else {
             UIPasteboard.general.string = item.value
         }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         let target = HistoryCopyTarget(itemID: item.id, codeIndex: codeIndex)
         copiedTarget = target
 
@@ -154,6 +155,8 @@ private struct HistoryCopyTarget: Equatable {
 private struct HistoryRow: View {
     /// A longer batch shows this many codes until it is expanded.
     private static let collapsedCodeCount = 3
+    /// Values longer than this are shown in the smaller code font.
+    private static let largeValueLength = 18
 
     let item: ScanHistoryItem
     /// Set while something of this entry was just copied.
@@ -179,8 +182,10 @@ private struct HistoryRow: View {
     private var singleBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
+                // Short codes stay large; long payloads such as links get the
+                // smaller size so more of them fits in three lines.
                 Text(item.value)
-                    .font(.title3.monospaced())
+                    .font(item.value.count > Self.largeValueLength ? .body.monospaced() : .title3.monospaced())
                     .lineLimit(3)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -190,6 +195,7 @@ private struct HistoryRow: View {
                 } label: {
                     Image(systemName: isWholeEntryCopied ? "checkmark" : "doc.on.doc")
                         .font(.body.weight(.semibold))
+                        .foregroundStyle(isWholeEntryCopied ? Color.green : Color.accentColor)
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel(isWholeEntryCopied ? "Copied" : "Copy")
@@ -197,16 +203,12 @@ private struct HistoryRow: View {
                 moreMenu
             }
 
-            Text(metadataLine)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            // The confirmation takes the place of the details, so the row
+            // keeps its height while it shows.
+            Text(isWholeEntryCopied ? NSLocalizedString("Copied", comment: "History row after copying") : metadataLine)
+                .font(isWholeEntryCopied ? .footnote.weight(.semibold) : .footnote)
+                .foregroundStyle(isWholeEntryCopied ? Color.green : Color.secondary)
                 .lineLimit(2)
-
-            if isWholeEntryCopied {
-                Text("Copied")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.blue)
-            }
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
@@ -223,23 +225,25 @@ private struct HistoryRow: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                Label(
-                    String(format: NSLocalizedString("%d codes", comment: "Batch list count, plural"), codes.count),
-                    systemImage: ScannerScanMode.batch.systemImage
-                )
+                HStack(spacing: 8) {
+                    Image(systemName: ScannerScanMode.batch.systemImage)
+                        .foregroundStyle(Color.secondary)
+                        .accessibilityHidden(true)
+                    Text(String(format: NSLocalizedString("%d codes", comment: "Batch list count, plural"), codes.count))
+                }
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button {
                     onCopy(nil)
                 } label: {
-                    Label(
-                        isWholeEntryCopied ? LocalizedStringKey("Copied") : LocalizedStringKey("Copy All"),
-                        systemImage: isWholeEntryCopied ? "checkmark" : "doc.on.doc"
-                    )
-                    .font(.subheadline.weight(.semibold))
+                    Text(isWholeEntryCopied ? LocalizedStringKey("Copied") : LocalizedStringKey("Copy All"))
+                        .font(.subheadline.weight(.semibold))
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+                .tint(isWholeEntryCopied ? Color.green : Color.accentColor)
 
                 moreMenu
             }
@@ -253,7 +257,7 @@ private struct HistoryRow: View {
                 }
             }
             .padding(.horizontal, 12)
-            .background(Color(.secondarySystemFill), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             if canCollapse {
                 Button {
@@ -280,6 +284,8 @@ private struct HistoryRow: View {
                 .lineLimit(2)
         }
         .padding(.vertical, 8)
+        // The line below the row starts at the row's edge, not after the icon.
+        .alignmentGuide(.listRowSeparatorLeading) { dimensions in dimensions[.leading] }
     }
 
     private func batchCodeLine(_ code: ScanHistoryBatchCode, index: Int, showsFormat: Bool) -> some View {
@@ -289,29 +295,33 @@ private struct HistoryRow: View {
             onCopy(index)
         } label: {
             HStack(spacing: 10) {
+                // Explicit colours: inside a button, `.secondary` follows the tint.
                 Text(verbatim: "\(index + 1)")
                     .font(.footnote.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.secondary)
                     .frame(minWidth: 18, alignment: .trailing)
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
+                    // A button centres wrapped label text unless told otherwise.
                     Text(verbatim: code.value)
                         .font(.body.monospaced())
                         .foregroundStyle(Color.primary)
+                        .multilineTextAlignment(.leading)
                         .lineLimit(2)
                         .truncationMode(.middle)
 
                     if showsFormat {
                         Text(verbatim: ScanHistoryItem.displayName(forCodeFormat: code.codeFormat))
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.secondary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                     .font(.footnote.weight(.semibold))
+                    .foregroundStyle(isCopied ? Color.green : Color.secondary)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, 9)
@@ -406,6 +416,6 @@ private struct HistoryEmptyState: View {
             return "History is off. Turn it on in Settings if you want Blip to keep local scan history."
         }
 
-        return "Successful real scans will appear here."
+        return "Your scans will appear here."
     }
 }
