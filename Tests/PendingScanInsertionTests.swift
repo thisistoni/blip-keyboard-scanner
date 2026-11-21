@@ -158,6 +158,8 @@ enum PendingScanInsertionTests {
             preconditionFailure("Oversized profile exported as QR")
         } catch BlipCompanyProfileQRError.tooLarge {} catch { preconditionFailure("Wrong QR export size error") }
 
+        batchSettingsInCompanyProfiles(baseJSON: oldProfile)
+
         // An explicit field token is required; a stale app-group session cannot tag another host.
         var keyboardTest = KeyboardTestSession(id: "test-field")
         precondition(!keyboardTest.launch(requestID: "r1", contentType: nil))
@@ -195,5 +197,108 @@ enum PendingScanInsertionTests {
         precondition(keyboardTest.phase == .editing && keyboardTest.code == nil && keyboardTest.requestIdentifier == nil)
 
         print("Pending scan and scoped keyboard test checks passed")
+    }
+
+    /// Scan Mode and Batch Separator in company profiles (ANT-151).
+    static func batchSettingsInCompanyProfiles(baseJSON: [String: Any]) {
+        func decode(_ json: [String: Any]) throws -> BlipCompanyProfile {
+            try BlipCompanyProfile.decode(from: JSONSerialization.data(withJSONObject: json))
+        }
+
+        // A profile as exported by 1.0.4 (no batch keys) still imports and leaves
+        // the device's scan mode and separator unchanged.
+        var released = baseJSON
+        released.removeValue(forKey: "scannerScanMode")
+        released.removeValue(forKey: "batchSeparator")
+        let releasedProfile = try! decode(released)
+        precondition(releasedProfile.scannerScanMode == nil && releasedProfile.batchSeparator == nil)
+        precondition(!releasedProfile.changes().contains { ["Scan Mode", "Batch Separator"].contains($0.title) })
+        precondition(!releasedProfile.includedSettings.contains { ["Scan Mode", "Batch Separator"].contains($0.title) })
+        let releasedQR = BlipCompanyProfileQR.prefix + String(decoding: try! JSONSerialization.data(withJSONObject: released), as: UTF8.self)
+        precondition(try! BlipCompanyProfileQR.decodeIfRecognized(releasedQR)?.scannerScanMode == nil)
+
+        // This build exports both values.
+        let current = BlipCompanyProfile.current
+        precondition(current.scannerScanMode == SharedKeyboardState.scannerScanMode.rawValue)
+        precondition(current.batchSeparator == SharedKeyboardState.batchSeparator.rawValue)
+        precondition(BlipCompanyProfile.currentVersion == 1 && BlipCompanyProfileQR.prefix == "BLIP_PROFILE:1:")
+
+        // Round trip through file and QR, shown in the summary and the preview.
+        var batchJSON = released
+        batchJSON["scannerScanMode"] = ScannerScanMode.batch.rawValue
+        batchJSON["batchSeparator"] = BatchSeparator.newline.rawValue
+        let batchProfile = try! decode(batchJSON)
+        let fileRoundTrip = try! BlipCompanyProfile.decode(from: batchProfile.exportData())
+        precondition(fileRoundTrip == batchProfile)
+        let qrRoundTrip = try! BlipCompanyProfileQR.decodeIfRecognized(
+            String(decoding: try! BlipCompanyProfileQR.encode(batchProfile), as: UTF8.self))!
+        precondition(qrRoundTrip.scannerScanMode == "batch" && qrRoundTrip.batchSeparator == "newline")
+        precondition(batchProfile.includedSettings.contains { $0.title == "Scan Mode" && $0.value == ScannerScanMode.batch.title })
+        precondition(batchProfile.includedSettings.contains { $0.title == "Batch Separator" && $0.value == BatchSeparator.newline.title })
+        var singleCommaJSON = batchJSON
+        singleCommaJSON["scannerScanMode"] = ScannerScanMode.single.rawValue
+        singleCommaJSON["batchSeparator"] = BatchSeparator.comma.rawValue
+        let singleComma = try! decode(singleCommaJSON)
+        let previewChanges = batchProfile.changes(comparedTo: singleComma)
+        precondition(previewChanges.contains {
+            $0.title == "Scan Mode" && $0.currentValue == ScannerScanMode.single.title && $0.incomingValue == ScannerScanMode.batch.title
+        })
+        precondition(previewChanges.contains {
+            $0.title == "Batch Separator" && $0.currentValue == BatchSeparator.comma.title && $0.incomingValue == BatchSeparator.newline.title
+        })
+        // Compared with a device that never stored them, the defaults are shown as current.
+        precondition(batchProfile.changes(comparedTo: releasedProfile).contains {
+            $0.title == "Scan Mode" && $0.currentValue == ScannerScanMode.single.title
+        })
+
+        // Invalid values are rejected before anything is applied.
+        for (key, value) in [("scannerScanMode", "triple"), ("batchSeparator", "pipe"), ("batchSeparator", "")] {
+            var invalid = batchJSON
+            invalid[key] = value
+            do {
+                _ = try decode(invalid)
+                preconditionFailure("Invalid \(key) accepted")
+            } catch BlipCompanyProfileError.invalidValue(let field) {
+                precondition(field == key)
+            } catch {
+                preconditionFailure("Wrong \(key) error")
+            }
+        }
+
+        // QR size budget: a full profile with the longest values fits, and the
+        // two new keys count towards the 1,200-byte limit.
+        var longest = batchJSON
+        longest["batchSeparator"] = BatchSeparator.semicolon.rawValue
+        longest["keyboardAppearance"] = KeyboardAppearance.blipBlue.rawValue
+        longest["keyboardClickSound"] = true
+        longest["keyboardHaptics"] = true
+        longest["autoInsertScans"] = true
+        precondition((try? BlipCompanyProfileQR.encode(decode(longest))) != nil, "full profile must fit in a QR code")
+
+        var customWithout = released
+        customWithout["returnTarget"] = ReturnTarget.custom.rawValue
+        customWithout["customReturnURL"] = "company://"
+        let baseSize = try! BlipCompanyProfileQR.encode(decode(customWithout)).count
+        customWithout["customReturnURL"] = "company://" + String(repeating: "x", count: BlipCompanyProfileQR.maximumBytes - baseSize - 5)
+        precondition((try? BlipCompanyProfileQR.encode(decode(customWithout))) != nil)
+        var customWith = customWithout
+        customWith["scannerScanMode"] = ScannerScanMode.single.rawValue
+        customWith["batchSeparator"] = BatchSeparator.comma.rawValue
+        do {
+            _ = try BlipCompanyProfileQR.encode(decode(customWith))
+            preconditionFailure("Batch keys must count towards the QR size limit")
+        } catch BlipCompanyProfileQRError.tooLarge {} catch { preconditionFailure("Wrong QR size error") }
+
+        // Why no version bump: the decoder is the synthesized Decodable, which
+        // ignores keys it does not know, exactly as in 1.0.4. A type with only
+        // 1.0.4's keys still decodes a profile exported by this build.
+        struct ReleasedProfileKeys: Decodable {
+            let profileVersion: Int
+            let scannerScanArea: String
+            let keyboardHaptics: Bool?
+        }
+        let olderReader = JSONDecoder()
+        olderReader.dateDecodingStrategy = .iso8601
+        precondition((try? olderReader.decode(ReleasedProfileKeys.self, from: batchProfile.exportData()))?.profileVersion == 1)
     }
 }

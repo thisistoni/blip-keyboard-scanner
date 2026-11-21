@@ -22,6 +22,10 @@ struct BlipCompanyProfile: Codable, Equatable {
     var keyboardAppearance: String?
     var keyboardClickSound: Bool?
     var keyboardHaptics: Bool?
+    // Optional for the same reason: profiles exported before batch scanning
+    // (1.0.4 and earlier) leave the device's scan mode and separator unchanged.
+    var scannerScanMode: String?
+    var batchSeparator: String?
 
     static var current: BlipCompanyProfile {
         BlipCompanyProfile(
@@ -42,7 +46,9 @@ struct BlipCompanyProfile: Codable, Equatable {
             scannerScanArea: SharedKeyboardState.scannerScanArea.rawValue,
             keyboardAppearance: SharedKeyboardState.keyboardAppearance.rawValue,
             keyboardClickSound: SharedKeyboardState.keyboardClickSound,
-            keyboardHaptics: SharedKeyboardState.keyboardHaptics
+            keyboardHaptics: SharedKeyboardState.keyboardHaptics,
+            scannerScanMode: SharedKeyboardState.scannerScanMode.rawValue,
+            batchSeparator: SharedKeyboardState.batchSeparator.rawValue
         )
     }
 
@@ -97,6 +103,12 @@ struct BlipCompanyProfile: Codable, Equatable {
         if let keyboardAppearance, KeyboardAppearance(rawValue: keyboardAppearance) == nil {
             throw BlipCompanyProfileError.invalidValue("keyboardAppearance")
         }
+        if let scannerScanMode, ScannerScanMode(rawValue: scannerScanMode) == nil {
+            throw BlipCompanyProfileError.invalidValue("scannerScanMode")
+        }
+        if let batchSeparator, BatchSeparator(rawValue: batchSeparator) == nil {
+            throw BlipCompanyProfileError.invalidValue("batchSeparator")
+        }
     }
 
     func apply() throws {
@@ -125,6 +137,12 @@ struct BlipCompanyProfile: Codable, Equatable {
         }
         if let keyboardClickSound { SharedKeyboardState.keyboardClickSound = keyboardClickSound }
         if let keyboardHaptics { SharedKeyboardState.keyboardHaptics = keyboardHaptics }
+        if let scannerScanMode, let mode = ScannerScanMode(rawValue: scannerScanMode) {
+            SharedKeyboardState.scannerScanMode = mode
+        }
+        if let batchSeparator, let separator = BatchSeparator(rawValue: batchSeparator) {
+            SharedKeyboardState.batchSeparator = separator
+        }
     }
 
     func changes(comparedTo current: BlipCompanyProfile = .current) -> [BlipCompanyProfileChange] {
@@ -169,6 +187,14 @@ struct BlipCompanyProfile: Codable, Equatable {
                     incomingValue: Self.formatToggle(incomingValue)))
             }
         }
+        if let scannerScanMode {
+            result.append(change("Scan Mode", current.scannerScanMode ?? ScannerScanMode.single.rawValue,
+                                 scannerScanMode) { ScannerScanMode(rawValue: $0) })
+        }
+        if let batchSeparator {
+            result.append(change("Batch Separator", current.batchSeparator ?? BatchSeparator.comma.rawValue,
+                                 batchSeparator) { BatchSeparator(rawValue: $0) })
+        }
         return result.filter { $0.currentValue != $0.incomingValue }
     }
 
@@ -200,6 +226,12 @@ struct BlipCompanyProfile: Codable, Equatable {
         }
         if let keyboardClickSound { settings.append(.init("Key Clicks", Self.formatToggle(keyboardClickSound))) }
         if let keyboardHaptics { settings.append(.init("Key Haptics", Self.formatToggle(keyboardHaptics))) }
+        if let scannerScanMode {
+            settings.append(.init("Scan Mode", ScannerScanMode(rawValue: scannerScanMode)?.title ?? scannerScanMode))
+        }
+        if let batchSeparator {
+            settings.append(.init("Batch Separator", BatchSeparator(rawValue: batchSeparator)?.title ?? batchSeparator))
+        }
         return settings
     }
 
@@ -380,5 +412,13 @@ extension ScannerZoomLevel: ProfileDisplayOption {
 }
 
 extension ScannerScanArea: ProfileDisplayOption {
+    var profileDisplayTitle: String { title }
+}
+
+extension ScannerScanMode: ProfileDisplayOption {
+    var profileDisplayTitle: String { title }
+}
+
+extension BatchSeparator: ProfileDisplayOption {
     var profileDisplayTitle: String { title }
 }
