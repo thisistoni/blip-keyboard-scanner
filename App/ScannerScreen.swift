@@ -338,8 +338,21 @@ struct ScannerScreen: View {
     /// which then applies the Insert Suffix once, as after a single scan. Each
     /// code already played the scan sound when it was added.
     private func handleScannedBatch(_ batch: BatchScanCollection, for session: ScannerSession) {
-        guard !batch.isEmpty, session.testSessionID == nil else { return }
+        guard !batch.isEmpty else { return }
         let separator = BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma
+
+        // The keyboard test field gets the joined text back like a single test
+        // scan: no history, clipboard or return to another app.
+        if let testID = session.testSessionID {
+            if SharedKeyboardState.finishKeyboardTest(
+                id: testID, requestID: session.id, code: batch.joinedText(separator: separator)
+            ) {
+                restoreTestField = true
+            }
+            activeSession = nil
+            return
+        }
+
         deliverScan(
             text: batch.joinedText(separator: separator),
             history: batch.entries.map {
@@ -649,13 +662,12 @@ private struct ScannerPresentation: View {
         self.onCancel = onCancel
     }
 
-    /// Keyboard test-field sessions, the screenshot camera and the manual-entry
-    /// fallback always scan a single code.
+    /// The screenshot camera and the manual-entry fallback always scan a single code.
     private var supportsBatch: Bool {
 #if DEBUG
         if ScreenshotAutomation.usesSimulatedCamera { return false }
 #endif
-        return session.testSessionID == nil && BarcodeScannerView.isScannerAvailable
+        return BarcodeScannerView.isScannerAvailable
     }
 
     private var isBatchActive: Bool {
