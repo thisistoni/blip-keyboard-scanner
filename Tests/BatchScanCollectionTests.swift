@@ -17,7 +17,7 @@ enum BatchScanCollectionTests {
         detectsCodesContainingTheSeparator()
         capsTheSpokenValue()
         reportsTheSharedFormatOnly()
-        historyEntryCarriesTheBatchCount()
+        historyEntryKeepsTheBatchCodes()
         print("BatchScanCollectionTests passed")
     }
 
@@ -183,7 +183,7 @@ enum BatchScanCollectionTests {
         precondition(unknown.commonCodeFormat == nil)
     }
 
-    static func historyEntryCarriesTheBatchCount() {
+    static func historyEntryKeepsTheBatchCodes() {
         let batch = collection(["1", "2", "3"])
         let item = ScanHistoryItem(
             value: batch.joinedText(separator: .comma),
@@ -191,9 +191,10 @@ enum BatchScanCollectionTests {
             source: .keyboard,
             returnTargetRawValue: nil,
             insertionStatus: .queuedForKeyboardInsertion,
-            batchCodeCount: batch.count
+            batchCodes: batch.entries.map { ScanHistoryBatchCode(value: $0.value, codeFormat: $0.codeFormat) }
         )
         precondition(item.isBatch && item.value == "1,2,3")
+        precondition(item.batchCodes?.map(\.value) == ["1", "2", "3"])
         let data = try! JSONEncoder().encode([item])
         precondition(try! JSONDecoder().decode([ScanHistoryItem].self, from: data) == [item])
 

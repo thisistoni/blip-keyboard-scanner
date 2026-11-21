@@ -11,7 +11,7 @@ struct HistoryView: View {
     @State private var searchText = ""
     @State private var showingClearConfirmation = false
     @State private var showingMailError = false
-    @State private var copiedItemID: ScanHistoryItem.ID?
+    @State private var copiedTarget: HistoryCopyTarget?
 
     init(screenshotItems: [ScanHistoryItem]? = nil) {
         self.screenshotItems = screenshotItems
@@ -48,9 +48,9 @@ struct HistoryView: View {
                             ForEach(filteredItems) { item in
                                 HistoryRow(
                                     item: item,
-                                    isCopied: copiedItemID == item.id,
-                                    onCopy: {
-                                        copy(item)
+                                    copiedTarget: copiedTarget?.itemID == item.id ? copiedTarget : nil,
+                                    onCopy: { codeIndex in
+                                        copy(item, codeIndex: codeIndex)
                                     },
                                     onReport: {
                                         report(item)
@@ -112,13 +112,19 @@ struct HistoryView: View {
         }
     }
 
-    private func copy(_ item: ScanHistoryItem) {
-        UIPasteboard.general.string = item.value
-        copiedItemID = item.id
+    /// Copies the whole entry, or one code of a batch when `codeIndex` is given.
+    private func copy(_ item: ScanHistoryItem, codeIndex: Int?) {
+        if let codeIndex, let codes = item.batchCodes, codes.indices.contains(codeIndex) {
+            UIPasteboard.general.string = codes[codeIndex].value
+        } else {
+            UIPasteboard.general.string = item.value
+        }
+        let target = HistoryCopyTarget(itemID: item.id, codeIndex: codeIndex)
+        copiedTarget = target
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            guard copiedItemID == item.id else { return }
-            copiedItemID = nil
+            guard copiedTarget == target else { return }
+            copiedTarget = nil
         }
     }
 
@@ -139,13 +145,38 @@ struct HistoryView: View {
     }
 }
 
+/// What the user last copied: a whole entry, or one code of a batch entry.
+private struct HistoryCopyTarget: Equatable {
+    let itemID: ScanHistoryItem.ID
+    let codeIndex: Int?
+}
+
 private struct HistoryRow: View {
+    /// A longer batch shows this many codes until it is expanded.
+    private static let collapsedCodeCount = 3
+
     let item: ScanHistoryItem
-    let isCopied: Bool
-    let onCopy: () -> Void
+    /// Set while something of this entry was just copied.
+    let copiedTarget: HistoryCopyTarget?
+    /// Nil copies the whole entry, an index one code of a batch.
+    let onCopy: (Int?) -> Void
     let onReport: () -> Void
 
+    @State private var isExpanded = false
+
+    private var isWholeEntryCopied: Bool {
+        copiedTarget != nil && copiedTarget?.codeIndex == nil
+    }
+
     var body: some View {
+        if let codes = item.batchCodes {
+            batchBody(codes)
+        } else {
+            singleBody
+        }
+    }
+
+    private var singleBody: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
                 Text(item.value)
@@ -155,26 +186,15 @@ private struct HistoryRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button {
-                    onCopy()
+                    onCopy(nil)
                 } label: {
-                    Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                    Image(systemName: isWholeEntryCopied ? "checkmark" : "doc.on.doc")
                         .font(.body.weight(.semibold))
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel(isCopied ? "Copied" : "Copy")
+                .accessibilityLabel(isWholeEntryCopied ? "Copied" : "Copy")
 
-                Menu {
-                    Button {
-                        onReport()
-                    } label: {
-                        Label("Report Issue", systemImage: "envelope")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.body.weight(.semibold))
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("More")
+                moreMenu
             }
 
             Text(metadataLine)
@@ -182,7 +202,7 @@ private struct HistoryRow: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
 
-            if isCopied {
+            if isWholeEntryCopied {
                 Text("Copied")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.blue)
@@ -190,16 +210,136 @@ private struct HistoryRow: View {
         }
         .padding(.vertical, 8)
         .contentShape(Rectangle())
-        .onTapGesture(perform: onCopy)
+        .onTapGesture { onCopy(nil) }
+    }
+
+    /// A batch is one entry: a header that copies the whole joined text, and
+    /// the codes as their own lines, each of which copies just that code.
+    private func batchBody(_ codes: [ScanHistoryBatchCode]) -> some View {
+        let canCollapse = codes.count > Self.collapsedCodeCount + 1
+        let visibleCount = canCollapse && !isExpanded ? Self.collapsedCodeCount : codes.count
+        // A batch of one format names it once below; a mixed one per code.
+        let showsFormats = item.codeFormat == nil
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Label(
+                    String(format: NSLocalizedString("%d codes", comment: "Batch list count, plural"), codes.count),
+                    systemImage: ScannerScanMode.batch.systemImage
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    onCopy(nil)
+                } label: {
+                    Label(
+                        isWholeEntryCopied ? LocalizedStringKey("Copied") : LocalizedStringKey("Copy All"),
+                        systemImage: isWholeEntryCopied ? "checkmark" : "doc.on.doc"
+                    )
+                    .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
+
+                moreMenu
+            }
+
+            VStack(spacing: 0) {
+                ForEach(0..<visibleCount, id: \.self) { index in
+                    if index > 0 {
+                        Divider()
+                    }
+                    batchCodeLine(codes[index], index: index, showsFormat: showsFormats)
+                }
+            }
+            .padding(.horizontal, 12)
+            .background(Color(.secondarySystemFill), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            if canCollapse {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                } label: {
+                    Text(
+                        isExpanded
+                            ? NSLocalizedString("Show Less", comment: "Collapse the codes of a batch in History")
+                            : String(
+                                format: NSLocalizedString("Show all %d codes", comment: "Expand the codes of a batch in History; %d is the count"),
+                                codes.count
+                            )
+                    )
+                    .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.borderless)
+            }
+
+            Text(metadataLine)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private func batchCodeLine(_ code: ScanHistoryBatchCode, index: Int, showsFormat: Bool) -> some View {
+        let isCopied = copiedTarget?.codeIndex == index
+
+        return Button {
+            onCopy(index)
+        } label: {
+            HStack(spacing: 10) {
+                Text(verbatim: "\(index + 1)")
+                    .font(.footnote.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(minWidth: 18, alignment: .trailing)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: code.value)
+                        .font(.body.monospaced())
+                        .foregroundStyle(Color.primary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+
+                    if showsFormat {
+                        Text(verbatim: ScanHistoryItem.displayName(forCodeFormat: code.codeFormat))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                    .font(.footnote.weight(.semibold))
+                    .accessibilityHidden(true)
+            }
+            .padding(.vertical, 9)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .accessibilityHint(isCopied ? LocalizedStringKey("Copied") : LocalizedStringKey("Copy"))
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button {
+                onReport()
+            } label: {
+                Label("Report Issue", systemImage: "envelope")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.body.weight(.semibold))
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel("More")
     }
 
     private var metadataLine: String {
         var parts = [HistoryDateFormatter.string(from: item.scannedAt)]
 
-        if let count = item.batchCodeCount {
-            parts.append(String(format: NSLocalizedString("%d codes", comment: "Batch list count, plural"), count))
-        }
-        // A batch that mixes formats has no single format to show.
+        // A batch that mixes formats names the format on each code instead.
         if !item.isBatch || item.codeFormat != nil {
             parts.append(item.displayCodeFormat)
         }

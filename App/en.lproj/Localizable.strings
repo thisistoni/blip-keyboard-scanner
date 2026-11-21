@@ -347,3 +347,6 @@
 "Undo" = "Undo";
 "Keyboard Test Ended" = "Keyboard Test Ended";
 "The keyboard test ended before the list was finished, for example because Blip went to the background. The codes were not inserted. Tap the test field and scan again." = "The keyboard test ended before the list was finished, for example because Blip went to the background. The codes were not inserted. Tap the test field and scan again.";
+"Copy All" = "Copy All";
+"Show all %d codes" = "Show all %d codes";
+"Show Less" = "Show Less";

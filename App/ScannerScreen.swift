@@ -399,7 +399,9 @@ struct ScannerScreen: View {
             value: joinedText,
             codeFormat: batch.commonCodeFormat,
             // A batch of one code is an ordinary single scan.
-            batchCodeCount: batch.count > 1 ? batch.count : nil,
+            batchCodes: batch.count > 1
+                ? batch.entries.map { ScanHistoryBatchCode(value: $0.value, codeFormat: $0.codeFormat) }
+                : nil,
             for: session
         )
 
@@ -424,7 +426,7 @@ struct ScannerScreen: View {
     }
 
     private func historyItem(
-        value: String, codeFormat: String?, batchCodeCount: Int? = nil, for session: ScannerSession
+        value: String, codeFormat: String?, batchCodes: [ScanHistoryBatchCode]? = nil, for session: ScannerSession
     ) -> ScanHistoryItem {
         ScanHistoryItem(
             value: value,
@@ -433,7 +435,7 @@ struct ScannerScreen: View {
             // A keyboard test returns to Blip's own test field, not to the return target.
             returnTargetRawValue: session.source == .keyboard && session.testSessionID == nil ? session.returnTarget.rawValue : nil,
             insertionStatus: session.source == .keyboard ? .queuedForKeyboardInsertion : .notQueued,
-            batchCodeCount: batchCodeCount
+            batchCodes: batchCodes
         )
     }
 

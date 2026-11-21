@@ -32,6 +32,12 @@ enum ScanInsertionStatus: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// One code of a batch that History stores as a single entry.
+struct ScanHistoryBatchCode: Codable, Equatable {
+    let value: String
+    let codeFormat: String?
+}
+
 struct ScanHistoryItem: Codable, Identifiable, Equatable {
     let id: UUID
     let value: String
@@ -40,10 +46,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
     let source: ScanHistorySource
     let returnTargetRawValue: String?
     let insertionStatus: ScanInsertionStatus
-    /// Number of codes when this entry is a whole batch, whose `value` is the
-    /// joined text exactly as it was inserted. Nil for a single scan, and in
-    /// entries saved before batches were stored as one entry.
-    let batchCodeCount: Int?
+    /// The codes, in scan order, when this entry is a whole batch; `value` is
+    /// then the joined text exactly as it was inserted. Nil for a single scan,
+    /// and in entries saved before batches were stored as one entry.
+    let batchCodes: [ScanHistoryBatchCode]?
 
     init(
         id: UUID = UUID(),
@@ -53,7 +59,7 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
         source: ScanHistorySource,
         returnTargetRawValue: String?,
         insertionStatus: ScanInsertionStatus,
-        batchCodeCount: Int? = nil
+        batchCodes: [ScanHistoryBatchCode]? = nil
     ) {
         self.id = id
         self.value = value
@@ -62,10 +68,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
         self.source = source
         self.returnTargetRawValue = returnTargetRawValue
         self.insertionStatus = insertionStatus
-        self.batchCodeCount = batchCodeCount
+        self.batchCodes = batchCodes
     }
 
-    var isBatch: Bool { batchCodeCount != nil }
+    var isBatch: Bool { batchCodes != nil }
 
     var returnTarget: ReturnTarget? {
         guard let returnTargetRawValue else { return nil }
