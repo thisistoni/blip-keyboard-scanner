@@ -65,7 +65,10 @@ enum BarcodeSelectionTrackerTests {
         batchFlickeringCodeIsNotAddedTwice()
         batchMovingToNextCodeAddsIt()
         batchTapAddsCodeAndKeepsScanning()
-        batchAddedNeighbourStillMeansAChoice()
+        batchNextItemBesideLoneAddedCodeIsAutoAdded()
+        batchTappedLabelCodeKeepsNeighbourTapOnly()
+        batchTwoNewCodesBesideLoneAddedCodeAreAChoice()
+        batchFlickerOfAddedCodeWhileNextConfirms()
         batchHandCoverFallbackKeepsScanning()
         batchPausedFramesKeepCodesBlocked()
         print("BarcodeSelectionTrackerTests passed")
@@ -400,14 +403,64 @@ enum BarcodeSelectionTrackerTests {
         precondition(!tracker.isFinished)
     }
 
-    static func batchAddedNeighbourStillMeansAChoice() {
+    static func batchNextItemBesideLoneAddedCodeIsAutoAdded() {
         var tracker = batchTracker()
         precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
-        // The added EAN is still in view when a new code appears next to it.
-        let decisions = run(&tracker, Array(repeating: [ean, qr], count: 20), start: Double(confirmFrames) * frame)
-        precondition(decisions.allSatisfy { $0 == .choose([ean, qr]) }, "\(decisions)")
-        precondition(tracker.addedKeys == [ean])
-        precondition(tracker.select(qr))
+        // The added EAN (previous item) is still in view when the next item's
+        // code appears beside it: no choice, the new code is confirmed and added.
+        let start = Double(confirmFrames) * frame
+        let decisions = run(&tracker, Array(repeating: [ean, qr], count: confirmFrames + 3), start: start)
+        precondition(!decisions.contains { if case .choose = $0 { true } else { false } }, "\(decisions)")
+        precondition(accepts(decisions) == [qr], "\(decisions)")
+        precondition((acceptTime(decisions) ?? 99) < confirm + frame * 1.5)
+        precondition(tracker.addedKeys == [ean, qr])
+        // ...and so on for a third item, with both earlier codes still visible.
+        let third = run(&tracker, Array(repeating: [ean, qr, code128], count: confirmFrames + 3),
+                        start: start + Double(confirmFrames + 3) * frame)
+        precondition(accepts(third) == [code128], "\(third)")
+        // The visible added codes are reported for their "added" outlines.
+        precondition(tracker.visibleAddedKeys == [ean, qr, code128])
+    }
+
+    static func batchTappedLabelCodeKeepsNeighbourTapOnly() {
+        var tracker = batchTracker()
+        // One label with two codes, seen together: a choice.
+        precondition(tracker.process([ean, code128], at: 0) == .choose([ean, code128]))
+        precondition(tracker.select(ean))
+        // Both stay in view for 3 s: the neighbour is never added on its own.
+        let decisions = run(&tracker, Array(repeating: [ean, code128], count: 90), start: frame)
+        precondition(accepts(decisions).isEmpty, "\(decisions)")
+        precondition(decisions.allSatisfy { $0 == .choose([ean, code128]) })
+        // Even after the selection was abandoned and both come back together.
+        _ = run(&tracker, Array(repeating: [ean], count: 40), start: 3.1)
+        let back = run(&tracker, Array(repeating: [ean, code128], count: 30), start: 4.5)
+        precondition(accepts(back).isEmpty, "\(back)")
+    }
+
+    static func batchTwoNewCodesBesideLoneAddedCodeAreAChoice() {
+        var tracker = batchTracker()
+        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
+        let decisions = run(&tracker, Array(repeating: [ean, qr, code128], count: 30), start: Double(confirmFrames) * frame)
+        precondition(accepts(decisions).isEmpty, "\(decisions)")
+        precondition(decisions.allSatisfy { $0 == .choose([ean, qr, code128]) }, "\(decisions)")
+        precondition(tracker.select(code128))
+    }
+
+    static func batchFlickerOfAddedCodeWhileNextConfirms() {
+        var tracker = batchTracker()
+        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
+        // The added EAN drops in and out while the new QR confirms.
+        let frames: [[BarcodeCandidateKey]] = (0..<(confirmFrames + 3)).map { index in
+            switch index % 3 {
+            case 0: [qr]
+            case 1: [ean, qr]
+            default: [ean]
+            }
+        }
+        let decisions = run(&tracker, frames, start: Double(confirmFrames) * frame)
+        precondition(accepts(decisions) == [qr], "\(decisions)")
+        precondition(!decisions.contains { if case .choose = $0 { true } else { false } })
+        precondition(tracker.addedKeys == [ean, qr])
     }
 
     static func batchHandCoverFallbackKeepsScanning() {

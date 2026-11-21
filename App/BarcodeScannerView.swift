@@ -696,11 +696,18 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         let decision = selectionTracker.process(frameCandidates, at: latestFrameTimestamp)
         switch decision {
         case .waiting:
-            lastKnownCandidateRects.removeAll()
-            presentCandidates([])
+            if selectionTracker.continuesAfterAccept {
+                // Batch: codes already in the list keep their "added" outline
+                // while they stay in view, also while a new code confirms.
+                presentVisibleAddedCodes(frameRects)
+            } else {
+                lastKnownCandidateRects.removeAll()
+                presentCandidates([])
+            }
         case .accept(let key):
             if selectionTracker.continuesAfterAccept {
-                // Batch: any outlines stay and are re-marked with the next frame.
+                // Batch: the accepted code is marked as added right away.
+                presentVisibleAddedCodes(frameRects)
                 deliverResult(for: key, highlightingSelection: false)
                 return
             }
@@ -715,6 +722,17 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             lastKnownCandidateRects = Dictionary(uniqueKeysWithValues: offered)
             presentCandidates(offered)
         }
+    }
+
+    /// Vision queue, batch only. Outlines the added codes reported within the
+    /// tracker's retention window, at their last known position.
+    private func presentVisibleAddedCodes(_ frameRects: [BarcodeCandidateKey: CGRect]) {
+        lastKnownCandidateRects.merge(frameRects) { _, newRect in newRect }
+        let visible = selectionTracker.visibleAddedKeys
+            .sorted { ($0.value, $0.symbology) < ($1.value, $1.symbology) }
+            .compactMap { key in lastKnownCandidateRects[key].map { (key, $0) } }
+        lastKnownCandidateRects = Dictionary(uniqueKeysWithValues: visible)
+        presentCandidates(visible)
     }
 
     /// Runs on `visionQueue`. Hops to main with Vision-space rects for the overlay.

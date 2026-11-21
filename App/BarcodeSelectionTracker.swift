@@ -48,6 +48,14 @@ enum BarcodeSelectionDecision: Equatable {
 /// Accepting from `confirming` returns to `idle`; accepting from `selecting`
 /// stays in `selecting`, so the remaining codes still need a tap. With no
 /// acceptable code for `selectingExitInterval` the tracker returns to `idle`.
+///
+/// Moving from item to item: a code that was auto-added as a lone code (from
+/// `confirming`) belongs to the previous item. While it stays in view it is
+/// ignored when deciding about new codes, so one new code next to it is
+/// confirmed and added without a tap, and two or more new codes are still a
+/// choice. Codes added from a choice (by tap or by the lone fallback) came from
+/// the same label as the codes offered with them, so they keep counting and the
+/// remaining codes stay tap-only while they are in view.
 /// Without `continuesAfterAccept` the guard stays empty and every rule above is
 /// exactly the single-scan behaviour.
 struct BarcodeSelectionTracker {
@@ -107,6 +115,8 @@ struct BarcodeSelectionTracker {
 
     private var state: State = .idle
     private var rescanGuard = BarcodeRescanGuard()
+    /// Added codes that were auto-accepted as lone codes (batch only).
+    private var addedAlone: Set<BarcodeCandidateKey> = []
     private var latestFrameTime: TimeInterval?
 
     /// True for batch scanning: accepting a code does not finish the tracker.
@@ -122,25 +132,37 @@ struct BarcodeSelectionTracker {
     /// empty for single scans.
     var addedKeys: Set<BarcodeCandidateKey> { rescanGuard.blockedKeys }
 
+    /// Added codes reported within `candidateRetention` of the latest frame, so
+    /// the scanner can keep marking them as added while they stay in view.
+    var visibleAddedKeys: Set<BarcodeCandidateKey> {
+        guard let latestFrameTime else { return [] }
+        return rescanGuard.keys(seenSince: latestFrameTime - Self.candidateRetention)
+    }
+
     /// Feeds the candidates of one analysed frame (after scan-area and profile filters).
     mutating func process(_ frameCandidates: [BarcodeCandidateKey], at time: TimeInterval) -> BarcodeSelectionDecision {
         let distinct = Self.distinct(frameCandidates)
         latestFrameTime = time
         rescanGuard.observe(distinct, at: time)
+        addedAlone.formIntersection(rescanGuard.blockedKeys)
         let eligible = distinct.filter { !rescanGuard.isBlocked($0) }
+        // Codes that decide between confirming and choosing: everything except
+        // lone-added codes of a previous item.
+        let relevant = distinct.filter { !addedAlone.contains($0) }
 
         switch state {
         case .finished:
             return .waiting
 
         case .idle:
-            return start(with: distinct, eligible: eligible, at: time)
+            return start(with: distinct, eligible: eligible, relevant: relevant, at: time)
 
         case let .confirming(key, firstSeen, sightings):
             // Any other code during confirmation, in the same frame or a later
-            // one, means there is a choice to make. In a batch this includes an
-            // already added code that is still in view.
-            if distinct.contains(where: { $0 != key }) {
+            // one, means there is a choice to make. In a batch this includes a
+            // code added from a choice that is still in view, but not a lone-added
+            // code of a previous item.
+            if relevant.contains(where: { $0 != key }) {
                 return enterSelecting(with: distinct.contains(key) ? distinct : [key] + distinct, at: time)
             }
             // A frame without the code still counts: Vision analysed it and found
@@ -151,6 +173,9 @@ struct BarcodeSelectionTracker {
             if time - firstSeen >= Self.singleConfirmationInterval,
                seen >= Self.singleConfirmationSightings {
                 state = continuesAfterAccept ? .idle : .finished
+                if continuesAfterAccept {
+                    addedAlone.insert(key)
+                }
                 return accept(key, at: time)
             }
             state = .confirming(key: key, firstSeen: firstSeen, sightings: seen)
@@ -177,7 +202,7 @@ struct BarcodeSelectionTracker {
                 selection.lastAnyCodeTime = time
             }
 
-            if distinct.count == 1, let only = distinct.first, !rescanGuard.isBlocked(only) {
+            if relevant.count == 1, let only = relevant.first, !rescanGuard.isBlocked(only) {
                 // A lone run continues only while that code keeps being reported;
                 // reappearing after a long gap (camera moved away) starts over.
                 if var lone = selection.lone, lone.key == only,
@@ -196,8 +221,8 @@ struct BarcodeSelectionTracker {
                 } else {
                     selection.lone = LoneRun(key: only, since: time, lastSeen: time)
                 }
-            } else if !distinct.isEmpty {
-                // Several codes, or only an already added one: nothing is alone.
+            } else if !relevant.isEmpty {
+                // Several codes, or only one added from a choice: nothing is alone.
                 selection.lone = nil
             }
 
@@ -255,6 +280,7 @@ struct BarcodeSelectionTracker {
     private mutating func start(
         with distinct: [BarcodeCandidateKey],
         eligible: [BarcodeCandidateKey],
+        relevant: [BarcodeCandidateKey],
         at time: TimeInterval
     ) -> BarcodeSelectionDecision {
         // Nothing new to take: no code, or only codes that were already added.
@@ -262,14 +288,14 @@ struct BarcodeSelectionTracker {
             state = .idle
             return .waiting
         }
-        switch distinct.count {
-        case 1:
-            state = .confirming(key: distinct[0], firstSeen: time, sightings: 1)
+        if relevant.count == 1 {
+            // One new code, possibly next to lone-added codes of a previous item.
+            state = .confirming(key: relevant[0], firstSeen: time, sightings: 1)
             return .waiting
-        default:
-            // Several codes, even if some were already added: the user chooses.
-            return enterSelecting(with: distinct, at: time)
         }
+        // Several new codes, or a new code next to one added from a choice on
+        // the same label: the user chooses.
+        return enterSelecting(with: distinct, at: time)
     }
 
     private static func distinct(_ frameCandidates: [BarcodeCandidateKey]) -> [BarcodeCandidateKey] {
@@ -314,6 +340,10 @@ struct BarcodeRescanGuard {
 
     mutating func block(_ key: BarcodeCandidateKey, at time: TimeInterval) {
         lastSeen[key] = time
+    }
+
+    func keys(seenSince time: TimeInterval) -> Set<BarcodeCandidateKey> {
+        Set(lastSeen.filter { $0.value >= time }.keys)
     }
 
     /// Releases codes that were absent long enough, then refreshes those seen in
