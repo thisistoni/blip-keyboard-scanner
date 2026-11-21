@@ -26,9 +26,11 @@ enum BarcodeSelectionDecision: Equatable {
 /// - `idle`: no candidate seen.
 /// - `confirming`: one code was seen and no other code since. It is accepted on
 ///   the first analysed frame at least `singleConfirmationInterval` after its first
-///   sighting (never on the first frame itself). Frames with that code or with no
-///   code at all keep the confirmation going; any other code switches to
-///   `selecting` with both codes offered.
+///   sighting once it has been reported in at least `singleConfirmationSightings`
+///   frames (never on the first frame itself, and never on a single read, which
+///   may be a misread). Frames with that code or with no code at all keep the
+///   confirmation going; any other code switches to `selecting` with both codes
+///   offered.
 /// - `selecting`: two or more distinct codes were seen. Never auto-accepts while
 ///   other codes keep appearing. Each code stays offered for `candidateRetention`
 ///   after its last sighting so a one-frame Vision dropout does not make its
@@ -59,6 +61,13 @@ struct BarcodeSelectionTracker {
     /// is taken, while a lone code still feels immediate. (A frame-count rule
     /// accepted after 66 ms on the device, before the neighbour was ever decoded.)
     static let singleConfirmationInterval: TimeInterval = 0.3
+    /// Analysed frames that must report a lone code before it is auto-accepted.
+    /// On the device a code was once read in exactly one frame among hundreds of
+    /// reads of two other codes, likely a misread. There is deliberately no
+    /// timeout that accepts on one sighting: a worn code waits for its second
+    /// decode. (Taps are explicit and need no second sighting; the lone fallback
+    /// in `selecting` already needs a run of sightings spanning 0.8 s.)
+    static let singleConfirmationSightings = 2
     /// How long a code stays outlined after Vision last reported it. Covers typical
     /// one-to-several-frame dropouts without leaving stale outlines on screen.
     static let candidateRetention: TimeInterval = 0.4
@@ -72,7 +81,7 @@ struct BarcodeSelectionTracker {
 
     private enum State: Equatable {
         case idle
-        case confirming(key: BarcodeCandidateKey, firstSeen: TimeInterval)
+        case confirming(key: BarcodeCandidateKey, firstSeen: TimeInterval, sightings: Int)
         case selecting(Selection)
         case finished
     }
@@ -127,7 +136,7 @@ struct BarcodeSelectionTracker {
         case .idle:
             return start(with: distinct, eligible: eligible, at: time)
 
-        case let .confirming(key, firstSeen):
+        case let .confirming(key, firstSeen, sightings):
             // Any other code during confirmation, in the same frame or a later
             // one, means there is a choice to make. In a batch this includes an
             // already added code that is still in view.
@@ -138,10 +147,13 @@ struct BarcodeSelectionTracker {
             // no neighbour. Requiring consecutive sightings would stop a worn or
             // dim code that only decodes now and then from ever being accepted.
             // The first sighting itself never accepts (it starts `confirming`).
-            if time - firstSeen >= Self.singleConfirmationInterval {
+            let seen = sightings + (distinct.contains(key) ? 1 : 0)
+            if time - firstSeen >= Self.singleConfirmationInterval,
+               seen >= Self.singleConfirmationSightings {
                 state = continuesAfterAccept ? .idle : .finished
                 return accept(key, at: time)
             }
+            state = .confirming(key: key, firstSeen: firstSeen, sightings: seen)
             return .waiting
 
         case var .selecting(selection):
@@ -252,7 +264,7 @@ struct BarcodeSelectionTracker {
         }
         switch distinct.count {
         case 1:
-            state = .confirming(key: distinct[0], firstSeen: time)
+            state = .confirming(key: distinct[0], firstSeen: time, sightings: 1)
             return .waiting
         default:
             // Several codes, even if some were already added: the user chooses.

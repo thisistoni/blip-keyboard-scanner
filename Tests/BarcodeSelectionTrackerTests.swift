@@ -53,6 +53,9 @@ enum BarcodeSelectionTrackerTests {
         lateReappearanceRestartsLoneTimer()
         sameValueDifferentSymbologyIsDistinct()
         intermittentlyDecodedCodeIsStillAccepted()
+        singleSightingIsNeverAutoAccepted()
+        tapNeedsNoSecondSighting()
+        loneFallbackNeedsSeveralSightings()
         differentLoneCodeDuringConfirmationIsOffered()
         tapFinishesOnce()
         singleModeNeverReportsAddedKeys()
@@ -222,8 +225,47 @@ enum BarcodeSelectionTrackerTests {
         // starved: frames without any other code count towards confirmation.
         var tracker = BarcodeSelectionTracker()
         precondition(run(&tracker, [[ean], [], [ean], [], [ean]], interval: 0.08) == [.waiting, .waiting, .waiting, .waiting, .accept(ean)])
+    }
+
+    static func singleSightingIsNeverAutoAccepted() {
+        // One read, possibly a misread, followed by 5 s without that code.
         var once = BarcodeSelectionTracker()
-        precondition(run(&once, [[ean], [], [], [], []], interval: 0.08) == [.waiting, .waiting, .waiting, .waiting, .accept(ean)])
+        let empty = run(&once, [[ean]] + Array(repeating: [], count: 150))
+        precondition(empty.allSatisfy { $0 == .waiting }, "one sighting must not be accepted: \(empty)")
+        precondition(!once.isFinished)
+        // A worn code simply waits for its second decode, however late.
+        precondition(once.process([ean], at: 6) == .accept(ean))
+
+        // Batch mode follows the same rule.
+        var batch = batchTracker()
+        precondition(accepts(run(&batch, [[ean]] + Array(repeating: [], count: 150))).isEmpty)
+        precondition(batch.addedKeys.isEmpty)
+        precondition(batch.process([ean], at: 6) == .accept(ean))
+
+        // The second sighting before the interval is enough once time has passed.
+        var early = BarcodeSelectionTracker()
+        let decisions = run(&early, [[ean], [ean], [], [], [], [], [], [], [], [], [], [], []])
+        precondition(accepts(decisions) == [ean], "\(decisions)")
+    }
+
+    static func tapNeedsNoSecondSighting() {
+        var tracker = BarcodeSelectionTracker()
+        precondition(tracker.process([ean, code128], at: 0) == .choose([ean, code128]))
+        precondition(tracker.select(code128))
+        var batch = batchTracker()
+        precondition(batch.process([ean, code128], at: 0) == .choose([ean, code128]))
+        precondition(batch.select(ean))
+        precondition(batch.addedKeys == [ean])
+    }
+
+    static func loneFallbackNeedsSeveralSightings() {
+        // After a choice, one more read of a code alone is not enough: the
+        // fallback needs that code alone across 0.8 s (gaps up to 0.4 s).
+        var tracker = BarcodeSelectionTracker()
+        _ = run(&tracker, [[ean, code128]])
+        precondition(tracker.process([ean], at: 0.1) == .choose([ean, code128]))
+        let empty = run(&tracker, Array(repeating: [], count: 30), start: 0.1 + frame)
+        precondition(!empty.contains { if case .accept = $0 { true } else { false } })
     }
 
     static func differentLoneCodeDuringConfirmationIsOffered() {
