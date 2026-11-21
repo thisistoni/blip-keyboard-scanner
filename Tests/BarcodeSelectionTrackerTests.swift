@@ -22,9 +22,26 @@ enum BarcodeSelectionTrackerTests {
         }
     }
 
+    static let confirm = BarcodeSelectionTracker.singleConfirmationInterval
+
+    /// Number of 30 fps frames, starting with the first sighting, that safely
+    /// spans the confirmation interval (one frame of margin, no exact boundary).
+    static let confirmFrames = Int((confirm / frame).rounded(.up)) + 2
+
+    /// Time of the single accept in `decisions` fed at `interval` from `start`.
+    static func acceptTime(
+        _ decisions: [BarcodeSelectionDecision],
+        start: TimeInterval = 0,
+        interval: TimeInterval = frame
+    ) -> TimeInterval? {
+        decisions.firstIndex { if case .accept = $0 { true } else { false } }
+            .map { start + Double($0) * interval }
+    }
+
     static func main() {
-        singleStableCodeIsAcceptedAfterThreeFrames()
-        singleCodeAcceptedQuicklyWhenFramesAreSlow()
+        singleStableCodeIsAcceptedAfterTheInterval()
+        singleCodeAcceptedAfterIntervalWhenFramesAreSlow()
+        neighbourDecodedLateIsStillOffered()
         duplicateObservationsOfOneCodeStaySingle()
         secondCodeArrivingOneFrameLateIsOffered()
         secondCodeArrivingTwoFramesLateIsOffered()
@@ -51,28 +68,46 @@ enum BarcodeSelectionTrackerTests {
         print("BarcodeSelectionTrackerTests passed")
     }
 
-    static func singleStableCodeIsAcceptedAfterThreeFrames() {
+    static func singleStableCodeIsAcceptedAfterTheInterval() {
         var tracker = BarcodeSelectionTracker()
-        let decisions = run(&tracker, [[ean], [ean], [ean], [ean]])
-        precondition(decisions[0] == .waiting)
-        precondition(decisions[1] == .waiting)
-        precondition(decisions[2] == .accept(ean))
+        let decisions = run(&tracker, Array(repeating: [ean], count: confirmFrames + 5))
+        precondition(decisions[0] == .waiting, "never on the first frame")
+        guard let accepted = acceptTime(decisions) else { preconditionFailure("lone code must be accepted") }
+        precondition(accepted > confirm - frame / 2, "accepted too early: \(accepted)")
+        precondition(accepted < confirm + frame * 1.5, "accepted too late: \(accepted)")
+        precondition(decisions.filter { $0 == .accept(ean) }.count == 1)
         // Later frames are ignored once a code is accepted.
-        precondition(decisions[3] == .waiting)
+        precondition(decisions.last == .waiting)
         precondition(tracker.isFinished)
     }
 
-    static func singleCodeAcceptedQuicklyWhenFramesAreSlow() {
+    static func singleCodeAcceptedAfterIntervalWhenFramesAreSlow() {
         var tracker = BarcodeSelectionTracker()
-        // 8 fps analysis: two frames already span 0.125 s.
-        let decisions = run(&tracker, [[ean], [ean]], interval: 0.125)
-        precondition(decisions == [.waiting, .accept(ean)])
+        // 8 fps analysis (0.125 s per frame): the fourth frame (0.375 s) is the
+        // first one past the interval.
+        let decisions = run(&tracker, [[ean], [ean], [ean], [ean], [ean]], interval: 0.125)
+        precondition(decisions == [.waiting, .waiting, .waiting, .accept(ean), .waiting], "\(decisions)")
+        // Even a very slow second frame never accepts on the first sighting.
+        var single = BarcodeSelectionTracker()
+        precondition(single.process([ean], at: 0) == .waiting)
+        precondition(single.process([ean], at: 2) == .accept(ean))
+    }
+
+    static func neighbourDecodedLateIsStillOffered() {
+        // As measured on the device: the second code shows up only in some
+        // frames, here first 0.25 s after the first one, with empty frames between.
+        var tracker = BarcodeSelectionTracker()
+        let decisions = run(&tracker, [[ean], [], [ean], [], [], [ean], [], [ean, code128]], interval: 0.25 / 7)
+        precondition(!decisions.contains { if case .accept = $0 { true } else { false } }, "\(decisions)")
+        precondition(decisions.last == .choose([ean, code128]))
     }
 
     static func duplicateObservationsOfOneCodeStaySingle() {
         var tracker = BarcodeSelectionTracker()
-        let decisions = run(&tracker, [[ean, ean], [ean], [ean, ean]])
-        precondition(decisions.last == .accept(ean))
+        let frames: [[BarcodeCandidateKey]] = (0..<confirmFrames).map { $0.isMultiple(of: 2) ? [ean, ean] : [ean] }
+        let decisions = run(&tracker, frames)
+        precondition(decisions.filter { $0 == .accept(ean) }.count == 1, "\(decisions)")
+        precondition(!decisions.contains { if case .choose = $0 { true } else { false } })
     }
 
     static func secondCodeArrivingOneFrameLateIsOffered() {
@@ -159,8 +194,9 @@ enum BarcodeSelectionTrackerTests {
         _ = run(&tracker, [[ean, code128]])
         precondition(tracker.process([], at: BarcodeSelectionTracker.selectingExitInterval + 0.01) == .waiting)
         // Back to idle: a lone code now uses the fast single-code path.
-        let decisions = run(&tracker, [[qr], [qr], [qr]], start: 1.5)
-        precondition(decisions == [.waiting, .waiting, .accept(qr)])
+        let decisions = run(&tracker, Array(repeating: [qr], count: confirmFrames), start: 1.5)
+        precondition(decisions.first == .waiting)
+        precondition(accepts(decisions) == [qr], "\(decisions)")
     }
 
     static func lateReappearanceRestartsLoneTimer() {
@@ -185,9 +221,9 @@ enum BarcodeSelectionTrackerTests {
         // A worn code that Vision only decodes every other frame must not be
         // starved: frames without any other code count towards confirmation.
         var tracker = BarcodeSelectionTracker()
-        precondition(run(&tracker, [[ean], [], [ean]]) == [.waiting, .waiting, .accept(ean)])
+        precondition(run(&tracker, [[ean], [], [ean], [], [ean]], interval: 0.08) == [.waiting, .waiting, .waiting, .waiting, .accept(ean)])
         var once = BarcodeSelectionTracker()
-        precondition(run(&once, [[ean], [], []]) == [.waiting, .waiting, .accept(ean)])
+        precondition(run(&once, [[ean], [], [], [], []], interval: 0.08) == [.waiting, .waiting, .waiting, .waiting, .accept(ean)])
     }
 
     static func differentLoneCodeDuringConfirmationIsOffered() {
@@ -212,7 +248,7 @@ enum BarcodeSelectionTrackerTests {
 
     static func singleModeNeverReportsAddedKeys() {
         var tracker = BarcodeSelectionTracker()
-        _ = run(&tracker, [[ean], [ean], [ean]])
+        _ = run(&tracker, Array(repeating: [ean], count: confirmFrames))
         precondition(tracker.isFinished)
         precondition(tracker.addedKeys.isEmpty)
         // `select` on a single-scan tracker is exactly `finishBySelection`.
@@ -238,31 +274,34 @@ enum BarcodeSelectionTrackerTests {
         // Five seconds of the same code in view.
         let decisions = run(&tracker, Array(repeating: [ean], count: 150))
         precondition(accepts(decisions) == [ean], "a code in view must be added once: \(accepts(decisions))")
-        precondition(decisions[2] == .accept(ean))
+        precondition((acceptTime(decisions) ?? 99) < confirm + frame * 1.5)
         precondition(!tracker.isFinished)
         precondition(tracker.addedKeys == [ean])
     }
 
     static func batchReaddsCodeAfterItLeftAndCameBack() {
         var tracker = batchTracker()
-        precondition(accepts(run(&tracker, [[ean], [ean], [ean]])) == [ean])
+        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
         // The item is taken away for longer than the re-entry interval...
+        let start = Double(confirmFrames) * frame
         let away = BarcodeRescanGuard.reentryAbsenceInterval + 0.1
         let empty = Int((away / frame).rounded(.up))
-        _ = run(&tracker, Array(repeating: [], count: empty), start: 3 * frame)
+        _ = run(&tracker, Array(repeating: [], count: empty), start: start)
         precondition(tracker.addedKeys.isEmpty)
         // ...and shown again: a second, intentional copy is added.
-        let back = run(&tracker, [[ean], [ean], [ean], [ean]], start: 3 * frame + Double(empty) * frame)
+        let back = run(&tracker, Array(repeating: [ean], count: confirmFrames), start: start + Double(empty) * frame)
         precondition(accepts(back) == [ean], "returning code must be added again: \(back)")
     }
 
     static func batchShortAbsenceDoesNotReadd() {
         var tracker = batchTracker()
-        _ = run(&tracker, [[ean], [ean], [ean]])
+        let seen = run(&tracker, Array(repeating: [ean], count: confirmFrames))
+        precondition(accepts(seen) == [ean])
         // Away for clearly less than the re-entry interval, then back for 3 s.
+        let lastSeen = Double(confirmFrames - 1) * frame
         let gap = BarcodeRescanGuard.reentryAbsenceInterval - 0.3
-        _ = tracker.process([], at: 0.1)
-        let back = run(&tracker, Array(repeating: [ean], count: 90), start: 0.1 + gap)
+        _ = tracker.process([], at: lastSeen + 0.1)
+        let back = run(&tracker, Array(repeating: [ean], count: 90), start: lastSeen + gap)
         precondition(accepts(back).isEmpty, "a short absence must not re-add: \(back)")
     }
 
@@ -286,9 +325,13 @@ enum BarcodeSelectionTrackerTests {
         var tracker = batchTracker()
         // First item, then the camera moves on: the first code leaves the view
         // before the second appears, so the fast single-code path is used.
-        let decisions = run(&tracker, [[ean], [ean], [ean], [ean], [], [code128], [code128], [code128], [code128]])
+        let first = Array(repeating: [ean], count: confirmFrames)
+        let second = Array(repeating: [code128], count: confirmFrames)
+        let decisions = run(&tracker, first + [[]] + second)
         precondition(accepts(decisions) == [ean, code128], "\(decisions)")
-        precondition(decisions[7] == .accept(code128))
+        let secondStart = first.count + 1
+        let secondAccept = acceptTime(Array(decisions[secondStart...]))
+        precondition((secondAccept ?? 99) < confirm + frame * 1.5, "next code must use the fast path")
         precondition(tracker.addedKeys == [ean, code128])
     }
 
@@ -317,9 +360,9 @@ enum BarcodeSelectionTrackerTests {
 
     static func batchAddedNeighbourStillMeansAChoice() {
         var tracker = batchTracker()
-        _ = run(&tracker, [[ean], [ean], [ean]])
+        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
         // The added EAN is still in view when a new code appears next to it.
-        let decisions = run(&tracker, [[ean, qr], [ean, qr], [ean, qr], [ean, qr]], start: 0.2)
+        let decisions = run(&tracker, Array(repeating: [ean, qr], count: 20), start: Double(confirmFrames) * frame)
         precondition(decisions.allSatisfy { $0 == .choose([ean, qr]) }, "\(decisions)")
         precondition(tracker.addedKeys == [ean])
         precondition(tracker.select(qr))
@@ -348,9 +391,9 @@ enum BarcodeSelectionTrackerTests {
 
     static func batchPausedFramesKeepCodesBlocked() {
         var tracker = batchTracker()
-        _ = run(&tracker, [[ean], [ean], [ean]])
+        precondition(accepts(run(&tracker, Array(repeating: [ean], count: confirmFrames))) == [ean])
         // The batch is full for 5 s while the EAN stays in view.
-        var time = 3 * frame
+        var time = Double(confirmFrames) * frame
         while time < 5 {
             tracker.observeWithoutAccepting([ean], at: time)
             time += frame

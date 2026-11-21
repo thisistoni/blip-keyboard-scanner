@@ -24,12 +24,11 @@ enum BarcodeSelectionDecision: Equatable {
 ///
 /// States:
 /// - `idle`: no candidate seen.
-/// - `confirming`: one code was seen and no other code since. It is accepted
-///   after `singleConfirmationFrames` analysed frames (counting the first sighting
-///   and later frames with that code or with no code), or after
-///   `singleConfirmationMinimumFrames` frames once `singleConfirmationInterval` has
-///   passed (bounds the delay when frames arrive slowly). Any other code in one of
-///   those frames switches to `selecting` with both codes offered.
+/// - `confirming`: one code was seen and no other code since. It is accepted on
+///   the first analysed frame at least `singleConfirmationInterval` after its first
+///   sighting (never on the first frame itself). Frames with that code or with no
+///   code at all keep the confirmation going; any other code switches to
+///   `selecting` with both codes offered.
 /// - `selecting`: two or more distinct codes were seen. Never auto-accepts while
 ///   other codes keep appearing. Each code stays offered for `candidateRetention`
 ///   after its last sighting so a one-frame Vision dropout does not make its
@@ -50,16 +49,16 @@ enum BarcodeSelectionDecision: Equatable {
 /// Without `continuesAfterAccept` the guard stays empty and every rule above is
 /// exactly the single-scan behaviour.
 struct BarcodeSelectionTracker {
-    /// Analysed frames, starting with the first sighting, that must pass without
-    /// any other code before a lone code is auto-accepted. Vision commonly decodes
-    /// a neighbouring code one or two frames after the first, so three frames (two
-    /// extra, ~66 ms at 30 fps) catch that.
-    static let singleConfirmationFrames = 3
-    /// Lower frame bound used together with `singleConfirmationInterval`.
-    static let singleConfirmationMinimumFrames = 2
-    /// When analysis runs slowly (dim light, older devices) two frames spanning at
-    /// least this long are enough, keeping the added latency near 0.1 s.
-    static let singleConfirmationInterval: TimeInterval = 0.1
+    /// How long a lone code must stay without any other code before it is
+    /// auto-accepted. Time-based because Vision does not decode every frame:
+    /// measured on an iPhone 16 Pro Max with two EAN-13 products side by side
+    /// (4K, ~31 analysed frames/s), only about 45 % of the frames that showed a
+    /// code showed both, and the longest gap between frames with any code was
+    /// 0.27 s. Waiting 0.3 s covers that gap and spans several frames, so a
+    /// neighbour that Vision decodes late is usually seen before the first code
+    /// is taken, while a lone code still feels immediate. (A frame-count rule
+    /// accepted after 66 ms on the device, before the neighbour was ever decoded.)
+    static let singleConfirmationInterval: TimeInterval = 0.3
     /// How long a code stays outlined after Vision last reported it. Covers typical
     /// one-to-several-frame dropouts without leaving stale outlines on screen.
     static let candidateRetention: TimeInterval = 0.4
@@ -73,7 +72,7 @@ struct BarcodeSelectionTracker {
 
     private enum State: Equatable {
         case idle
-        case confirming(key: BarcodeCandidateKey, firstSeen: TimeInterval, frames: Int)
+        case confirming(key: BarcodeCandidateKey, firstSeen: TimeInterval)
         case selecting(Selection)
         case finished
     }
@@ -128,7 +127,7 @@ struct BarcodeSelectionTracker {
         case .idle:
             return start(with: distinct, eligible: eligible, at: time)
 
-        case let .confirming(key, firstSeen, frames):
+        case let .confirming(key, firstSeen):
             // Any other code during confirmation, in the same frame or a later
             // one, means there is a choice to make. In a batch this includes an
             // already added code that is still in view.
@@ -138,14 +137,11 @@ struct BarcodeSelectionTracker {
             // A frame without the code still counts: Vision analysed it and found
             // no neighbour. Requiring consecutive sightings would stop a worn or
             // dim code that only decodes now and then from ever being accepted.
-            let frameCount = frames + 1
-            if frameCount >= Self.singleConfirmationFrames
-                || (frameCount >= Self.singleConfirmationMinimumFrames
-                    && time - firstSeen >= Self.singleConfirmationInterval) {
+            // The first sighting itself never accepts (it starts `confirming`).
+            if time - firstSeen >= Self.singleConfirmationInterval {
                 state = continuesAfterAccept ? .idle : .finished
                 return accept(key, at: time)
             }
-            state = .confirming(key: key, firstSeen: firstSeen, frames: frameCount)
             return .waiting
 
         case var .selecting(selection):
@@ -256,7 +252,7 @@ struct BarcodeSelectionTracker {
         }
         switch distinct.count {
         case 1:
-            state = .confirming(key: distinct[0], firstSeen: time, frames: 1)
+            state = .confirming(key: distinct[0], firstSeen: time)
             return .waiting
         default:
             // Several codes, even if some were already added: the user chooses.

@@ -27,6 +27,8 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     @Binding var statusMessage: String?
     @Binding var currentZoomFactor: Double
     @Binding var selectableCodeCount: Int
+    /// Lets a SwiftUI tap gesture on this view reach the controller as well.
+    var tapRelay: BarcodeScannerTapRelay? = nil
     let onCode: (ScannerCodeResult) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -49,6 +51,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         controller.continuesScanning = continuesScanning
         controller.acceptsMoreCodes = acceptsMoreCodes
         controller.setTorch(on: flashlightMode == .on)
+        tapRelay?.controller = controller
         return controller
     }
 
@@ -60,6 +63,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         uiViewController.continuesScanning = continuesScanning
         uiViewController.acceptsMoreCodes = acceptsMoreCodes
         uiViewController.setTorch(on: flashlightMode == .on)
+        tapRelay?.controller = uiViewController
     }
 
     static func dismantleUIViewController(_ uiViewController: BarcodeCaptureViewController, coordinator: Coordinator) {
@@ -114,6 +118,18 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     }
 }
 
+/// Forwards taps recognised by SwiftUI on `BarcodeScannerView` (in the
+/// controller view's coordinates) to the capture controller. The controller
+/// also has its own UIKit tap recognizer; it drops the second delivery of the
+/// same tap, so a tap arriving through both paths selects only once.
+final class BarcodeScannerTapRelay {
+    weak var controller: BarcodeCaptureViewController?
+
+    func tap(at point: CGPoint) {
+        controller?.handleTap(at: point, source: .swiftUI)
+    }
+}
+
 private extension ScanFormatProfile {
     var visionSymbologies: [VNBarcodeSymbology] {
         switch self {
@@ -165,7 +181,18 @@ protocol BarcodeCaptureViewControllerDelegate: AnyObject {
     func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateSelectableCodeCount count: Int)
 }
 
-final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
+final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate, UIGestureRecognizerDelegate {
+    enum TapSource: String {
+        case uiKit
+        case swiftUI
+    }
+
+    /// Two deliveries of one tap (UIKit and SwiftUI) arrive within a few
+    /// milliseconds at the same point; a real second tap comes through the same
+    /// path again and is never filtered, however quickly it follows.
+    private static let duplicateTapInterval: TimeInterval = 0.15
+    private static let duplicateTapDistance: CGFloat = 30
+
     private static let fullVisionRegion = CGRect(x: 0, y: 0, width: 1, height: 1)
 
     weak var delegate: BarcodeCaptureViewControllerDelegate?
@@ -215,6 +242,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "com.antoniobeslic.Blip.camera")
     private let visionQueue = DispatchQueue(label: "com.antoniobeslic.Blip.vision")
+    private let frameQueue = DispatchQueue(label: "com.antoniobeslic.Blip.frames")
     private let videoOutput = AVCaptureVideoDataOutput()
 
     private var previewLayer: AVCaptureVideoPreviewLayer?
@@ -243,6 +271,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private let candidateOverlay = BarcodeCandidateOverlayView()
     private var candidateAccessibilityElements: [BarcodeCandidateKey: BarcodeCandidateAccessibilityElement] = [:]
     private var publishedSelectableCodeCount = 0
+    private var lastTap: (time: TimeInterval, point: CGPoint, source: TapSource)?
 
     static func defaultVideoDevice() -> AVCaptureDevice? {
         AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
@@ -324,13 +353,38 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
 
     private func configureTapGesture() {
         let recognizer = UITapGestureRecognizer(target: self, action: #selector(handleTapGesture(_:)))
+        // Never let this recognizer block (or be blocked by) SwiftUI's own
+        // gesture recognizers or the pinch; duplicates are filtered in `handleTap`.
+        recognizer.cancelsTouchesInView = false
+        recognizer.delegate = self
         view.addGestureRecognizer(recognizer)
     }
 
     @objc private func handleTapGesture(_ recognizer: UITapGestureRecognizer) {
-        guard recognizer.state == .ended,
-              let key = candidateOverlay.candidate(at: recognizer.location(in: candidateOverlay)) else { return }
+        guard recognizer.state == .ended else { return }
+        handleTap(at: recognizer.location(in: candidateOverlay), source: .uiKit)
+    }
+
+    /// Main thread. `point` is in this controller's view (and overlay) coordinates.
+    func handleTap(at point: CGPoint, source: TapSource) {
+        let now = ProcessInfo.processInfo.systemUptime
+        if let lastTap, lastTap.source != source,
+           now - lastTap.time < Self.duplicateTapInterval,
+           hypot(lastTap.point.x - point.x, lastTap.point.y - point.y) < Self.duplicateTapDistance {
+            return
+        }
+        lastTap = (now, point, source)
+
+        let key = candidateOverlay.candidate(at: point)
+        guard let key else { return }
         selectCandidate(key)
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        true
     }
 
     private func configurePinchGesture() {
@@ -437,7 +491,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 self.videoOutput.videoSettings = [
                     kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
                 ]
-                self.videoOutput.setSampleBufferDelegate(self, queue: self.visionQueue)
+                self.videoOutput.setSampleBufferDelegate(self, queue: self.frameQueue)
 
                 guard self.session.canAddOutput(self.videoOutput) else {
                     self.session.commitConfiguration()
@@ -446,12 +500,34 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 }
                 self.session.addOutput(self.videoOutput)
 
+                // 4K frames when the camera supports them: at 1080p (`.high`) an
+                // iPhone 16 Pro Max could not decode two EAN-13 product codes side
+                // by side (one decoded now and then, the other never); at 4K both
+                // decoded at ~31 analysed frames/s. Checked after the input and
+                // output are attached, because support depends on them. Zoom
+                // limits come from the active format, and the scan-area and
+                // outline maths use normalised coordinates, so neither depends on
+                // the preset.
+                if self.session.canSetSessionPreset(.hd4K3840x2160) {
+                    self.session.sessionPreset = .hd4K3840x2160
+                }
+
                 if let connection = self.videoOutput.connection(with: .video),
                    connection.isVideoOrientationSupported {
                     connection.videoOrientation = .portrait
                 }
 
                 self.session.commitConfiguration()
+
+                // Barcodes are scanned up close: keep continuous autofocus in the
+                // near range so it does not hunt to the background, and turn off
+                // smooth (slow, video-oriented) focus ramps.
+                if (try? device.lockForConfiguration()) != nil {
+                    if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
+                    if device.isAutoFocusRangeRestrictionSupported { device.autoFocusRangeRestriction = .near }
+                    if device.isSmoothAutoFocusSupported { device.isSmoothAutoFocusEnabled = false }
+                    device.unlockForConfiguration()
+                }
 
                 self.videoDevice = device
                 self.isConfigured = true
@@ -545,6 +621,16 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        // Frames arrive on `frameQueue` and take turns on `visionQueue` with taps
+        // and setting changes. Delivering frames straight onto `visionQueue`
+        // starved those: on device a tap waited seconds until no code was in view.
+        visionQueue.sync {
+            analyse(sampleBuffer)
+        }
+    }
+
+    /// Runs on `visionQueue`.
+    private func analyse(_ sampleBuffer: CMSampleBuffer) {
         guard !didScan, !isProcessingFrame, let barcodeRequest else { return }
 
         isProcessingFrame = true
@@ -607,7 +693,8 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             return
         }
 
-        switch selectionTracker.process(frameCandidates, at: latestFrameTimestamp) {
+        let decision = selectionTracker.process(frameCandidates, at: latestFrameTimestamp)
+        switch decision {
         case .waiting:
             lastKnownCandidateRects.removeAll()
             presentCandidates([])
@@ -652,22 +739,22 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 )
             }
             self.candidateOverlay.update(displayed)
-            self.updateCandidateAccessibility(displayed)
+            // VoiceOver frames follow the smoothed rects that are drawn and tapped.
+            self.updateCandidateAccessibility(self.candidateOverlay.candidates)
         }
     }
 
     /// Main thread. The tap is resolved on `visionQueue` so it cannot race an auto-accept.
     private func selectCandidate(_ key: BarcodeCandidateKey) {
         visionQueue.async { [weak self] in
-            guard let self, !self.didScan, !self.isCollectionPaused else { return }
+            guard let self, !self.didScan, !self.isCollectionPaused,
+                  self.selectionTracker.select(key) else { return }
             if self.selectionTracker.continuesAfterAccept {
                 // Batch: the code is added and scanning continues; the next frame
                 // marks its outline as added.
-                guard self.selectionTracker.select(key) else { return }
                 self.deliverResult(for: key, highlightingSelection: false)
                 return
             }
-            guard self.selectionTracker.select(key) else { return }
             self.didScan = true
             self.isPresentingCandidates = false
             self.lastKnownCandidateRects.removeAll()

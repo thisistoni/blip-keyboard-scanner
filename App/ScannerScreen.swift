@@ -616,6 +616,7 @@ private struct ScannerPresentation: View {
     @State private var scanMode: ScannerScanMode
     @StateObject private var batchScan = BatchScanModel()
     @State private var pendingBatchDiscard: BatchScanDiscardReason?
+    @State private var tapRelay = BarcodeScannerTapRelay()
     @State private var isTorchAvailable = false
     @State private var isTorchOn = false
     @State private var scannerStatusMessage: String?
@@ -801,7 +802,17 @@ private struct ScannerPresentation: View {
                 statusMessage: $scannerStatusMessage,
                 currentZoomFactor: $currentZoomFactor,
                 selectableCodeCount: $selectableCodeCount,
+                tapRelay: tapRelay,
                 onCode: handleCode
+            )
+            // A second tap path next to the controller's UIKit recognizer; the
+            // controller ignores the duplicate when both deliver the same tap.
+            // Applied before `ignoresSafeArea()` so the location is in the
+            // controller view's coordinates.
+            .simultaneousGesture(
+                SpatialTapGesture().onEnded { value in
+                    tapRelay.tap(at: value.location)
+                }
             )
             .ignoresSafeArea()
         } else {

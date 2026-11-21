@@ -1,6 +1,14 @@
 import SwiftUI
 import UIKit
 
+private struct BatchScanPanelHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 220
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 /// A short line above the batch list: added confirmation, limit, hints.
 struct BatchScanPanelStatus: Equatable {
     let message: String
@@ -29,24 +37,32 @@ struct BatchScanPanel: View {
     private static let outerPadding: CGFloat = 12
     private static let guideSpacing: CGFloat = 8
 
+    @State private var maximumHeight: CGFloat = 220
+
     var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                panel
-                    .frame(maxWidth: Self.maximumWidth)
-                    .frame(maxHeight: Self.maximumHeight(in: geometry), alignment: .bottom)
+        // Only the panel itself takes touches. The full-screen measuring layer
+        // never hit-tests, and the empty area around the panel is not content,
+        // so taps and pinches there reach the camera view underneath.
+        ZStack(alignment: .bottom) {
+            GeometryReader { geometry in
+                Color.clear.preference(key: BatchScanPanelHeightKey.self, value: Self.maximumHeight(in: geometry))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 16)
-            .padding(.bottom, Self.outerPadding)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+
+            panel
+                .frame(maxWidth: Self.maximumWidth)
+                .frame(maxHeight: maximumHeight, alignment: .bottom)
+                .padding(.horizontal, 16)
+                .padding(.bottom, Self.outerPadding)
         }
+        .onPreferenceChange(BatchScanPanelHeightKey.self) { maximumHeight = $0 }
         // Very large text would otherwise push the panel over the scan target.
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
     }
 
     /// The space between the bottom of the centred scan guide (drawn over the
-    /// full screen) and the bottom of the safe area.
+    /// full screen) and the bottom of the safe area, minus the panel's margins.
     private static func maximumHeight(in geometry: GeometryProxy) -> CGFloat {
         let insets = geometry.safeAreaInsets
         let fullHeight = geometry.size.height + insets.top + insets.bottom
