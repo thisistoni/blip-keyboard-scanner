@@ -194,11 +194,16 @@ private struct HistoryRow: View {
     }
 
     private var metadataLine: String {
-        var parts = [
-            HistoryDateFormatter.string(from: item.scannedAt),
-            item.displayCodeFormat,
-            item.source.title,
-        ]
+        var parts = [HistoryDateFormatter.string(from: item.scannedAt)]
+
+        if let count = item.batchCodeCount {
+            parts.append(String(format: NSLocalizedString("%d codes", comment: "Batch list count, plural"), count))
+        }
+        // A batch that mixes formats has no single format to show.
+        if !item.isBatch || item.codeFormat != nil {
+            parts.append(item.displayCodeFormat)
+        }
+        parts.append(item.source.title)
 
         if let returnTarget = item.returnTarget {
             parts.append(returnTarget.title)

@@ -40,6 +40,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
     let source: ScanHistorySource
     let returnTargetRawValue: String?
     let insertionStatus: ScanInsertionStatus
+    /// Number of codes when this entry is a whole batch, whose `value` is the
+    /// joined text exactly as it was inserted. Nil for a single scan, and in
+    /// entries saved before batches were stored as one entry.
+    let batchCodeCount: Int?
 
     init(
         id: UUID = UUID(),
@@ -48,7 +52,8 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
         scannedAt: Date = Date(),
         source: ScanHistorySource,
         returnTargetRawValue: String?,
-        insertionStatus: ScanInsertionStatus
+        insertionStatus: ScanInsertionStatus,
+        batchCodeCount: Int? = nil
     ) {
         self.id = id
         self.value = value
@@ -57,7 +62,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
         self.source = source
         self.returnTargetRawValue = returnTargetRawValue
         self.insertionStatus = insertionStatus
+        self.batchCodeCount = batchCodeCount
     }
+
+    var isBatch: Bool { batchCodeCount != nil }
 
     var returnTarget: ReturnTarget? {
         guard let returnTargetRawValue else { return nil }

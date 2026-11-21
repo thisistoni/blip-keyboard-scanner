@@ -34,7 +34,8 @@ enum SupportEmail {
 
             Scan:
             Value: \(item.value)
-            Format: \(item.codeFormat ?? "Unknown")
+            Format: \(item.codeFormat ?? (item.isBatch ? "Mixed" : "Unknown"))
+            Codes: \(item.batchCodeCount ?? 1)
             Date: \(Self.dateFormatter.string(from: item.scannedAt))
             Source: \(item.source.title)
             Return Target: \(item.returnTarget?.title ?? "None")

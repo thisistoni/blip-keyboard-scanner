@@ -99,6 +99,13 @@ struct BatchScanCollection: Equatable {
     func joinedText(separator: BatchSeparator) -> String {
         entries.map(\.value).joined(separator: separator.text)
     }
+
+    /// The format every code in the batch shares, or nil when the batch is
+    /// empty, mixes formats or holds a code without a known format.
+    var commonCodeFormat: String? {
+        guard let first = entries.first?.codeFormat else { return nil }
+        return entries.allSatisfy { $0.codeFormat == first } ? first : nil
+    }
 }
 
 extension BatchSeparator {

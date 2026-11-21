@@ -386,24 +386,30 @@ struct ScannerScreen: View {
         )
     }
 
-    /// Finishes a batch: one history item per code (scan order), and the codes
-    /// joined with the separator as one text for the clipboard and the keyboard,
-    /// which then applies the Insert Suffix once, as after a single scan. Each
-    /// code already played the scan sound when it was added.
+    /// Finishes a batch: the codes joined with the separator are one text for the
+    /// clipboard and the keyboard, which then applies the Insert Suffix once, as
+    /// after a single scan. History gets the same text as one entry, so the
+    /// newest entry is always what Insert Last Scan inserts. Each code already
+    /// played the scan sound when it was added.
     private func handleScannedBatch(_ batch: BatchScanCollection, for session: ScannerSession) {
         guard !batch.isEmpty else { return }
         let separator = BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma
-        let batchHistory = batch.entries.map {
-            historyItem(value: $0.value, codeFormat: $0.codeFormat, scannedAt: $0.scannedAt, for: session)
-        }
+        let joinedText = batch.joinedText(separator: separator)
+        let batchHistory = historyItem(
+            value: joinedText,
+            codeFormat: batch.commonCodeFormat,
+            // A batch of one code is an ordinary single scan.
+            batchCodeCount: batch.count > 1 ? batch.count : nil,
+            for: session
+        )
 
         // The keyboard test field gets the joined text back like a single test
         // scan: recorded in History, but no clipboard or return to another app.
         if let testID = session.testSessionID {
             if SharedKeyboardState.finishKeyboardTest(
-                id: testID, requestID: session.requestID, code: batch.joinedText(separator: separator)
+                id: testID, requestID: session.requestID, code: joinedText
             ) {
-                ScanHistoryStore.record(contentsOf: batchHistory)
+                ScanHistoryStore.record(batchHistory)
                 restoreTestField = true
             } else {
                 // Typically the test ended when Blip went to the background; say
@@ -414,22 +420,20 @@ struct ScannerScreen: View {
             return
         }
 
-        deliverScan(
-            text: batch.joinedText(separator: separator),
-            history: batchHistory,
-            for: session
-        )
+        deliverScan(text: joinedText, history: [batchHistory], for: session)
     }
 
-    private func historyItem(value: String, codeFormat: String?, scannedAt: Date = Date(), for session: ScannerSession) -> ScanHistoryItem {
+    private func historyItem(
+        value: String, codeFormat: String?, batchCodeCount: Int? = nil, for session: ScannerSession
+    ) -> ScanHistoryItem {
         ScanHistoryItem(
             value: value,
             codeFormat: codeFormat,
-            scannedAt: scannedAt,
             source: session.source.historySource,
             // A keyboard test returns to Blip's own test field, not to the return target.
             returnTargetRawValue: session.source == .keyboard && session.testSessionID == nil ? session.returnTarget.rawValue : nil,
-            insertionStatus: session.source == .keyboard ? .queuedForKeyboardInsertion : .notQueued
+            insertionStatus: session.source == .keyboard ? .queuedForKeyboardInsertion : .notQueued,
+            batchCodeCount: batchCodeCount
         )
     }
 

@@ -16,6 +16,8 @@ enum BatchScanCollectionTests {
         marksRepeatedValues()
         detectsCodesContainingTheSeparator()
         capsTheSpokenValue()
+        reportsTheSharedFormatOnly()
+        historyEntryCarriesTheBatchCount()
         print("BatchScanCollectionTests passed")
     }
 
@@ -168,5 +170,39 @@ enum BatchScanCollectionTests {
         _ = collection.remove(id: first)
         _ = collection.remove(id: collection.entries[0].id)
         precondition(collection.append(BatchScanEntry(value: "A", codeFormat: nil), skippingDuplicates: true) == .added(count: 2))
+    }
+
+    static func reportsTheSharedFormatOnly() {
+        precondition(BatchScanCollection().commonCodeFormat == nil)
+        precondition(collection(["1", "2", "3"]).commonCodeFormat == "VNBarcodeSymbologyEAN13")
+        var mixed = collection(["1"])
+        _ = mixed.append(BatchScanEntry(value: "2", codeFormat: "VNBarcodeSymbologyQR"))
+        precondition(mixed.commonCodeFormat == nil)
+        var unknown = collection(["1"])
+        _ = unknown.append(BatchScanEntry(value: "2", codeFormat: nil))
+        precondition(unknown.commonCodeFormat == nil)
+    }
+
+    static func historyEntryCarriesTheBatchCount() {
+        let batch = collection(["1", "2", "3"])
+        let item = ScanHistoryItem(
+            value: batch.joinedText(separator: .comma),
+            codeFormat: batch.commonCodeFormat,
+            source: .keyboard,
+            returnTargetRawValue: nil,
+            insertionStatus: .queuedForKeyboardInsertion,
+            batchCodeCount: batch.count
+        )
+        precondition(item.isBatch && item.value == "1,2,3")
+        let data = try! JSONEncoder().encode([item])
+        precondition(try! JSONDecoder().decode([ScanHistoryItem].self, from: data) == [item])
+
+        // An entry saved by 1.0.4 has no batch count and is a single scan.
+        let old = """
+        [{"id":"6F0C7E0E-3C6B-4C1B-9E55-0B6B1D1E7A11","value":"4006381333931","codeFormat":"VNBarcodeSymbologyEAN13",
+          "scannedAt":785000000,"source":"keyboard","returnTargetRawValue":"safari","insertionStatus":"queuedForKeyboardInsertion"}]
+        """
+        let decoded = try! JSONDecoder().decode([ScanHistoryItem].self, from: Data(old.utf8))
+        precondition(decoded.count == 1 && !decoded[0].isBatch && decoded[0].value == "4006381333931")
     }
 }
