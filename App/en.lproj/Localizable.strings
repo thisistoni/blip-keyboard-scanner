@@ -333,6 +333,11 @@
 "This code contains the separator." = "This code contains the separator.";
 "Duplicate" = "Duplicate";
 "Contains the separator" = "Contains the separator";
+"Scan mode and batch settings" = "Scan mode and batch settings";
+"Skip Duplicate Codes" = "Skip Duplicate Codes";
+"In Batch mode, a code that is already in the list is not added again. Leave this off to count identical items by scanning each one." = "In Batch mode, a code that is already in the list is not added again. Leave this off to count identical items by scanning each one.";
+"Already in the list: %@" = "Already in the list: %@";
+"Already in the list." = "Already in the list.";
 "Removed %@" = "Removed %@";
 "Restored %@" = "Restored %@";
 "Undo" = "Undo";

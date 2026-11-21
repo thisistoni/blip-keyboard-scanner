@@ -6,6 +6,7 @@ import Foundation
 @main
 enum BatchScanCollectionTests {
     static func main() {
+        skipsDuplicatesOnlyWhenAsked()
         joinsWithEverySeparatorWithoutTrailingSeparator()
         keepsValuesExactlyAsScanned()
         singleCodeBatchIsThePlainCode()
@@ -149,5 +150,23 @@ enum BatchScanCollectionTests {
         let long = String(repeating: "x", count: 200)
         let spoken = BatchScanEntry(value: long, codeFormat: nil).spokenValue
         precondition(spoken == String(repeating: "x", count: 40) + "…")
+    }
+
+    static func skipsDuplicatesOnlyWhenAsked() {
+        var collection = BatchScanCollection(maximumCount: 3)
+        precondition(collection.append(BatchScanEntry(value: "A", codeFormat: nil), skippingDuplicates: true) == .added(count: 1))
+        // The same value again: skipped when asked, added otherwise.
+        precondition(collection.append(BatchScanEntry(value: "A", codeFormat: "other"), skippingDuplicates: true) == .duplicate)
+        precondition(collection.count == 1)
+        precondition(collection.append(BatchScanEntry(value: "A", codeFormat: nil)) == .added(count: 2))
+        precondition(collection.append(BatchScanEntry(value: "B", codeFormat: nil), skippingDuplicates: true) == .added(count: 3))
+        // Full: a duplicate is still reported as a duplicate, a new value as full.
+        precondition(collection.append(BatchScanEntry(value: "B", codeFormat: nil), skippingDuplicates: true) == .duplicate)
+        precondition(collection.append(BatchScanEntry(value: "C", codeFormat: nil), skippingDuplicates: true) == .full)
+        // A deleted value can be scanned again.
+        let first = collection.entries[0].id
+        _ = collection.remove(id: first)
+        _ = collection.remove(id: collection.entries[0].id)
+        precondition(collection.append(BatchScanEntry(value: "A", codeFormat: nil), skippingDuplicates: true) == .added(count: 2))
     }
 }

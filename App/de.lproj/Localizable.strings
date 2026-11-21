@@ -292,10 +292,10 @@
 
 "Scan Mode" = "Scanmodus";
 "Single" = "Einzeln";
-"Batch" = "Stapel";
-"The scanner closes after one code. To collect several codes, switch to Batch with the stack button at the top of the scanner." = "Der Scanner schließt sich nach einem Code. Um mehrere Codes zu sammeln, wechsle oben im Scanner mit der Stapel-Taste zu „Stapel“.";
+"Batch" = "Mehrfach";
+"The scanner closes after one code. To collect several codes, switch to Batch with the stack button at the top of the scanner." = "Der Scanner schließt sich nach einem Code. Um mehrere Codes zu sammeln, tippe oben im Scanner auf das Stapel-Symbol und wähle „Mehrfach“.";
 "The scanner stays open and lists up to %d codes. Insert them all at once; the Scan Suffix follows the last code." = "Der Scanner bleibt geöffnet und sammelt bis zu %d Codes. Füge sie alle auf einmal ein; das Scan-Suffix folgt nach dem letzten Code.";
-"Batch Separator" = "Trennzeichen";
+"Batch Separator" = "Trennzeichen (Mehrfach)";
 "Comma" = "Komma";
 "Semicolon" = "Semikolon";
 "New Line" = "Neue Zeile";
@@ -304,7 +304,7 @@
 "Example: 123 456 789" = "Beispiel: 123 456 789";
 "Suits spreadsheet-style inputs. Some fields ignore tabs or move to the next field instead." = "Passt für tabellenartige Eingaben. Manche Felder ignorieren Tabs oder springen stattdessen zum nächsten Feld.";
 "Suits multi-line fields and spreadsheet-style inputs. Some single-line fields may submit the form or ignore the line break." = "Passt für mehrzeilige Felder und tabellenartige Eingaben. Manche einzeiligen Felder senden das Formular ab oder ignorieren den Zeilenumbruch.";
-"Scan codes to add them to the list. Switch modes with the stack button at the top." = "Scanne Codes, um sie zur Liste hinzuzufügen. Den Modus wechselst du oben mit der Stapel-Taste.";
+"Scan codes to add them to the list. Switch modes with the stack button at the top." = "Scanne Codes, um sie zur Liste hinzuzufügen. Den Modus wechselst du oben über das Stapel-Symbol.";
 "1 code" = "1 Code";
 "%d codes" = "%d Codes";
 "Remove" = "Entfernen";
@@ -327,12 +327,17 @@
 "Discard and Switch" = "Verwerfen und wechseln";
 "Keep Scanning" = "Weiterscannen";
 "Separator: %@" = "Trennzeichen: %@";
-"Used whenever you scan in Batch mode, including when you switch to Batch in the scanner." = "Gilt immer, wenn du im Modus „Stapel“ scannst – auch wenn du im Scanner zu „Stapel“ wechselst.";
+"Used whenever you scan in Batch mode, including when you switch to Batch in the scanner." = "Gilt immer, wenn du im Modus „Mehrfach“ scannst – auch wenn du im Scanner zu „Mehrfach“ wechselst.";
 "Added again: %@" = "Erneut hinzugefügt: %@";
 "Added again, %d codes." = "Erneut hinzugefügt, %d Codes.";
 "This code contains the separator." = "Dieser Code enthält das Trennzeichen.";
 "Duplicate" = "Doppelt";
 "Contains the separator" = "Enthält das Trennzeichen";
+"Scan mode and batch settings" = "Scanmodus und Mehrfach-Einstellungen";
+"Skip Duplicate Codes" = "Doppelte Codes überspringen";
+"In Batch mode, a code that is already in the list is not added again. Leave this off to count identical items by scanning each one." = "Im Modus „Mehrfach“ wird ein Code, der schon in der Liste steht, nicht erneut hinzugefügt. Lass die Option aus, wenn du gleiche Artikel zählst, indem du jeden einzeln scannst.";
+"Already in the list: %@" = "Schon in der Liste: %@";
+"Already in the list." = "Schon in der Liste.";
 "Removed %@" = "%@ entfernt";
 "Restored %@" = "%@ wiederhergestellt";
 "Undo" = "Rückgängig";

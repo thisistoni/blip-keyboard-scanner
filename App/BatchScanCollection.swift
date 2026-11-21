@@ -36,6 +36,8 @@ struct BatchScanCollection: Equatable {
         case added(count: Int)
         /// The batch already holds `BatchScanLimit.maximumCodeCount` codes.
         case full
+        /// Duplicates are skipped and the value is already in the list.
+        case duplicate
     }
 
     let maximumCount: Int
@@ -49,7 +51,10 @@ struct BatchScanCollection: Equatable {
     var isEmpty: Bool { entries.isEmpty }
     var isFull: Bool { entries.count >= maximumCount }
 
-    mutating func append(_ entry: BatchScanEntry) -> AppendOutcome {
+    /// A skipped duplicate is reported as such even when the list is full: it
+    /// would not have been added with room either.
+    mutating func append(_ entry: BatchScanEntry, skippingDuplicates: Bool = false) -> AppendOutcome {
+        if skippingDuplicates, contains(value: entry.value) { return .duplicate }
         guard !isFull else { return .full }
         entries.append(entry)
         return .added(count: entries.count)

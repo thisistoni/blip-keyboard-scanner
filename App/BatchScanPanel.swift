@@ -458,14 +458,41 @@ final class BatchScanModel: ObservableObject {
     /// beep; spacing them keeps one audible beep (and haptic) per code.
     private static let soundSpacing: TimeInterval = 0.15
 
-    /// Adds a decoded code. Returns false when the batch is already full.
+    enum AddOutcome {
+        case added
+        /// Duplicates are skipped and the value is already in the list.
+        case skippedDuplicate
+        case full
+    }
+
+    /// Adds a decoded code, unless the list is full or the code is a duplicate
+    /// that is to be skipped.
     @discardableResult
-    func add(_ result: ScannerCodeResult, playScanSound: Bool, separator: BatchSeparator) -> Bool {
+    func add(
+        _ result: ScannerCodeResult,
+        playScanSound: Bool,
+        separator: BatchSeparator,
+        skippingDuplicates: Bool
+    ) -> AddOutcome {
         let entry = BatchScanEntry(value: result.value, codeFormat: result.codeFormat)
         let isRepeat = collection.contains(value: result.value)
-        guard case .added(let count) = collection.append(entry) else {
+        let count: Int
+        switch collection.append(entry, skippingDuplicates: skippingDuplicates) {
+        case .added(let newCount):
+            count = newCount
+        case .full:
             announce(Self.limitMessage)
-            return false
+            return .full
+        case .duplicate:
+            // Seen, but not added: say so, without the sound of an addition.
+            ScanSoundPlayer.shared.playBatchDuplicate()
+            show(BatchScanPanelStatus(
+                message: String(format: NSLocalizedString("Already in the list: %@", comment: "Batch status when a duplicate code was skipped; %@ is the code"), result.value),
+                systemImage: "equal.circle.fill",
+                tint: .orange
+            ))
+            announce(NSLocalizedString("Already in the list.", comment: "VoiceOver when a duplicate batch code was skipped"))
+            return .skippedDuplicate
         }
         // The new status replaces the Removed notice and with it the Undo button.
         lastRemoval = nil
@@ -499,7 +526,7 @@ final class BatchScanModel: ObservableObject {
             announcement += " " + Self.limitMessage
         }
         announce(announcement)
-        return true
+        return .added
     }
 
     /// A company-profile QR never joins a batch; the collected codes stay.

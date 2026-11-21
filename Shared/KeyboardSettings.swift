@@ -754,6 +754,7 @@ enum SharedKeyboardState {
         static let scannerScanArea = "scannerScanArea"
         static let scannerScanMode = "scannerScanMode"
         static let batchSeparator = "batchSeparator"
+        static let batchSkipDuplicates = "batchSkipDuplicates"
     }
 
     static var defaults: UserDefaults? {
@@ -1140,6 +1141,17 @@ enum SharedKeyboardState {
         }
         set {
             defaults?.set(newValue.rawValue, forKey: Keys.batchSeparator)
+        }
+    }
+
+    /// Batch scans: a code already in the list is not added again. Off by
+    /// default, so counting identical items by scanning each one keeps working.
+    static var batchSkipDuplicates: Bool {
+        get {
+            defaults?.bool(forKey: Keys.batchSkipDuplicates) ?? false
+        }
+        set {
+            defaults?.set(newValue, forKey: Keys.batchSkipDuplicates)
         }
     }
 

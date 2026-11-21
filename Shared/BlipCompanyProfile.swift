@@ -26,6 +26,7 @@ struct BlipCompanyProfile: Codable, Equatable {
     // (1.0.4 and earlier) leave the device's scan mode and separator unchanged.
     var scannerScanMode: String?
     var batchSeparator: String?
+    var batchSkipDuplicates: Bool?
 
     static var current: BlipCompanyProfile {
         BlipCompanyProfile(
@@ -48,7 +49,8 @@ struct BlipCompanyProfile: Codable, Equatable {
             keyboardClickSound: SharedKeyboardState.keyboardClickSound,
             keyboardHaptics: SharedKeyboardState.keyboardHaptics,
             scannerScanMode: SharedKeyboardState.scannerScanMode.rawValue,
-            batchSeparator: SharedKeyboardState.batchSeparator.rawValue
+            batchSeparator: SharedKeyboardState.batchSeparator.rawValue,
+            batchSkipDuplicates: SharedKeyboardState.batchSkipDuplicates
         )
     }
 
@@ -143,6 +145,7 @@ struct BlipCompanyProfile: Codable, Equatable {
         if let batchSeparator, let separator = BatchSeparator(rawValue: batchSeparator) {
             SharedKeyboardState.batchSeparator = separator
         }
+        if let batchSkipDuplicates { SharedKeyboardState.batchSkipDuplicates = batchSkipDuplicates }
     }
 
     func changes(comparedTo current: BlipCompanyProfile = .current) -> [BlipCompanyProfileChange] {
@@ -195,6 +198,11 @@ struct BlipCompanyProfile: Codable, Equatable {
             result.append(change("Batch Separator", current.batchSeparator ?? BatchSeparator.comma.rawValue,
                                  batchSeparator) { BatchSeparator(rawValue: $0) })
         }
+        if let batchSkipDuplicates {
+            result.append(BlipCompanyProfileChange(title: "Skip Duplicate Codes",
+                currentValue: Self.formatToggle(current.batchSkipDuplicates ?? false),
+                incomingValue: Self.formatToggle(batchSkipDuplicates)))
+        }
         return result.filter { $0.currentValue != $0.incomingValue }
     }
 
@@ -232,6 +240,7 @@ struct BlipCompanyProfile: Codable, Equatable {
         if let batchSeparator {
             settings.append(.init("Batch Separator", BatchSeparator(rawValue: batchSeparator)?.title ?? batchSeparator))
         }
+        if let batchSkipDuplicates { settings.append(.init("Skip Duplicate Codes", Self.formatToggle(batchSkipDuplicates))) }
         return settings
     }
 

@@ -44,6 +44,13 @@ final class ScanSoundPlayer {
         playIfEnabled(true)
     }
 
+    /// A code that was seen but skipped as a duplicate: a different haptic and
+    /// no sound, so it is not mistaken for an addition.
+    func playBatchDuplicate() {
+        haptic.notificationOccurred(.warning)
+        haptic.prepare()
+    }
+
     private func prepareAudioPlayer() {
         guard player == nil,
               let url = Bundle.main.url(forResource: "blip", withExtension: "mp3")

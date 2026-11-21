@@ -35,6 +35,9 @@ struct ScannerScreen: View {
     @AppStorage(SharedKeyboardState.Keys.batchSeparator, store: SharedKeyboardState.appStorageDefaults)
     private var batchSeparatorRawValue = SharedKeyboardState.batchSeparator.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.batchSkipDuplicates, store: SharedKeyboardState.appStorageDefaults)
+    private var batchSkipDuplicates = SharedKeyboardState.batchSkipDuplicates
+
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
@@ -149,6 +152,7 @@ struct ScannerScreen: View {
                     defaultFlashlightMode: ScannerFlashlightMode(rawValue: scannerFlashlightModeRawValue) ?? .off,
                     defaultScanMode: ScannerScanMode(rawValue: scannerScanModeRawValue) ?? .single,
                     batchSeparator: BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma,
+                    batchSkipsDuplicates: batchSkipDuplicates,
                     hasCollectedCodes: $openScannerHasCollectedCodes
                 ) { result in
                     guard let current = presentedSession(session.id) else { return }
@@ -695,6 +699,7 @@ private struct ScannerPresentation: View {
     let defaultZoomLevel: ScannerZoomLevel
     let scanArea: ScannerScanArea
     let batchSeparator: BatchSeparator
+    let batchSkipsDuplicates: Bool
     /// Whether the batch list holds codes, for the screen deciding about a new request.
     @Binding var hasCollectedCodes: Bool
     let onCode: (ScannerCodeResult) -> Void
@@ -728,6 +733,7 @@ private struct ScannerPresentation: View {
         defaultFlashlightMode: ScannerFlashlightMode,
         defaultScanMode: ScannerScanMode,
         batchSeparator: BatchSeparator,
+        batchSkipsDuplicates: Bool,
         hasCollectedCodes: Binding<Bool>,
         onCode: @escaping (ScannerCodeResult) -> Void,
         onBatch: @escaping (BatchScanCollection) -> Void,
@@ -742,6 +748,7 @@ private struct ScannerPresentation: View {
         // The same applies to the scan mode.
         _scanMode = State(initialValue: defaultScanMode)
         self.batchSeparator = batchSeparator
+        self.batchSkipsDuplicates = batchSkipsDuplicates
         _hasCollectedCodes = hasCollectedCodes
         self.onCode = onCode
         self.onBatch = onBatch
@@ -999,8 +1006,15 @@ private struct ScannerPresentation: View {
 
         if isBatchActive, !result.isManualEntry {
             if !result.value.hasPrefix(BlipCompanyProfileQR.marker) {
-                if !batchScan.add(result, playScanSound: playScanSound, separator: batchSeparator) {
-                    // Full: the controller offers it again once there is room.
+                let outcome = batchScan.add(
+                    result,
+                    playScanSound: playScanSound,
+                    separator: batchSeparator,
+                    skippingDuplicates: batchSkipsDuplicates
+                )
+                if outcome == .full {
+                    // The controller offers it again once there is room. A
+                    // skipped duplicate stays blocked like an added code.
                     tapRelay.batchCodeRejected(value: result.value)
                 }
                 return

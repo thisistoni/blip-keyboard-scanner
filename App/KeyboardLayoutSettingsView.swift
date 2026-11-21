@@ -281,6 +281,9 @@ private struct ScannerSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.batchSeparator, store: SharedKeyboardState.appStorageDefaults)
     private var batchSeparatorRawValue = SharedKeyboardState.batchSeparator.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.batchSkipDuplicates, store: SharedKeyboardState.appStorageDefaults)
+    private var batchSkipDuplicates = SharedKeyboardState.batchSkipDuplicates
+
     @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
     private var playScanSound = SharedKeyboardState.playScanSound
 
@@ -412,6 +415,12 @@ private struct ScannerSettingsPage: View {
                 .foregroundStyle(.secondary)
 
             Text("Used whenever you scan in Batch mode, including when you switch to Batch in the scanner.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Toggle("Skip Duplicate Codes", isOn: $batchSkipDuplicates)
+
+            Text("In Batch mode, a code that is already in the list is not added again. Leave this off to count identical items by scanning each one.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         } header: {

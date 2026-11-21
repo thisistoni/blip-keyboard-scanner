@@ -210,8 +210,12 @@ enum PendingScanInsertionTests {
         var released = baseJSON
         released.removeValue(forKey: "scannerScanMode")
         released.removeValue(forKey: "batchSeparator")
+        released.removeValue(forKey: "batchSkipDuplicates")
         let releasedProfile = try! decode(released)
         precondition(releasedProfile.scannerScanMode == nil && releasedProfile.batchSeparator == nil)
+        precondition(releasedProfile.batchSkipDuplicates == nil)
+        precondition(!releasedProfile.changes().contains { $0.title == "Skip Duplicate Codes" })
+        precondition(!releasedProfile.includedSettings.contains { $0.title == "Skip Duplicate Codes" })
         precondition(!releasedProfile.changes().contains { ["Scan Mode", "Batch Separator"].contains($0.title) })
         precondition(!releasedProfile.includedSettings.contains { ["Scan Mode", "Batch Separator"].contains($0.title) })
         let releasedQR = BlipCompanyProfileQR.prefix + String(decoding: try! JSONSerialization.data(withJSONObject: released), as: UTF8.self)
@@ -221,28 +225,36 @@ enum PendingScanInsertionTests {
         let current = BlipCompanyProfile.current
         precondition(current.scannerScanMode == SharedKeyboardState.scannerScanMode.rawValue)
         precondition(current.batchSeparator == SharedKeyboardState.batchSeparator.rawValue)
+        precondition(current.batchSkipDuplicates == SharedKeyboardState.batchSkipDuplicates)
         precondition(BlipCompanyProfile.currentVersion == 1 && BlipCompanyProfileQR.prefix == "BLIP_PROFILE:1:")
 
         // Round trip through file and QR, shown in the summary and the preview.
         var batchJSON = released
         batchJSON["scannerScanMode"] = ScannerScanMode.batch.rawValue
         batchJSON["batchSeparator"] = BatchSeparator.newline.rawValue
+        batchJSON["batchSkipDuplicates"] = true
         let batchProfile = try! decode(batchJSON)
         let fileRoundTrip = try! BlipCompanyProfile.decode(from: batchProfile.exportData())
         precondition(fileRoundTrip == batchProfile)
         let qrRoundTrip = try! BlipCompanyProfileQR.decodeIfRecognized(
             String(decoding: try! BlipCompanyProfileQR.encode(batchProfile), as: UTF8.self))!
         precondition(qrRoundTrip.scannerScanMode == "batch" && qrRoundTrip.batchSeparator == "newline")
+        precondition(qrRoundTrip.batchSkipDuplicates == true)
+        precondition(batchProfile.includedSettings.contains { $0.title == "Skip Duplicate Codes" })
+        // Compared with a device that never stored it, "off" is shown as current.
+        precondition(batchProfile.changes(comparedTo: releasedProfile).contains { $0.title == "Skip Duplicate Codes" })
         precondition(batchProfile.includedSettings.contains { $0.title == "Scan Mode" && $0.value == ScannerScanMode.batch.title })
         precondition(batchProfile.includedSettings.contains { $0.title == "Batch Separator" && $0.value == BatchSeparator.newline.title })
         var singleCommaJSON = batchJSON
         singleCommaJSON["scannerScanMode"] = ScannerScanMode.single.rawValue
         singleCommaJSON["batchSeparator"] = BatchSeparator.comma.rawValue
+        singleCommaJSON["batchSkipDuplicates"] = false
         let singleComma = try! decode(singleCommaJSON)
         let previewChanges = batchProfile.changes(comparedTo: singleComma)
         precondition(previewChanges.contains {
             $0.title == "Scan Mode" && $0.currentValue == ScannerScanMode.single.title && $0.incomingValue == ScannerScanMode.batch.title
         })
+        precondition(previewChanges.contains { $0.title == "Skip Duplicate Codes" })
         precondition(previewChanges.contains {
             $0.title == "Batch Separator" && $0.currentValue == BatchSeparator.comma.title && $0.incomingValue == BatchSeparator.newline.title
         })
