@@ -32,6 +32,12 @@ enum ScanInsertionStatus: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+/// One code of a batch that History stores as a single entry.
+struct ScanHistoryBatchCode: Codable, Equatable {
+    let value: String
+    let codeFormat: String?
+}
+
 struct ScanHistoryItem: Codable, Identifiable, Equatable {
     let id: UUID
     let value: String
@@ -40,6 +46,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
     let source: ScanHistorySource
     let returnTargetRawValue: String?
     let insertionStatus: ScanInsertionStatus
+    /// The codes, in scan order, when this entry is a whole batch; `value` is
+    /// then the joined text exactly as it was inserted. Nil for a single scan,
+    /// and in entries saved before batches were stored as one entry.
+    let batchCodes: [ScanHistoryBatchCode]?
 
     init(
         id: UUID = UUID(),
@@ -48,7 +58,8 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
         scannedAt: Date = Date(),
         source: ScanHistorySource,
         returnTargetRawValue: String?,
-        insertionStatus: ScanInsertionStatus
+        insertionStatus: ScanInsertionStatus,
+        batchCodes: [ScanHistoryBatchCode]? = nil
     ) {
         self.id = id
         self.value = value
@@ -57,7 +68,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
         self.source = source
         self.returnTargetRawValue = returnTargetRawValue
         self.insertionStatus = insertionStatus
+        self.batchCodes = batchCodes
     }
+
+    var isBatch: Bool { batchCodes != nil }
 
     var returnTarget: ReturnTarget? {
         guard let returnTargetRawValue else { return nil }
@@ -65,6 +79,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
     }
 
     var displayCodeFormat: String {
+        Self.displayName(forCodeFormat: codeFormat)
+    }
+
+    static func displayName(forCodeFormat codeFormat: String?) -> String {
         guard let codeFormat, !codeFormat.isEmpty else {
             return NSLocalizedString("Unknown format", comment: "Unknown scan history code format")
         }
@@ -184,13 +202,19 @@ enum ScanHistoryStore {
     }
 
     static func record(_ item: ScanHistoryItem) {
+        record(contentsOf: [item])
+    }
+
+    /// Records several scans (in scan order) with one read and write, e.g. a batch.
+    static func record(contentsOf items: [ScanHistoryItem]) {
         guard SharedKeyboardState.scanHistoryRetention != .off else {
             save([])
             return
         }
+        guard !items.isEmpty else { return }
 
         var currentItems = applyRetention()
-        currentItems.insert(item, at: 0)
+        currentItems.insert(contentsOf: items.reversed(), at: 0)
         save(currentItems)
         _ = applyRetention()
     }

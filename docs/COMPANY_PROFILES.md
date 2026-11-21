@@ -2,21 +2,23 @@
 
 Settings → Company Profiles exports the current configuration as a `.blipprofile` JSON file or a QR code. Both use `BlipCompanyProfile` validation and the same preview-before-Apply flow. A scan never applies a profile automatically. Cancel leaves the configuration unchanged.
 
-The QR sheet shows the values from the exact snapshot encoded in the code: return target, language, keyboard type and layouts, scan suffix, automatic insertion, scan formats, scan sound, flashlight, zoom, scan area, keyboard appearance, key clicks and haptics. The custom URL is included only when Custom is the selected return target. A remembered but inactive custom destination is neither shared nor displayed; importing another target also preserves that local remembered destination.
+The QR sheet shows the values from the exact snapshot encoded in the code: return target, language, keyboard type and layouts, scan suffix, automatic insertion, scan formats, scan sound, flashlight, zoom, scan area, keyboard appearance, key clicks and haptics, scan mode (Single / Batch), batch separator and whether duplicate codes are skipped. A company can therefore roll out batch scanning by file or QR code. The custom URL is included only when Custom is the selected return target. A remembered but inactive custom destination is neither shared nor displayed; importing another target also preserves that local remembered destination.
 
 Profiles contain configuration, not scan history, barcode values, clipboard contents or in-flight scan sessions. Nothing is uploaded. History retention stays a local preference. Keyboard installation and Full Access remain device-level setup steps.
 
 ## Compatibility and transport
 
-The schema remains version 1. Automatic insertion, keyboard appearance, key clicks and haptics are optional keys; importing older profiles leaves the omitted choices unchanged. Unknown enum values and unsupported schema versions are rejected before applying any settings.
+The schema remains version 1. Automatic insertion, keyboard appearance, key clicks and haptics, scan mode (`scannerScanMode`: `single`, `batch`) batch separator (`batchSeparator`: `comma`, `semicolon`, `space`, `tab`, `newline`) and skipping duplicate codes in a batch (`batchSkipDuplicates`: `true`, `false`) are optional keys; importing older profiles, including every profile exported by 1.0.4, leaves the omitted choices unchanged. Unknown enum values and unsupported schema versions are rejected before applying any settings.
 
-QR transport is UTF-8 `BLIP_PROFILE:1:` followed by compact, sorted JSON. It is limited to 1,200 bytes and a maximum 129-module matrix, with a four-module quiet zone. Larger profiles use file export instead. The QR image and settings summary share one immutable profile snapshot.
+Adding the batch keys did not require a version bump. Both 1.0.4 and this build decode profiles with Swift's synthesized `Decodable` (no custom `CodingKeys` or `init(from:)`), which ignores keys it does not know, and `validate()` checks only the known fields. A profile exported by this build therefore still imports on 1.0.4, which simply keeps its single-scan behaviour, while a version bump would make 1.0.4 reject it as unsupported. The QR prefix stays `BLIP_PROFILE:1:`.
+
+QR transport is UTF-8 `BLIP_PROFILE:1:` followed by compact, sorted JSON. The two batch keys add about 56 bytes; a full profile without a custom URL is about 580 bytes. It is limited to 1,200 bytes and a maximum 129-module matrix, with a four-module quiet zone. Larger profiles use file export instead. The QR image and settings summary share one immutable profile snapshot.
 
 The scanner recognizes the reserved `BLIP_PROFILE:` marker before its ordinary text-insertion path. Valid profiles open a preview after the camera dismisses; invalid or unsupported profile payloads show an error. Neither becomes keyboard text, a browser navigation or a history entry. Profile QR codes remain recognizable under Common Barcodes, while ordinary QR payloads continue to obey the selected format filter.
 
 ## Validation
 
-The standalone pending-scan tests cover transport round trips, older profiles, unsupported versions, invalid settings, oversized payloads, inactive custom destinations, new appearance/feedback fields and the ordinary-QR filter. Build and run them with:
+The standalone pending-scan tests cover transport round trips, older profiles, unsupported versions, invalid settings, oversized payloads, inactive custom destinations, new appearance/feedback fields, the batch scan mode, separator and duplicate setting (1.0.4-shaped import, round trip, preview, invalid values, QR size budget) and the ordinary-QR filter. Build and run them with:
 
 ```sh
 xcrun swiftc Shared/KeyboardSettings.swift Shared/BlipCompanyProfile.swift Shared/ScanHistory.swift Tests/PendingScanInsertionTests.swift -o /tmp/blip-profile-tests

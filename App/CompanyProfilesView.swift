@@ -49,6 +49,7 @@ struct CompanyProfilesView: View {
                 ProfileIncludedRow(title: "Scan formats", systemImage: "barcode.viewfinder")
                 ProfileIncludedRow(title: "Return Target", systemImage: "arrowshape.turn.up.backward")
                 ProfileIncludedRow(title: "Sound, flashlight, zoom, and scan area", systemImage: "camera.viewfinder")
+                ProfileIncludedRow(title: "Scan mode and batch settings", systemImage: "square.stack.3d.up")
                 ProfileIncludedRow(title: "Keyboard Appearance", systemImage: "paintpalette")
                 ProfileIncludedRow(title: "Key Clicks", systemImage: "speaker.wave.2")
                 ProfileIncludedRow(title: "Key Haptics", systemImage: "hand.tap")

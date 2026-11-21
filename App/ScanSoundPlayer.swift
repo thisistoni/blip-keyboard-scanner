@@ -32,6 +32,25 @@ final class ScanSoundPlayer {
         }
     }
 
+    /// A code added to a batch always vibrates: the scanner stays open, so with
+    /// the sound off the haptic is the only hands-free sign. The sound still
+    /// follows the setting.
+    func playBatchAddition(soundEnabled: Bool) {
+        guard soundEnabled else {
+            haptic.notificationOccurred(.success)
+            haptic.prepare()
+            return
+        }
+        playIfEnabled(true)
+    }
+
+    /// A code that was seen but skipped as a duplicate: a different haptic and
+    /// no sound, so it is not mistaken for an addition.
+    func playBatchDuplicate() {
+        haptic.notificationOccurred(.warning)
+        haptic.prepare()
+    }
+
     private func prepareAudioPlayer() {
         guard player == nil,
               let url = Bundle.main.url(forResource: "blip", withExtension: "mp3")
