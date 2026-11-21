@@ -17,6 +17,11 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     let flashlightMode: ScannerFlashlightMode
     let defaultZoomFactor: Double
     let scanArea: ScannerScanArea
+    /// Batch scans keep scanning after each accepted code.
+    var continuesScanning = false
+    /// Batch scans only: false while the list is full; frames are still analysed
+    /// so codes in view stay blocked, but nothing is accepted or offered.
+    var acceptsMoreCodes = true
     @Binding var isTorchAvailable: Bool
     @Binding var isTorchOn: Bool
     @Binding var statusMessage: String?
@@ -41,14 +46,19 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         controller.scanFormatProfile = scanFormatProfile
         controller.defaultZoomFactor = defaultZoomFactor
         controller.scanArea = scanArea
+        controller.continuesScanning = continuesScanning
+        controller.acceptsMoreCodes = acceptsMoreCodes
         controller.setTorch(on: flashlightMode == .on)
         return controller
     }
 
     func updateUIViewController(_ uiViewController: BarcodeCaptureViewController, context: Context) {
+        context.coordinator.onCode = onCode
         uiViewController.scanFormatProfile = scanFormatProfile
         uiViewController.defaultZoomFactor = defaultZoomFactor
         uiViewController.scanArea = scanArea
+        uiViewController.continuesScanning = continuesScanning
+        uiViewController.acceptsMoreCodes = acceptsMoreCodes
         uiViewController.setTorch(on: flashlightMode == .on)
     }
 
@@ -58,7 +68,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     }
 
     final class Coordinator: NSObject, BarcodeCaptureViewControllerDelegate {
-        private let onCode: (ScannerCodeResult) -> Void
+        var onCode: (ScannerCodeResult) -> Void
         private var isTorchAvailable: Binding<Bool>
         private var isTorchOn: Binding<Bool>
         private var statusMessage: Binding<String?>
@@ -177,6 +187,30 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             updateScanAreaRegion()
         }
     }
+    /// Batch scanning: accepted codes do not end scanning. Changing it starts a
+    /// fresh selection (only done while no batch code is collected).
+    var continuesScanning = false {
+        didSet {
+            guard oldValue != continuesScanning else { return }
+            let continues = continuesScanning
+            visionQueue.async { [weak self] in
+                guard let self, !self.didScan else { return }
+                self.selectionTracker = BarcodeSelectionTracker(continuesAfterAccept: continues)
+                self.lastKnownCandidateRects.removeAll()
+                self.presentCandidates([])
+            }
+        }
+    }
+    /// Batch scanning: false while the list is full.
+    var acceptsMoreCodes = true {
+        didSet {
+            guard oldValue != acceptsMoreCodes else { return }
+            let accepts = acceptsMoreCodes
+            visionQueue.async { [weak self] in
+                self?.isCollectionPaused = !accepts
+            }
+        }
+    }
 
     private let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "com.antoniobeslic.Blip.camera")
@@ -197,9 +231,11 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private var latestDetectionRegionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
     private var latestAcceptanceRegionOfInterest: CGRect?
 
-    // Multi-code selection. The tracker, frame metadata and `didScan` are only
-    // touched on `visionQueue`; the overlay and accessibility state on main.
+    // Multi-code selection. The tracker, frame metadata, `didScan` and
+    // `isCollectionPaused` are only touched on `visionQueue`; the overlay and
+    // accessibility state on main.
     private var selectionTracker = BarcodeSelectionTracker()
+    private var isCollectionPaused = false
     private var latestFrameTimestamp: TimeInterval = 0
     private var latestBufferIsPortrait = true
     private var lastKnownCandidateRects: [BarcodeCandidateKey: CGRect] = [:]
@@ -564,11 +600,23 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             )
         }
 
+        if isCollectionPaused {
+            selectionTracker.observeWithoutAccepting(frameCandidates, at: latestFrameTimestamp)
+            lastKnownCandidateRects.removeAll()
+            presentCandidates([])
+            return
+        }
+
         switch selectionTracker.process(frameCandidates, at: latestFrameTimestamp) {
         case .waiting:
             lastKnownCandidateRects.removeAll()
             presentCandidates([])
         case .accept(let key):
+            if selectionTracker.continuesAfterAccept {
+                // Batch: any outlines stay and are re-marked with the next frame.
+                deliverResult(for: key, highlightingSelection: false)
+                return
+            }
             didScan = true
             lastKnownCandidateRects.removeAll()
             presentCandidates([])
@@ -587,6 +635,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         guard !candidates.isEmpty || isPresentingCandidates else { return }
         isPresentingCandidates = !candidates.isEmpty
         let bufferIsPortrait = latestBufferIsPortrait
+        let addedKeys = selectionTracker.addedKeys
 
         DispatchQueue.main.async { [weak self] in
             guard let self, let previewLayer = self.previewLayer else { return }
@@ -598,7 +647,8 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                             fromVisionRect: visionRect,
                             bufferIsPortrait: bufferIsPortrait
                         )
-                    )
+                    ),
+                    isAdded: addedKeys.contains(key)
                 )
             }
             self.candidateOverlay.update(displayed)
@@ -609,7 +659,15 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     /// Main thread. The tap is resolved on `visionQueue` so it cannot race an auto-accept.
     private func selectCandidate(_ key: BarcodeCandidateKey) {
         visionQueue.async { [weak self] in
-            guard let self, !self.didScan, self.selectionTracker.finishBySelection() else { return }
+            guard let self, !self.didScan, !self.isCollectionPaused else { return }
+            if self.selectionTracker.continuesAfterAccept {
+                // Batch: the code is added and scanning continues; the next frame
+                // marks its outline as added.
+                guard self.selectionTracker.select(key) else { return }
+                self.deliverResult(for: key, highlightingSelection: false)
+                return
+            }
+            guard self.selectionTracker.select(key) else { return }
             self.didScan = true
             self.isPresentingCandidates = false
             self.lastKnownCandidateRects.removeAll()
@@ -623,13 +681,16 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             codeFormat: key.symbology,
             isManualEntry: false
         )
+        let continues = selectionTracker.continuesAfterAccept
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if highlightingSelection {
                 self.candidateOverlay.highlight(key)
             }
-            self.updateCandidateAccessibility([])
+            if !continues {
+                self.updateCandidateAccessibility([])
+            }
             self.delegate?.barcodeCaptureViewController(self, didScan: result)
         }
     }
@@ -638,15 +699,28 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         let previousKeys = Set(candidateAccessibilityElements.keys)
         var elements: [BarcodeCandidateAccessibilityElement] = []
         var elementsByKey: [BarcodeCandidateKey: BarcodeCandidateAccessibilityElement] = [:]
+        var selectableCount = 0
 
         for candidate in candidates {
             let element = candidateAccessibilityElements[candidate.key]
                 ?? BarcodeCandidateAccessibilityElement(accessibilityContainer: view as Any)
-            element.accessibilityLabel = "\(candidate.key.value), \(ScanHistoryItem.displayName(forCodeFormat: candidate.key.symbology))"
-            element.accessibilityHint = NSLocalizedString("Uses this code.", comment: "Selectable scanned code accessibility hint")
-            element.accessibilityTraits = .button
+            let label = "\(candidate.key.value), \(ScanHistoryItem.displayName(forCodeFormat: candidate.key.symbology))"
+            if candidate.isAdded {
+                element.accessibilityLabel = String(
+                    format: NSLocalizedString("%@, added", comment: "Outlined code already in the batch list; %@ is the code and its format"),
+                    label
+                )
+                element.accessibilityHint = nil
+                element.accessibilityTraits = .staticText
+                element.onActivate = nil
+            } else {
+                element.accessibilityLabel = label
+                element.accessibilityHint = NSLocalizedString("Uses this code.", comment: "Selectable scanned code accessibility hint")
+                element.accessibilityTraits = .button
+                element.onActivate = { [weak self] in self?.selectCandidate(candidate.key) }
+                selectableCount += 1
+            }
             element.accessibilityFrameInContainerSpace = BarcodeCandidateOverlayView.tapTarget(for: candidate.rect)
-            element.onActivate = { [weak self] in self?.selectCandidate(candidate.key) }
             elements.append(element)
             elementsByKey[candidate.key] = element
         }
@@ -657,7 +731,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         if Set(elementsByKey.keys) != previousKeys {
             UIAccessibility.post(notification: .layoutChanged, argument: nil)
         }
-        if publishedSelectableCodeCount == 0, !elements.isEmpty {
+        if publishedSelectableCodeCount == 0, selectableCount > 0 {
             UIAccessibility.post(
                 notification: .announcement,
                 argument: NSLocalizedString(
@@ -666,9 +740,9 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 )
             )
         }
-        if publishedSelectableCodeCount != elements.count {
-            publishedSelectableCodeCount = elements.count
-            delegate?.barcodeCaptureViewController(self, didUpdateSelectableCodeCount: elements.count)
+        if publishedSelectableCodeCount != selectableCount {
+            publishedSelectableCodeCount = selectableCount
+            delegate?.barcodeCaptureViewController(self, didUpdateSelectableCodeCount: selectableCount)
         }
     }
 

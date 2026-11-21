@@ -29,6 +29,12 @@ struct ScannerScreen: View {
     @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
     private var playScanSound = SharedKeyboardState.playScanSound
 
+    @AppStorage(SharedKeyboardState.Keys.scannerScanMode, store: SharedKeyboardState.appStorageDefaults)
+    private var scannerScanModeRawValue = SharedKeyboardState.scannerScanMode.rawValue
+
+    @AppStorage(SharedKeyboardState.Keys.batchSeparator, store: SharedKeyboardState.appStorageDefaults)
+    private var batchSeparatorRawValue = SharedKeyboardState.batchSeparator.rawValue
+
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
@@ -127,9 +133,12 @@ struct ScannerScreen: View {
                     playScanSound: playScanSound,
                     defaultZoomLevel: scannerZoomLevel,
                     scanArea: scannerScanArea,
-                    defaultFlashlightMode: ScannerFlashlightMode(rawValue: scannerFlashlightModeRawValue) ?? .off
+                    defaultFlashlightMode: ScannerFlashlightMode(rawValue: scannerFlashlightModeRawValue) ?? .off,
+                    defaultScanMode: ScannerScanMode(rawValue: scannerScanModeRawValue) ?? .single
                 ) { result in
                     handleScannedCode(result, for: session)
+                } onBatch: { batch in
+                    handleScannedBatch(batch, for: session)
                 } onCancel: {
                     handleScannerCancel(for: session)
                 }
@@ -317,19 +326,46 @@ struct ScannerScreen: View {
         }
 
         ScanSoundPlayer.shared.playIfEnabled(playScanSound)
-        lastScannedCode = result.value
-        UIPasteboard.general.string = result.value
+        deliverScan(
+            text: result.value,
+            history: result.isManualEntry ? [] : [historyItem(value: result.value, codeFormat: result.codeFormat, for: session)],
+            for: session
+        )
+    }
 
-        if !result.isManualEntry {
-            ScanHistoryStore.record(
-                ScanHistoryItem(
-                    value: result.value,
-                    codeFormat: result.codeFormat,
-                    source: session.source.historySource,
-                    returnTargetRawValue: session.source == .keyboard ? session.returnTarget.rawValue : nil,
-                    insertionStatus: session.source == .keyboard ? .queuedForKeyboardInsertion : .notQueued
-                )
-            )
+    /// Finishes a batch: one history item per code (scan order), and the codes
+    /// joined with the separator as one text for the clipboard and the keyboard,
+    /// which then applies the Insert Suffix once, as after a single scan. Each
+    /// code already played the scan sound when it was added.
+    private func handleScannedBatch(_ batch: BatchScanCollection, for session: ScannerSession) {
+        guard !batch.isEmpty, session.testSessionID == nil else { return }
+        let separator = BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma
+        deliverScan(
+            text: batch.joinedText(separator: separator),
+            history: batch.entries.map {
+                historyItem(value: $0.value, codeFormat: $0.codeFormat, scannedAt: $0.scannedAt, for: session)
+            },
+            for: session
+        )
+    }
+
+    private func historyItem(value: String, codeFormat: String?, scannedAt: Date = Date(), for session: ScannerSession) -> ScanHistoryItem {
+        ScanHistoryItem(
+            value: value,
+            codeFormat: codeFormat,
+            scannedAt: scannedAt,
+            source: session.source.historySource,
+            returnTargetRawValue: session.source == .keyboard ? session.returnTarget.rawValue : nil,
+            insertionStatus: session.source == .keyboard ? .queuedForKeyboardInsertion : .notQueued
+        )
+    }
+
+    private func deliverScan(text: String, history: [ScanHistoryItem], for session: ScannerSession) {
+        lastScannedCode = text
+        UIPasteboard.general.string = text
+
+        if !history.isEmpty {
+            ScanHistoryStore.record(contentsOf: history)
         }
 
         activeSession = nil
@@ -337,7 +373,7 @@ struct ScannerScreen: View {
         guard session.source == .keyboard else { return }
 
         SharedKeyboardState.queuePendingInsertion(
-            result.value,
+            text,
             requestIdentifier: session.id,
             autoInsert: session.returnTarget.shouldAutomaticallyInsertScan(userEnabled: SharedKeyboardState.autoInsertScans)
         )
@@ -573,9 +609,13 @@ private struct ScannerPresentation: View {
     let defaultZoomLevel: ScannerZoomLevel
     let scanArea: ScannerScanArea
     let onCode: (ScannerCodeResult) -> Void
+    let onBatch: (BatchScanCollection) -> Void
     let onCancel: () -> Void
 
     @State private var flashlightMode: ScannerFlashlightMode
+    @State private var scanMode: ScannerScanMode
+    @StateObject private var batchScan = BatchScanModel()
+    @State private var pendingBatchDiscard: BatchScanDiscardReason?
     @State private var isTorchAvailable = false
     @State private var isTorchOn = false
     @State private var scannerStatusMessage: String?
@@ -590,7 +630,9 @@ private struct ScannerPresentation: View {
         defaultZoomLevel: ScannerZoomLevel,
         scanArea: ScannerScanArea,
         defaultFlashlightMode: ScannerFlashlightMode,
+        defaultScanMode: ScannerScanMode,
         onCode: @escaping (ScannerCodeResult) -> Void,
+        onBatch: @escaping (BatchScanCollection) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.session = session
@@ -599,8 +641,36 @@ private struct ScannerPresentation: View {
         self.scanArea = scanArea
         // A toolbar toggle applies to this scan; only Settings changes the next scan's default.
         _flashlightMode = State(initialValue: defaultFlashlightMode)
+        // The same applies to the scan mode.
+        _scanMode = State(initialValue: defaultScanMode)
         self.onCode = onCode
+        self.onBatch = onBatch
         self.onCancel = onCancel
+    }
+
+    /// Keyboard test-field sessions, the screenshot camera and the manual-entry
+    /// fallback always scan a single code.
+    private var supportsBatch: Bool {
+#if DEBUG
+        if ScreenshotAutomation.usesSimulatedCamera { return false }
+#endif
+        return session.testSessionID == nil && BarcodeScannerView.isScannerAvailable
+    }
+
+    private var isBatchActive: Bool {
+        supportsBatch && scanMode == .batch
+    }
+
+    private var scanModeSelection: Binding<ScannerScanMode> {
+        Binding {
+            scanMode
+        } set: { newMode in
+            if newMode == .single, !batchScan.collection.isEmpty {
+                pendingBatchDiscard = .switchToSingle
+            } else {
+                scanMode = newMode
+            }
+        }
     }
 
     private var scannerFeedIsAvailable: Bool {
@@ -623,7 +693,21 @@ private struct ScannerPresentation: View {
                 }
 
                 scannerOverlay
+
+                if isBatchActive {
+                    BatchScanPanel(
+                        entries: batchScan.collection.entries,
+                        status: batchScan.status(selectableCodeCount: selectableCodeCount),
+                        finishTitle: batchScan.finishTitle(insertsIntoKeyboard: session.source == .keyboard),
+                        finishHint: batchScan.finishHint(insertsIntoKeyboard: session.source == .keyboard),
+                        zoomFactor: currentZoomFactor,
+                        onRemove: batchScan.remove(id:),
+                        onFinish: finishBatch
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isBatchActive)
             .navigationTitle(session.title)
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
@@ -639,7 +723,21 @@ private struct ScannerPresentation: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel", action: onCancel)
+                    Button("Cancel") {
+                        if isBatchActive, !batchScan.collection.isEmpty {
+                            pendingBatchDiscard = .cancel
+                        } else {
+                            onCancel()
+                        }
+                    }
+                }
+
+                if supportsBatch {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        // Applies to this scan only; Settings sets the default.
+                        BatchScanModeMenu(selection: scanModeSelection)
+                            .disabled(scannedCode != nil)
+                    }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -660,6 +758,15 @@ private struct ScannerPresentation: View {
                             : NSLocalizedString("Flashlight Off", comment: "Flashlight off accessibility label")
                     )
                     .disabled(!isTorchAvailable || scannedCode != nil)
+                }
+            }
+            .batchDiscardConfirmation($pendingBatchDiscard) { reason in
+                switch reason {
+                case .cancel:
+                    onCancel()
+                case .switchToSingle:
+                    batchScan.removeAll()
+                    scanMode = .single
                 }
             }
         }
@@ -687,6 +794,8 @@ private struct ScannerPresentation: View {
                 flashlightMode: flashlightMode,
                 defaultZoomFactor: defaultZoomLevel.factor,
                 scanArea: scanArea,
+                continuesScanning: isBatchActive,
+                acceptsMoreCodes: !batchScan.collection.isFull,
                 isTorchAvailable: $isTorchAvailable,
                 isTorchOn: $isTorchOn,
                 statusMessage: $scannerStatusMessage,
@@ -730,7 +839,8 @@ private struct ScannerPresentation: View {
 
             Spacer()
 
-            if scannedCode == nil, selectableCodeCount > 0 {
+            // In batch mode the hint and zoom level are shown in the batch panel.
+            if !isBatchActive, scannedCode == nil, selectableCodeCount > 0 {
                 // Taps fall through this overlay to the outlined codes in the camera view.
                 ScanStatusPill(
                     title: "Choose a code",
@@ -742,7 +852,7 @@ private struct ScannerPresentation: View {
                 .transition(.opacity)
             }
 
-            if scannerFeedIsAvailable {
+            if scannerFeedIsAvailable, !isBatchActive {
                 ZoomIndicator(value: currentZoomFactor)
                     .padding(.bottom, 18)
             }
@@ -755,11 +865,30 @@ private struct ScannerPresentation: View {
     private func handleCode(_ result: ScannerCodeResult) {
         guard scannedCode == nil else { return }
 
+        if isBatchActive, !result.isManualEntry {
+            if !result.value.hasPrefix(BlipCompanyProfileQR.marker) {
+                batchScan.add(result, playScanSound: playScanSound)
+                return
+            }
+            // A company profile with an empty list opens its preview as before;
+            // with collected codes it is ignored so nothing is lost.
+            guard batchScan.collection.isEmpty else {
+                batchScan.ignoreCompanyProfile()
+                return
+            }
+        }
+
         scannedCode = result.value.hasPrefix(BlipCompanyProfileQR.marker)
             ? NSLocalizedString("Company Profile", comment: "Recognized profile scan") : result.value
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             onCode(result)
         }
+    }
+
+    private func finishBatch() {
+        guard isBatchActive, scannedCode == nil, !batchScan.collection.isEmpty else { return }
+        scannedCode = BatchScanPanel.countText(batchScan.collection.count)
+        onBatch(batchScan.collection)
     }
 }
 

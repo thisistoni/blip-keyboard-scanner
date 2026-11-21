@@ -9,6 +9,8 @@ final class BarcodeCandidateOverlayView: UIView {
         let key: BarcodeCandidateKey
         /// Code bounds in this view's (and the preview layer's) coordinates.
         let rect: CGRect
+        /// Batch scans only: the code is already in the list and cannot be tapped.
+        var isAdded = false
     }
 
     /// Tap targets are at least this large, even for tiny codes far away.
@@ -49,6 +51,7 @@ final class BarcodeCandidateOverlayView: UIView {
                     outline.add(fade, forKey: "appear")
                 }
             }
+            Self.applyStyle(to: outline, isAdded: candidate.isAdded)
             outline.path = UIBezierPath(
                 roundedRect: candidate.rect.insetBy(dx: -Self.outlinePadding, dy: -Self.outlinePadding),
                 cornerRadius: Self.outlineCornerRadius
@@ -78,7 +81,7 @@ final class BarcodeCandidateOverlayView: UIView {
     /// resolve to the code whose centre is nearest.
     func candidate(at point: CGPoint) -> BarcodeCandidateKey? {
         candidates
-            .filter { Self.tapTarget(for: $0.rect).contains(point) }
+            .filter { !$0.isAdded && Self.tapTarget(for: $0.rect).contains(point) }
             .min { Self.distance($0.rect, point) < Self.distance($1.rect, point) }?
             .key
     }
@@ -94,10 +97,24 @@ final class BarcodeCandidateOverlayView: UIView {
         hypot(rect.midX - point.x, rect.midY - point.y)
     }
 
+    /// Selectable codes are yellow; codes already in the batch list are green,
+    /// like the chosen code in a single scan, with a dashed line so the
+    /// difference does not rely on colour alone.
+    private static func applyStyle(to outline: CAShapeLayer, isAdded: Bool) {
+        if isAdded {
+            outline.strokeColor = UIColor.systemGreen.cgColor
+            outline.fillColor = UIColor.systemGreen.withAlphaComponent(0.25).cgColor
+            outline.lineDashPattern = [8, 5]
+        } else {
+            outline.strokeColor = UIColor.systemYellow.cgColor
+            outline.fillColor = UIColor.white.withAlphaComponent(0.12).cgColor
+            outline.lineDashPattern = nil
+        }
+    }
+
     private static func makeOutlineLayer() -> CAShapeLayer {
         let outline = CAShapeLayer()
-        outline.strokeColor = UIColor.systemYellow.cgColor
-        outline.fillColor = UIColor.white.withAlphaComponent(0.12).cgColor
+        applyStyle(to: outline, isAdded: false)
         outline.lineWidth = 3
         outline.lineJoin = .round
         // A soft dark halo keeps the outline visible on white labels.

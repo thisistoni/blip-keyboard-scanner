@@ -188,13 +188,19 @@ enum ScanHistoryStore {
     }
 
     static func record(_ item: ScanHistoryItem) {
+        record(contentsOf: [item])
+    }
+
+    /// Records several scans (in scan order) with one read and write, e.g. a batch.
+    static func record(contentsOf items: [ScanHistoryItem]) {
         guard SharedKeyboardState.scanHistoryRetention != .off else {
             save([])
             return
         }
+        guard !items.isEmpty else { return }
 
         var currentItems = applyRetention()
-        currentItems.insert(item, at: 0)
+        currentItems.insert(contentsOf: items.reversed(), at: 0)
         save(currentItems)
         _ = applyRetention()
     }

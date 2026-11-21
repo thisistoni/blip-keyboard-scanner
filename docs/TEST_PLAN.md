@@ -31,11 +31,15 @@ Use a physical iPhone for the full workflow. The simulator cannot validate camer
 - Repeat the music test with Blip sound disabled.
 - With a label carrying several codes, confirm every code is outlined, the hint appears, and tapping an outline returns that code. A single code must still scan without a tap, and covering the other codes with a hand must fall back to automatic scanning after about a second.
 
-The multi-code decision logic has a standalone test executable:
+- In Batch scan mode (Settings or the scanner's Scan Mode menu), scan several items: each code is added once while it stays in view, the list numbers them, a code taken away for about two seconds and shown again is added again, and the finish button inserts all codes joined with the Batch Separator followed by the Scan Suffix once.
+
+The multi-code and batch re-scan logic, and the batch list, have standalone test executables:
 
 ```sh
 xcrun swiftc App/BarcodeSelectionTracker.swift Tests/BarcodeSelectionTrackerTests.swift -o /tmp/blip-selection-tests
 /tmp/blip-selection-tests
+xcrun swiftc Shared/KeyboardSettings.swift Shared/ScanHistory.swift App/BatchScanCollection.swift Tests/BatchScanCollectionTests.swift -o /tmp/blip-batch-tests
+/tmp/blip-batch-tests
 ```
 
 ## Wedge Flow

@@ -275,6 +275,12 @@ private struct ScannerSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.scannerScanArea, store: SharedKeyboardState.appStorageDefaults)
     private var scannerScanAreaRawValue = SharedKeyboardState.scannerScanArea.rawValue
 
+    @AppStorage(SharedKeyboardState.Keys.scannerScanMode, store: SharedKeyboardState.appStorageDefaults)
+    private var scannerScanModeRawValue = SharedKeyboardState.scannerScanMode.rawValue
+
+    @AppStorage(SharedKeyboardState.Keys.batchSeparator, store: SharedKeyboardState.appStorageDefaults)
+    private var batchSeparatorRawValue = SharedKeyboardState.batchSeparator.rawValue
+
     @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
     private var playScanSound = SharedKeyboardState.playScanSound
 
@@ -310,6 +316,22 @@ private struct ScannerSettingsPage: View {
             ScannerScanArea(rawValue: scannerScanAreaRawValue) ?? .fullFrame
         } set: { newValue in
             scannerScanAreaRawValue = newValue.rawValue
+        }
+    }
+
+    private var scannerScanMode: Binding<ScannerScanMode> {
+        Binding {
+            ScannerScanMode(rawValue: scannerScanModeRawValue) ?? .single
+        } set: { newValue in
+            scannerScanModeRawValue = newValue.rawValue
+        }
+    }
+
+    private var batchSeparator: Binding<BatchSeparator> {
+        Binding {
+            BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma
+        } set: { newValue in
+            batchSeparatorRawValue = newValue.rawValue
         }
     }
 
@@ -367,6 +389,28 @@ private struct ScannerSettingsPage: View {
             Text(scannerScanArea.wrappedValue.detail)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            Picker("Scan Mode", selection: scannerScanMode) {
+                ForEach(ScannerScanMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+
+            Text(scannerScanMode.wrappedValue.detail)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            if scannerScanMode.wrappedValue == .batch {
+                Picker("Batch Separator", selection: batchSeparator) {
+                    ForEach(BatchSeparator.allCases) { separator in
+                        Text(separator.title).tag(separator)
+                    }
+                }
+
+                Text(batchSeparator.wrappedValue.detail)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         } header: {
             Text("Scanner")
         } footer: {
