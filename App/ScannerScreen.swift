@@ -581,6 +581,8 @@ private struct ScannerPresentation: View {
     @State private var scannerStatusMessage: String?
     @State private var scannedCode: String?
     @State private var currentZoomFactor = 1.0
+    @State private var selectableCodeCount = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         session: ScannerSession,
@@ -689,6 +691,7 @@ private struct ScannerPresentation: View {
                 isTorchOn: $isTorchOn,
                 statusMessage: $scannerStatusMessage,
                 currentZoomFactor: $currentZoomFactor,
+                selectableCodeCount: $selectableCodeCount,
                 onCode: handleCode
             )
             .ignoresSafeArea()
@@ -727,12 +730,25 @@ private struct ScannerPresentation: View {
 
             Spacer()
 
+            if scannedCode == nil, selectableCodeCount > 0 {
+                // Taps fall through this overlay to the outlined codes in the camera view.
+                ScanStatusPill(
+                    title: "Choose a code",
+                    detail: NSLocalizedString("Tap the code you want to use.", comment: "Hint when several codes are visible"),
+                    systemImage: "hand.tap.fill",
+                    color: .yellow
+                )
+                .padding(.bottom, 10)
+                .transition(.opacity)
+            }
+
             if scannerFeedIsAvailable {
                 ZoomIndicator(value: currentZoomFactor)
                     .padding(.bottom, 18)
             }
         }
         .padding(.horizontal, 16)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: scannedCode == nil && selectableCodeCount > 0)
         .allowsHitTesting(false)
     }
 

@@ -21,6 +21,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     @Binding var isTorchOn: Bool
     @Binding var statusMessage: String?
     @Binding var currentZoomFactor: Double
+    @Binding var selectableCodeCount: Int
     let onCode: (ScannerCodeResult) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -29,7 +30,8 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
             isTorchAvailable: $isTorchAvailable,
             isTorchOn: $isTorchOn,
             statusMessage: $statusMessage,
-            currentZoomFactor: $currentZoomFactor
+            currentZoomFactor: $currentZoomFactor,
+            selectableCodeCount: $selectableCodeCount
         )
     }
 
@@ -61,19 +63,22 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         private var isTorchOn: Binding<Bool>
         private var statusMessage: Binding<String?>
         private var currentZoomFactor: Binding<Double>
+        private var selectableCodeCount: Binding<Int>
 
         init(
             onCode: @escaping (ScannerCodeResult) -> Void,
             isTorchAvailable: Binding<Bool>,
             isTorchOn: Binding<Bool>,
             statusMessage: Binding<String?>,
-            currentZoomFactor: Binding<Double>
+            currentZoomFactor: Binding<Double>,
+            selectableCodeCount: Binding<Int>
         ) {
             self.onCode = onCode
             self.isTorchAvailable = isTorchAvailable
             self.isTorchOn = isTorchOn
             self.statusMessage = statusMessage
             self.currentZoomFactor = currentZoomFactor
+            self.selectableCodeCount = selectableCodeCount
         }
 
         func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didScan result: ScannerCodeResult) {
@@ -91,6 +96,10 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
 
         func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateStatus message: String?) {
             statusMessage.wrappedValue = message
+        }
+
+        func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateSelectableCodeCount count: Int) {
+            selectableCodeCount.wrappedValue = count
         }
     }
 }
@@ -142,6 +151,8 @@ protocol BarcodeCaptureViewControllerDelegate: AnyObject {
     func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateTorchAvailability isAvailable: Bool, isOn: Bool)
     func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateZoomFactor zoomFactor: Double)
     func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateStatus message: String?)
+    /// Number of outlined codes the user can tap; 0 when no choice is pending.
+    func barcodeCaptureViewController(_ controller: BarcodeCaptureViewController, didUpdateSelectableCodeCount count: Int)
 }
 
 final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
@@ -186,6 +197,17 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private var latestDetectionRegionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
     private var latestAcceptanceRegionOfInterest: CGRect?
 
+    // Multi-code selection. The tracker, frame metadata and `didScan` are only
+    // touched on `visionQueue`; the overlay and accessibility state on main.
+    private var selectionTracker = BarcodeSelectionTracker()
+    private var latestFrameTimestamp: TimeInterval = 0
+    private var latestBufferIsPortrait = true
+    private var lastKnownCandidateRects: [BarcodeCandidateKey: CGRect] = [:]
+    private var isPresentingCandidates = false
+    private let candidateOverlay = BarcodeCandidateOverlayView()
+    private var candidateAccessibilityElements: [BarcodeCandidateKey: BarcodeCandidateAccessibilityElement] = [:]
+    private var publishedSelectableCodeCount = 0
+
     static func defaultVideoDevice() -> AVCaptureDevice? {
         AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
             ?? AVCaptureDevice.default(for: .video)
@@ -195,7 +217,9 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         super.viewDidLoad()
         view.backgroundColor = .black
         configurePreviewLayer()
+        configureCandidateOverlay()
         configurePinchGesture()
+        configureTapGesture()
         configureVision()
         requestCameraAccessAndConfigure()
     }
@@ -203,6 +227,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         previewLayer?.frame = view.bounds
+        candidateOverlay.frame = view.bounds
         updateScanAreaRegion()
     }
 
@@ -252,6 +277,24 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         previewLayer.frame = view.bounds
         view.layer.addSublayer(previewLayer)
         self.previewLayer = previewLayer
+    }
+
+    private func configureCandidateOverlay() {
+        // Taps and pinches go to `view`'s recognizers; the overlay only draws.
+        candidateOverlay.isUserInteractionEnabled = false
+        candidateOverlay.frame = view.bounds
+        view.addSubview(candidateOverlay)
+    }
+
+    private func configureTapGesture() {
+        let recognizer = UITapGestureRecognizer(target: self, action: #selector(handleTapGesture(_:)))
+        view.addGestureRecognizer(recognizer)
+    }
+
+    @objc private func handleTapGesture(_ recognizer: UITapGestureRecognizer) {
+        guard recognizer.state == .ended,
+              let key = candidateOverlay.candidate(at: recognizer.location(in: candidateOverlay)) else { return }
+        selectCandidate(key)
     }
 
     private func configurePinchGesture() {
@@ -469,6 +512,13 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         guard !didScan, !isProcessingFrame, let barcodeRequest else { return }
 
         isProcessingFrame = true
+        let presentationTime = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        latestFrameTimestamp = presentationTime.isNumeric
+            ? presentationTime.seconds
+            : ProcessInfo.processInfo.systemUptime
+        if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            latestBufferIsPortrait = CVPixelBufferGetHeight(pixelBuffer) >= CVPixelBufferGetWidth(pixelBuffer)
+        }
         latestAcceptanceRegionOfInterest = currentActiveVisionScanRect()
         latestDetectionRegionOfInterest = latestAcceptanceRegionOfInterest.map {
             Self.expandedVisionRect($0, paddingRatio: 0.18)
@@ -488,33 +538,137 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         defer { isProcessingFrame = false }
 
         guard error == nil, !didScan else { return }
-        let observation = request.results?
-            .compactMap { $0 as? VNBarcodeObservation }
-            .first { observation in
-                guard let value = observation.payloadStringValue else { return false }
-                guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
-                if observation.symbology == .qr,
-                   !BlipCompanyProfileQR.acceptsScannedQR(value, formatProfile: self.scanFormatProfile) {
-                    return false
-                }
-                return self.isObservationInsideActiveScanArea(
-                    observation,
-                    detectionRegionOfInterest: self.latestDetectionRegionOfInterest,
-                    acceptanceRegionOfInterest: self.latestAcceptanceRegionOfInterest
+
+        // Every distinct code that passes the existing filters, in Vision's order.
+        var frameCandidates: [BarcodeCandidateKey] = []
+        var frameRects: [BarcodeCandidateKey: CGRect] = [:]
+        for observation in request.results?.compactMap({ $0 as? VNBarcodeObservation }) ?? [] {
+            guard let value = observation.payloadStringValue else { continue }
+            guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+            if observation.symbology == .qr,
+               !BlipCompanyProfileQR.acceptsScannedQR(value, formatProfile: scanFormatProfile) {
+                continue
+            }
+            guard isObservationInsideActiveScanArea(
+                observation,
+                detectionRegionOfInterest: latestDetectionRegionOfInterest,
+                acceptanceRegionOfInterest: latestAcceptanceRegionOfInterest
+            ) else { continue }
+
+            let key = BarcodeCandidateKey(value: value, symbology: observation.symbology.rawValue)
+            guard frameRects[key] == nil else { continue }
+            frameCandidates.append(key)
+            frameRects[key] = Self.fullImageBoundingBox(
+                fromRegionRelativeBoundingBox: observation.boundingBox,
+                regionOfInterest: latestDetectionRegionOfInterest
+            )
+        }
+
+        switch selectionTracker.process(frameCandidates, at: latestFrameTimestamp) {
+        case .waiting:
+            lastKnownCandidateRects.removeAll()
+            presentCandidates([])
+        case .accept(let key):
+            didScan = true
+            lastKnownCandidateRects.removeAll()
+            presentCandidates([])
+            deliverResult(for: key, highlightingSelection: false)
+        case .choose(let keys):
+            lastKnownCandidateRects.merge(frameRects) { _, newRect in newRect }
+            // Codes Vision skipped this frame keep their last outline until they expire.
+            let offered = keys.compactMap { key in lastKnownCandidateRects[key].map { (key, $0) } }
+            lastKnownCandidateRects = Dictionary(uniqueKeysWithValues: offered)
+            presentCandidates(offered)
+        }
+    }
+
+    /// Runs on `visionQueue`. Hops to main with Vision-space rects for the overlay.
+    private func presentCandidates(_ candidates: [(BarcodeCandidateKey, CGRect)]) {
+        guard !candidates.isEmpty || isPresentingCandidates else { return }
+        isPresentingCandidates = !candidates.isEmpty
+        let bufferIsPortrait = latestBufferIsPortrait
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let previewLayer = self.previewLayer else { return }
+            let displayed = candidates.map { key, visionRect in
+                BarcodeCandidateOverlayView.Candidate(
+                    key: key,
+                    rect: previewLayer.layerRectConverted(
+                        fromMetadataOutputRect: Self.metadataRect(
+                            fromVisionRect: visionRect,
+                            bufferIsPortrait: bufferIsPortrait
+                        )
+                    )
                 )
             }
+            self.candidateOverlay.update(displayed)
+            self.updateCandidateAccessibility(displayed)
+        }
+    }
 
-        guard let code = observation?.payloadStringValue else { return }
-        didScan = true
+    /// Main thread. The tap is resolved on `visionQueue` so it cannot race an auto-accept.
+    private func selectCandidate(_ key: BarcodeCandidateKey) {
+        visionQueue.async { [weak self] in
+            guard let self, !self.didScan, self.selectionTracker.finishBySelection() else { return }
+            self.didScan = true
+            self.isPresentingCandidates = false
+            self.lastKnownCandidateRects.removeAll()
+            self.deliverResult(for: key, highlightingSelection: true)
+        }
+    }
+
+    private func deliverResult(for key: BarcodeCandidateKey, highlightingSelection: Bool) {
         let result = ScannerCodeResult(
-            value: code,
-            codeFormat: observation?.symbology.rawValue,
+            value: key.value,
+            codeFormat: key.symbology,
             isManualEntry: false
         )
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            if highlightingSelection {
+                self.candidateOverlay.highlight(key)
+            }
+            self.updateCandidateAccessibility([])
             self.delegate?.barcodeCaptureViewController(self, didScan: result)
+        }
+    }
+
+    private func updateCandidateAccessibility(_ candidates: [BarcodeCandidateOverlayView.Candidate]) {
+        let previousKeys = Set(candidateAccessibilityElements.keys)
+        var elements: [BarcodeCandidateAccessibilityElement] = []
+        var elementsByKey: [BarcodeCandidateKey: BarcodeCandidateAccessibilityElement] = [:]
+
+        for candidate in candidates {
+            let element = candidateAccessibilityElements[candidate.key]
+                ?? BarcodeCandidateAccessibilityElement(accessibilityContainer: view as Any)
+            element.accessibilityLabel = "\(candidate.key.value), \(ScanHistoryItem.displayName(forCodeFormat: candidate.key.symbology))"
+            element.accessibilityHint = NSLocalizedString("Uses this code.", comment: "Selectable scanned code accessibility hint")
+            element.accessibilityTraits = .button
+            element.accessibilityFrameInContainerSpace = BarcodeCandidateOverlayView.tapTarget(for: candidate.rect)
+            element.onActivate = { [weak self] in self?.selectCandidate(candidate.key) }
+            elements.append(element)
+            elementsByKey[candidate.key] = element
+        }
+
+        candidateAccessibilityElements = elementsByKey
+        view.accessibilityElements = elements.isEmpty ? nil : elements
+
+        if Set(elementsByKey.keys) != previousKeys {
+            UIAccessibility.post(notification: .layoutChanged, argument: nil)
+        }
+        if publishedSelectableCodeCount == 0, !elements.isEmpty {
+            UIAccessibility.post(
+                notification: .announcement,
+                argument: NSLocalizedString(
+                    "Several codes found. Select the code you want to use.",
+                    comment: "VoiceOver announcement when several codes are visible"
+                )
+            )
+        }
+        if publishedSelectableCodeCount != elements.count {
+            publishedSelectableCodeCount = elements.count
+            delegate?.barcodeCaptureViewController(self, didUpdateSelectableCodeCount: elements.count)
         }
     }
 
@@ -554,6 +708,20 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 height: rect.height
             )
         )
+    }
+
+    /// Maps a full-image Vision rect (lower-left origin, in the `.right`-oriented
+    /// image Vision analyses) to capture metadata coordinates (upper-left origin,
+    /// unrotated sensor), which the preview layer converts with its aspect fill.
+    private static func metadataRect(fromVisionRect rect: CGRect, bufferIsPortrait: Bool) -> CGRect {
+        if bufferIsPortrait {
+            // The connection already rotated the buffer to portrait and `.right`
+            // turns it once more, so Vision x runs against the sensor's x axis
+            // while Vision y (upwards) runs along the sensor's y axis (downwards).
+            return CGRect(x: 1 - rect.maxX, y: rect.minY, width: rect.width, height: rect.height)
+        }
+        // Unrotated sensor buffer: `.right` yields the portrait image, swapping the axes.
+        return CGRect(x: 1 - rect.maxY, y: 1 - rect.maxX, width: rect.height, height: rect.width)
     }
 
     private static func expandedVisionRect(_ rect: CGRect, paddingRatio: CGFloat) -> CGRect {

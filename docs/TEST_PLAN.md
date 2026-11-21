@@ -29,6 +29,14 @@ Use a physical iPhone for the full workflow. The simulator cannot validate camer
 - With music playing in another app, cold-launch Blip and open the scanner with Blip sound enabled. Music must keep playing before any code is scanned.
 - Complete a scan and verify the beep mixes with the music; repeat opening/canceling the scanner.
 - Repeat the music test with Blip sound disabled.
+- With a label carrying several codes, confirm every code is outlined, the hint appears, and tapping an outline returns that code. A single code must still scan without a tap, and covering the other codes with a hand must fall back to automatic scanning after about a second.
+
+The multi-code decision logic has a standalone test executable:
+
+```sh
+xcrun swiftc App/BarcodeSelectionTracker.swift Tests/BarcodeSelectionTrackerTests.swift -o /tmp/blip-selection-tests
+/tmp/blip-selection-tests
+```
 
 ## Wedge Flow
 

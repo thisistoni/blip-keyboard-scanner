@@ -31,6 +31,8 @@
 		C8B533246884B21A3E3DC1EA /* BlipCompanyProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */; };
 		D0DE4492D022484817C7D82F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = EB007F38639A2CA409E5775A /* PrivacyInfo.xcprivacy */; };
 		D92071A43A8542A555BDA2F5 /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81CECF940A77E80308B06286 /* BarcodeScannerView.swift */; };
+		5629CE3A249F79599EDE9955 /* BarcodeCandidateOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925A4C3025476D1A20205708 /* BarcodeCandidateOverlayView.swift */; };
+		5BE473C1D88F92F881AF565D /* BarcodeSelectionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D161690F1D54ABE4ABCAAC78 /* BarcodeSelectionTracker.swift */; };
 		E54A46DB412041B7F6EE7942 /* SystemSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20D38EC79D0E23991B53B2E /* SystemSettingsOpener.swift */; };
 		ED860D2D15741BE25855EFDA /* ScanHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD33ED6BE3399E6428739E3 /* ScanHistory.swift */; };
 		FD047880801250BBA16B80FE /* SupportEmail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F4AAFBA4E577FB1CC1547E2 /* SupportEmail.swift */; };
@@ -79,6 +81,8 @@
 		7636556798B59B570DF3FDEC /* KeyboardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardSettings.swift; sourceTree = "<group>"; };
 		7B0CA1B63DBE419AAB686754 /* Blip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Blip.entitlements; sourceTree = "<group>"; };
 		81CECF940A77E80308B06286 /* BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
+		925A4C3025476D1A20205708 /* BarcodeCandidateOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeCandidateOverlayView.swift; sourceTree = "<group>"; };
+		D161690F1D54ABE4ABCAAC78 /* BarcodeSelectionTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeSelectionTracker.swift; sourceTree = "<group>"; };
 		83B3C586764EC372876B4F29 /* BlipCompanyProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlipCompanyProfile.swift; sourceTree = "<group>"; };
 		92506F914D036514AB4055CD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A13418EDC64D955E03A48729 /* ScanSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanSoundPlayer.swift; sourceTree = "<group>"; };
@@ -140,7 +144,9 @@
 			children = (
 				2A14A6BBDE409BA05BA1074C /* AppRootView.swift */,
 				C6FCE2FCF2F29D1426988ED7 /* Assets.xcassets */,
+				925A4C3025476D1A20205708 /* BarcodeCandidateOverlayView.swift */,
 				81CECF940A77E80308B06286 /* BarcodeScannerView.swift */,
+				D161690F1D54ABE4ABCAAC78 /* BarcodeSelectionTracker.swift */,
 				7B0CA1B63DBE419AAB686754 /* Blip.entitlements */,
 				64C996AC636B03E56AE187B7 /* BlipApp.swift */,
 				EF1998ECC1E46ECFC99560FC /* CompanyProfilesView.swift */,
@@ -296,6 +302,8 @@
 			files = (
 				112C8602482855C75018A929 /* AppRootView.swift in Sources */,
 				D92071A43A8542A555BDA2F5 /* BarcodeScannerView.swift in Sources */,
+				5629CE3A249F79599EDE9955 /* BarcodeCandidateOverlayView.swift in Sources */,
+				5BE473C1D88F92F881AF565D /* BarcodeSelectionTracker.swift in Sources */,
 				C7FC916F8A685C9A102F9524 /* BlipApp.swift in Sources */,
 				99B3538C83F92ED9F21DC818 /* BlipCompanyProfile.swift in Sources */,
 				40F8928D20247E13575C8B1D /* CompanyProfilesView.swift in Sources */,

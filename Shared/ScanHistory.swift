@@ -65,6 +65,10 @@ struct ScanHistoryItem: Codable, Identifiable, Equatable {
     }
 
     var displayCodeFormat: String {
+        Self.displayName(forCodeFormat: codeFormat)
+    }
+
+    static func displayName(forCodeFormat codeFormat: String?) -> String {
         guard let codeFormat, !codeFormat.isEmpty else {
             return NSLocalizedString("Unknown format", comment: "Unknown scan history code format")
         }
