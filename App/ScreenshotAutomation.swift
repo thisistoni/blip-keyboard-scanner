@@ -39,6 +39,18 @@ enum ScreenshotAutomation {
         scene == .scanner || scene == .batch
     }
 
+    /// `--test-field-text` fills the Scan tab's test field with a long batch,
+    /// to check that the field keeps to its row.
+    static var testFieldText: String? {
+        guard arguments.contains("--test-field-text") else { return nil }
+        return (1...30).map { "40123456789\(String(format: "%02d", $0))" }.joined(separator: ",")
+    }
+
+    /// `--test-field-clear` empties that text again after two seconds.
+    static var clearsTestFieldText: Bool {
+        arguments.contains("--test-field-clear")
+    }
+
     /// The batch review scene opens the scanner in Batch mode with a filled list.
     static var showsBatchReview: Bool {
         scene == .batch

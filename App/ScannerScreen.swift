@@ -1352,7 +1352,27 @@ private struct KeyboardTestTextField: UIViewRepresentable {
         field.autocorrectionType = .no
         field.autocapitalizationType = .none
         field.textContentType = UITextContentType(rawValue: KeyboardTestSession.contentTypePrefix + sessionID)
+        // The field's own width follows its text. Never let that widen it:
+        // a long batch would push it out of the row on both sides.
+        field.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+#if DEBUG
+        if let text = ScreenshotAutomation.testFieldText {
+            field.text = text
+            if ScreenshotAutomation.clearsTestFieldText {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { field.text = "" }
+            }
+        }
+#endif
         return field
+    }
+
+    /// Always exactly as wide as the row offers, whatever the text. Without
+    /// this the field grew with a long scan, was centred over the row, and
+    /// stayed shifted after the text was deleted (placeholder cut off).
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextField, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, width > 0 else { return nil }
+        return CGSize(width: width, height: uiView.intrinsicContentSize.height)
     }
 
     func updateUIView(_ field: UITextField, context: Context) {
