@@ -1,8 +1,9 @@
 import Foundation
 
-/// Identity of a decoded code. Two observations are the same candidate only when
-/// both the payload and the symbology match, so an EAN-13 and a Code 128 carrying
-/// the same digits are still offered as separate choices.
+/// Identity of a decoded code. The trackers treat keys that differ in payload or
+/// symbology as different codes; the scanner reports one key per payload within
+/// a session (the symbology it was first seen as), because one label can be
+/// decoded under two symbologies.
 struct BarcodeCandidateKey: Hashable {
     let value: String
     let symbology: String
@@ -23,15 +24,21 @@ enum BarcodeSelectionDecision: Equatable {
 /// scanner feeds it the filtered candidates of every analysed frame together
 /// with the frame timestamp.
 ///
+/// All intervals are measured in scanning time (`BarcodeScanClock`), which
+/// does not run while no frames are analysed.
+///
 /// States:
 /// - `idle`: no candidate seen.
 /// - `confirming`: one code was seen and no other code since. It is accepted on
 ///   the first analysed frame at least `singleConfirmationInterval` after its first
 ///   sighting once it has been reported in at least `singleConfirmationSightings`
 ///   frames (never on the first frame itself, and never on a single read, which
-///   may be a misread). Frames with that code or with no code at all keep the
+///   may be a misread) and within `acceptanceRecency` of its latest sighting, so
+///   a code that already left the view waits for its next read instead of being
+///   entered. Frames with that code or with no code at all keep the
 ///   confirmation going; any other code switches to `selecting` with both codes
-///   offered.
+///   offered, unless the confirming code was not seen for `candidateRetention`:
+///   then it is stale and the other code starts a confirmation of its own.
 /// - `selecting`: two or more distinct codes were seen. Never auto-accepts while
 ///   other codes keep appearing. Each code stays offered for `candidateRetention`
 ///   after its last sighting so a one-frame Vision dropout does not make its
@@ -59,6 +66,10 @@ struct BarcodeSelectionTracker {
     /// decode. (Taps are explicit and need no second sighting; the lone fallback
     /// in `selecting` already needs a run of sightings spanning 0.8 s.)
     static let singleConfirmationSightings = 2
+    /// A lone code is only accepted while it was reported this recently. Longer
+    /// than a few dropped frames, so a steadily held code is accepted on time;
+    /// short enough that a code already panned past is not.
+    static let acceptanceRecency: TimeInterval = 0.15
     /// How long a code stays outlined after Vision last reported it. Covers typical
     /// one-to-several-frame dropouts without leaving stale outlines on screen.
     static let candidateRetention: TimeInterval = 0.4
@@ -72,7 +83,7 @@ struct BarcodeSelectionTracker {
 
     private enum State: Equatable {
         case idle
-        case confirming(key: BarcodeCandidateKey, firstSeen: TimeInterval, sightings: Int)
+        case confirming(key: BarcodeCandidateKey, firstSeen: TimeInterval, lastSeen: TimeInterval, sightings: Int)
         case selecting(Selection)
         case finished
     }
@@ -97,45 +108,49 @@ struct BarcodeSelectionTracker {
     }
 
     private var state: State = .idle
+    private var clock = BarcodeScanClock()
 
     var isFinished: Bool { state == .finished }
 
     /// Feeds the candidates of one analysed frame (after scan-area and profile filters).
-    mutating func process(_ frameCandidates: [BarcodeCandidateKey], at time: TimeInterval) -> BarcodeSelectionDecision {
+    mutating func process(_ frameCandidates: [BarcodeCandidateKey], at frameTime: TimeInterval) -> BarcodeSelectionDecision {
         let distinct = frameCandidates.distinctKeys
+        let time = clock.scanTime(forFrameAt: frameTime)
 
         switch state {
         case .finished:
             return .waiting
 
         case .idle:
-            switch distinct.count {
-            case 0:
-                return .waiting
-            case 1:
-                state = .confirming(key: distinct[0], firstSeen: time, sightings: 1)
-                return .waiting
-            default:
-                return enterSelecting(with: distinct, at: time)
-            }
+            return begin(with: distinct, at: time)
 
-        case let .confirming(key, firstSeen, sightings):
-            // Any other code during confirmation, in the same frame or a later
-            // one, means there is a choice to make.
+        case let .confirming(key, firstSeen, lastSeen, sightings):
             if distinct.contains(where: { $0 != key }) {
+                // A code not reported for the retention window was a glimpse or a
+                // misread; it must not turn the next code into a choice.
+                if !distinct.contains(key), time - lastSeen > Self.candidateRetention {
+                    return begin(with: distinct, at: time)
+                }
+                // Any other code during confirmation, in the same frame or a
+                // later one, means there is a choice to make.
                 return enterSelecting(with: distinct.contains(key) ? distinct : [key] + distinct, at: time)
             }
             // A frame without the code still counts: Vision analysed it and found
             // no neighbour. Requiring consecutive sightings would stop a worn or
             // dim code that only decodes now and then from ever being accepted.
             // The first sighting itself never accepts (it starts `confirming`).
-            let seen = sightings + (distinct.contains(key) ? 1 : 0)
+            let isSeen = distinct.contains(key)
+            let seen = sightings + (isSeen ? 1 : 0)
+            let latestSighting = isSeen ? time : lastSeen
+            // The code must still be there: one glimpsed in two frames while
+            // panning past it is not entered after it has left the view.
             if time - firstSeen >= Self.singleConfirmationInterval,
-               seen >= Self.singleConfirmationSightings {
+               seen >= Self.singleConfirmationSightings,
+               time - latestSighting <= Self.acceptanceRecency {
                 state = .finished
                 return .accept(key)
             }
-            state = .confirming(key: key, firstSeen: firstSeen, sightings: seen)
+            state = .confirming(key: key, firstSeen: firstSeen, lastSeen: latestSighting, sightings: seen)
             return .waiting
 
         case var .selecting(selection):
@@ -181,17 +196,28 @@ struct BarcodeSelectionTracker {
         }
     }
 
-    /// Records the user's tap on an outlined code. Returns false when a code was
-    /// already accepted, so a tap can never race a second result through.
-    mutating func finishBySelection() -> Bool {
-        guard state != .finished else { return false }
+    /// Records the user's tap on an outlined code. Returns true only while a
+    /// choice is offered and `key` is one of the offered codes, so a tap that
+    /// arrives after an auto-accept, or on an outline that just expired, does nothing.
+    mutating func select(_ key: BarcodeCandidateKey) -> Bool {
+        guard case let .selecting(selection) = state,
+              selection.sightings.contains(where: { $0.key == key }) else { return false }
         state = .finished
         return true
     }
 
-    /// Records a tap on `key`; the same as `finishBySelection()`.
-    mutating func select(_ key: BarcodeCandidateKey) -> Bool {
-        finishBySelection()
+    /// The `idle` transition, also used when a stale confirmation is replaced.
+    private mutating func begin(with distinct: [BarcodeCandidateKey], at time: TimeInterval) -> BarcodeSelectionDecision {
+        switch distinct.count {
+        case 0:
+            state = .idle
+            return .waiting
+        case 1:
+            state = .confirming(key: distinct[0], firstSeen: time, lastSeen: time, sightings: 1)
+            return .waiting
+        default:
+            return enterSelecting(with: distinct, at: time)
+        }
     }
 
     private mutating func enterSelecting(with distinct: [BarcodeCandidateKey], at time: TimeInterval) -> BarcodeSelectionDecision {
@@ -213,6 +239,7 @@ struct BarcodeSelectionTracker {
 /// first sighting. A confirmation that has not been reported for
 /// `candidateRetention` is dropped, so a single misread does not linger and get
 /// added on one more stray read later. Added codes go to a `BarcodeRescanGuard`.
+/// All intervals are measured in scanning time (`BarcodeScanClock`).
 struct BarcodeBatchTracker {
     private struct Pending: Equatable {
         let key: BarcodeCandidateKey
@@ -224,16 +251,22 @@ struct BarcodeBatchTracker {
     /// Codes still confirming, in order of first sighting.
     private var pending: [Pending] = []
     private var rescanGuard = BarcodeRescanGuard()
-    private var latestFrameTime: TimeInterval?
+    private var clock = BarcodeScanClock()
+    private var latestScanTime: TimeInterval?
+    /// Added codes whose list row was deleted: still blocked, but no longer
+    /// marked as added. Always a subset of the blocked codes.
+    private var removedKeys: Set<BarcodeCandidateKey> = []
 
-    /// Codes added in this batch that may not be added again yet.
+    /// Codes added in this batch that may not be added again yet (including
+    /// codes whose row was deleted since).
     var addedKeys: Set<BarcodeCandidateKey> { rescanGuard.blockedKeys }
 
     /// Added codes reported within `candidateRetention` of the latest frame, so
     /// the scanner can keep marking them as added while they stay in view.
     var visibleAddedKeys: Set<BarcodeCandidateKey> {
-        guard let latestFrameTime else { return [] }
-        return rescanGuard.keys(seenSince: latestFrameTime - BarcodeSelectionTracker.candidateRetention)
+        guard let latestScanTime else { return [] }
+        return rescanGuard.keys(seenSince: latestScanTime - BarcodeSelectionTracker.candidateRetention)
+            .subtracting(removedKeys)
     }
 
     /// Codes being confirmed, in order of first sighting.
@@ -244,12 +277,15 @@ struct BarcodeBatchTracker {
     /// it stay pending (not blocked) until there is room again.
     mutating func process(
         _ frameCandidates: [BarcodeCandidateKey],
-        at time: TimeInterval,
+        at frameTime: TimeInterval,
         capacity: Int = .max
     ) -> [BarcodeCandidateKey] {
         let distinct = frameCandidates.distinctKeys
-        latestFrameTime = time
+        let time = clock.scanTime(forFrameAt: frameTime)
+        latestScanTime = time
         rescanGuard.observe(distinct, at: time)
+        // A deleted code that was released is an ordinary code again.
+        removedKeys.formIntersection(rescanGuard.blockedKeys)
 
         // Drop stale confirmations before counting this frame, so a code
         // reappearing after a long gap starts over with one sighting.
@@ -275,6 +311,57 @@ struct BarcodeBatchTracker {
         }
         pending.removeAll { added.contains($0.key) }
         return added
+    }
+
+    /// The user deleted the row of an added code. It stays blocked under the
+    /// normal re-entry rule, so a code still in view is not added straight
+    /// back, but it is no longer marked as added.
+    mutating func markRemoved(_ key: BarcodeCandidateKey) {
+        guard rescanGuard.isBlocked(key) else { return }
+        removedKeys.insert(key)
+    }
+
+    /// The user undid a deletion. Only matters while the code is still blocked;
+    /// once released, `removedKeys` no longer holds it and nothing changes.
+    mutating func markRestored(_ key: BarcodeCandidateKey) {
+        removedKeys.remove(key)
+    }
+
+    /// The list refused an added code (it was full). The code is released
+    /// completely, so it is confirmed and added again once there is room.
+    mutating func release(_ key: BarcodeCandidateKey) {
+        rescanGuard.release(key)
+        removedKeys.remove(key)
+        pending.removeAll { $0.key == key }
+    }
+}
+
+/// Turns frame timestamps into scanning time, which does not run while no
+/// frames are analysed (screen locked, app switcher, a call, the camera
+/// interrupted). Without it every timer would read such a pause as absence:
+/// added codes still in view would be released and added a second time.
+struct BarcodeScanClock {
+    /// A longer gap between analysed frames is a pause, not a run of frames
+    /// without a code. Frames are analysed ~31 times a second on the device, so
+    /// this is far above any normal gap.
+    static let pauseThreshold: TimeInterval = 0.5
+    /// What a pause counts as. Below `candidateRetention` and every longer
+    /// interval, so no timer fires because of one pause. Not zero, so a device
+    /// that only manages a frame or two a second still makes progress instead
+    /// of never confirming a code.
+    static let pauseStep: TimeInterval = 0.25
+
+    private var lastFrameTime: TimeInterval?
+    private var elapsed: TimeInterval = 0
+
+    mutating func scanTime(forFrameAt frameTime: TimeInterval) -> TimeInterval {
+        if let lastFrameTime {
+            let gap = frameTime - lastFrameTime
+            // A clock running backwards adds nothing, so scanning time never decreases.
+            elapsed += gap > Self.pauseThreshold ? Self.pauseStep : max(gap, 0)
+        }
+        lastFrameTime = frameTime
+        return elapsed
     }
 }
 
@@ -313,6 +400,10 @@ struct BarcodeRescanGuard {
 
     mutating func block(_ key: BarcodeCandidateKey, at time: TimeInterval) {
         lastSeen[key] = time
+    }
+
+    mutating func release(_ key: BarcodeCandidateKey) {
+        lastSeen[key] = nil
     }
 
     func keys(seenSince time: TimeInterval) -> Set<BarcodeCandidateKey> {

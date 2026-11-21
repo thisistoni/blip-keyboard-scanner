@@ -6,6 +6,9 @@ struct ScannerCodeResult: Equatable {
     let value: String
     let codeFormat: String?
     let isManualEntry: Bool
+    /// True for codes added by batch scanning, so a result still on its way when
+    /// the mode changed can be told apart and dropped.
+    var isBatchAddition = false
 }
 
 struct BarcodeScannerView: UIViewControllerRepresentable {
@@ -22,6 +25,9 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
     /// Batch scans only: how many more codes the list can take. At 0 frames are
     /// still analysed so codes in view stay blocked, but nothing is added.
     var batchCapacity = Int.max
+    /// Batch scans only: height in points, from the bottom edge of this view,
+    /// covered by the batch panel. Codes centred in that strip are ignored.
+    var bottomObscuredHeight: CGFloat = 0
     @Binding var isTorchAvailable: Bool
     @Binding var isTorchOn: Bool
     @Binding var statusMessage: String?
@@ -50,6 +56,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         controller.scanArea = scanArea
         controller.continuesScanning = continuesScanning
         controller.batchCapacity = batchCapacity
+        controller.bottomObscuredHeight = bottomObscuredHeight
         controller.setTorch(on: flashlightMode == .on)
         tapRelay?.controller = controller
         return controller
@@ -62,6 +69,7 @@ struct BarcodeScannerView: UIViewControllerRepresentable {
         uiViewController.scanArea = scanArea
         uiViewController.continuesScanning = continuesScanning
         uiViewController.batchCapacity = batchCapacity
+        uiViewController.bottomObscuredHeight = bottomObscuredHeight
         uiViewController.setTorch(on: flashlightMode == .on)
         tapRelay?.controller = uiViewController
     }
@@ -127,6 +135,24 @@ final class BarcodeScannerTapRelay {
 
     func tap(at point: CGPoint) {
         controller?.handleTap(at: point, source: .swiftUI)
+    }
+
+    // Batch list changes the scanner must know about (main thread; no-ops
+    // outside batch mode).
+
+    /// The user deleted the row of `value`; it is no longer in the list.
+    func batchCodeRemoved(value: String) {
+        controller?.batchCodeRemoved(value: value)
+    }
+
+    /// The user undid the deletion of `value`.
+    func batchCodeRestored(value: String) {
+        controller?.batchCodeRestored(value: value)
+    }
+
+    /// The list refused the delivered `value` because it was full.
+    func batchCodeRejected(value: String) {
+        controller?.batchCodeRejected(value: value)
     }
 }
 
@@ -221,22 +247,39 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             guard oldValue != continuesScanning else { return }
             let continues = continuesScanning
             visionQueue.async { [weak self] in
-                guard let self, !self.didScan else { return }
+                guard let self else { return }
+                // Also when a single result is still on its way: SwiftUI drops it
+                // (its `isBatchAddition` no longer matches the mode) and the code
+                // is detected again in the new mode. Skipping the reset left batch
+                // mode without a tracker and the camera analysing nothing.
+                self.didScan = false
                 self.selectionTracker = BarcodeSelectionTracker()
                 self.batchTracker = continues ? BarcodeBatchTracker() : nil
+                self.candidateKeyByValue.removeAll()
                 self.lastKnownCandidateRects.removeAll()
+                // Forces the overlay update, which also clears a chosen-code highlight.
+                self.isPresentingCandidates = true
                 self.presentCandidates([])
             }
+            updateScanAreaRegion()
         }
     }
-    /// Batch scanning: how many more codes the list can take.
+    /// Batch scanning: how many more codes the list can take. Applied on every
+    /// update, even an unchanged one: the scanner counts its own deliveries down
+    /// and this resyncs it with the list.
     var batchCapacity = Int.max {
         didSet {
-            guard oldValue != batchCapacity else { return }
             let capacity = batchCapacity
             visionQueue.async { [weak self] in
                 self?.remainingBatchCapacity = capacity
             }
+        }
+    }
+    /// Batch scanning: points at the bottom of the view covered by the batch panel.
+    var bottomObscuredHeight: CGFloat = 0 {
+        didSet {
+            guard oldValue != bottomObscuredHeight else { return }
+            updateScanAreaRegion()
         }
     }
 
@@ -255,8 +298,21 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private var desiredTorchOn = false
     private var currentZoomFactor: Double = 1.0
     private var pinchStartZoomFactor: Double = 1.0
+    /// Restarting after a runtime error happens at most once in this interval,
+    /// so a camera that keeps failing does not restart in a loop.
+    private static let runtimeErrorRestartInterval: TimeInterval = 5
+    private var sessionObservers: [NSObjectProtocol] = []
+    /// Session queue. Whether the camera should run (between start and stop),
+    /// so an interruption ending or a restart never turns it or the torch back on.
+    private var isRunningRequested = false
+    private var lastRuntimeErrorRestart: TimeInterval?
+    /// Main thread. Set while the "Camera paused" status is shown.
+    private var isShowingInterruptionStatus = false
     private let scanAreaLock = NSLock()
     private var activeVisionScanRect: CGRect?
+    /// Batch only: the part of the view the batch panel leaves uncovered, in
+    /// capture metadata coordinates. Guarded by `scanAreaLock`.
+    private var activeUncoveredMetadataRect: CGRect?
     private var latestDetectionRegionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
     private var latestAcceptanceRegionOfInterest: CGRect?
 
@@ -269,6 +325,10 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     /// Counted down as codes are delivered and reset from SwiftUI as the list
     /// changes, so a frame never delivers more codes than the list can take.
     private var remainingBatchCapacity = Int.max
+    /// The key each payload was first seen with in this session. One carton
+    /// label can be reported as both ITF-14 and Interleaved 2 of 5; mapping by
+    /// payload keeps it one code (with its first-seen format) for the trackers.
+    private var candidateKeyByValue: [String: BarcodeCandidateKey] = [:]
     private var latestFrameTimestamp: TimeInterval = 0
     private var latestBufferIsPortrait = true
     private var lastKnownCandidateRects: [BarcodeCandidateKey: CGRect] = [:]
@@ -291,7 +351,14 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         configurePinchGesture()
         configureTapGesture()
         configureVision()
+        observeSessionNotifications()
         requestCameraAccessAndConfigure()
+    }
+
+    deinit {
+        for observer in sessionObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -313,7 +380,9 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
 
     func startScanning() {
         sessionQueue.async { [weak self] in
-            guard let self, self.isConfigured, !self.session.isRunning else { return }
+            guard let self else { return }
+            self.isRunningRequested = true
+            guard self.isConfigured, !self.session.isRunning else { return }
             self.session.startRunning()
             self.applyTorchState()
         }
@@ -322,6 +391,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     func stopScanning() {
         sessionQueue.async { [weak self] in
             guard let self else { return }
+            self.isRunningRequested = false
             self.setTorchOnSessionQueue(false)
             guard self.session.isRunning else { return }
             self.session.stopRunning()
@@ -329,9 +399,98 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     }
 
     func setTorch(on isOn: Bool) {
+        // SwiftUI calls this on every render; only a change needs the camera.
+        guard isOn != desiredTorchOn else { return }
         desiredTorchOn = isOn
         sessionQueue.async { [weak self] in
             self?.applyTorchState()
+        }
+    }
+
+    // MARK: Batch list changes (main thread)
+
+    func batchCodeRemoved(value: String) {
+        updateBatchTracker(forValue: value) { tracker, key in tracker.markRemoved(key) }
+    }
+
+    func batchCodeRestored(value: String) {
+        updateBatchTracker(forValue: value) { tracker, key in tracker.markRestored(key) }
+    }
+
+    func batchCodeRejected(value: String) {
+        updateBatchTracker(forValue: value) { tracker, key in tracker.release(key) }
+    }
+
+    /// Applies a list change on `visionQueue`, where the tracker lives. Does
+    /// nothing outside batch mode or for a payload this session has not seen.
+    private func updateBatchTracker(
+        forValue value: String,
+        _ change: @escaping (inout BarcodeBatchTracker, BarcodeCandidateKey) -> Void
+    ) {
+        visionQueue.async { [weak self] in
+            guard let self, var batch = self.batchTracker,
+                  let key = self.candidateKeyByValue[value] else { return }
+            change(&batch, key)
+            self.batchTracker = batch
+        }
+    }
+
+    // MARK: Session interruptions and runtime errors
+
+    private func observeSessionNotifications() {
+        let center = NotificationCenter.default
+        sessionObservers = [
+            center.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: .main) { [weak self] _ in
+                self?.handleSessionRuntimeError()
+            },
+            center.addObserver(forName: AVCaptureSession.wasInterruptedNotification, object: session, queue: .main) { [weak self] _ in
+                self?.handleSessionInterruption(began: true)
+            },
+            center.addObserver(forName: AVCaptureSession.interruptionEndedNotification, object: session, queue: .main) { [weak self] _ in
+                self?.handleSessionInterruption(began: false)
+            },
+        ]
+    }
+
+    /// Main thread. Restarts the session (for example after media services were
+    /// reset), at most once per `runtimeErrorRestartInterval`.
+    private func handleSessionRuntimeError() {
+        sessionQueue.async { [weak self] in
+            guard let self, self.isConfigured, self.isRunningRequested else { return }
+            let now = ProcessInfo.processInfo.systemUptime
+            if let last = self.lastRuntimeErrorRestart, now - last < Self.runtimeErrorRestartInterval {
+                self.updateStatus(NSLocalizedString("Camera failed to start", comment: "Camera failed to start status"))
+                self.publishTorchState(isAvailable: self.videoDevice?.hasTorch ?? false, isOn: false)
+                return
+            }
+            self.lastRuntimeErrorRestart = now
+            if !self.session.isRunning {
+                self.session.startRunning()
+            }
+            self.applyTorchState()
+        }
+    }
+
+    /// Main thread. The session resumes by itself when an interruption (a call,
+    /// another app using the camera) ends; only the status and torch need care.
+    private func handleSessionInterruption(began: Bool) {
+        if began {
+            isShowingInterruptionStatus = true
+            updateStatus(NSLocalizedString("Camera paused", comment: "Scanner status while the camera is interrupted, for example by a call"))
+            sessionQueue.async { [weak self] in
+                guard let self else { return }
+                // The torch goes off with the camera; show that, not the wish.
+                self.publishTorchState(isAvailable: self.videoDevice?.hasTorch ?? false, isOn: false)
+            }
+        } else {
+            if isShowingInterruptionStatus {
+                isShowingInterruptionStatus = false
+                updateStatus(nil)
+            }
+            sessionQueue.async { [weak self] in
+                guard let self, self.isRunningRequested else { return }
+                self.applyTorchState()
+            }
         }
     }
 
@@ -421,7 +580,10 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
     private func updateScanSymbologies() {
         var symbologies = scanFormatProfile.visionSymbologies
         if !symbologies.contains(.qr) { symbologies.append(.qr) }
-        barcodeRequest?.symbologies = symbologies
+        // The request runs on `visionQueue`; change it there, between frames.
+        visionQueue.async { [weak self] in
+            self?.barcodeRequest?.symbologies = symbologies
+        }
     }
 
     private func updateScanAreaRegion() {
@@ -437,8 +599,27 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 visionScanRect = nil
             }
 
+            // Batch only: codes under the batch panel are not added. Kept in
+            // metadata coordinates because the Vision mapping depends on the
+            // buffer orientation, which is known on `visionQueue`.
+            let uncoveredMetadataRect: CGRect?
+            if self.continuesScanning, self.bottomObscuredHeight > 0,
+               let previewLayer = self.previewLayer, !previewLayer.bounds.isEmpty {
+                let bounds = previewLayer.bounds
+                let uncovered = CGRect(
+                    x: bounds.minX,
+                    y: bounds.minY,
+                    width: bounds.width,
+                    height: max(bounds.height - self.bottomObscuredHeight, 0)
+                )
+                uncoveredMetadataRect = previewLayer.metadataOutputRectConverted(fromLayerRect: uncovered)
+            } else {
+                uncoveredMetadataRect = nil
+            }
+
             self.scanAreaLock.lock()
             self.activeVisionScanRect = visionScanRect
+            self.activeUncoveredMetadataRect = uncoveredMetadataRect
             self.scanAreaLock.unlock()
 
             self.visionQueue.async { [weak self] in
@@ -493,8 +674,15 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 self.session.addInput(input)
 
                 self.videoOutput.alwaysDiscardsLateVideoFrames = true
+                // The camera's native YUV format: Vision reads it directly, and at
+                // 4K it avoids a BGRA conversion and ~33 MB buffers per frame.
+                // Nothing here reads the pixels themselves.
+                let preferredPixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+                let pixelFormat = self.videoOutput.availableVideoPixelFormatTypes.contains(preferredPixelFormat)
+                    ? preferredPixelFormat
+                    : kCVPixelFormatType_32BGRA
                 self.videoOutput.videoSettings = [
-                    kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+                    kCVPixelBufferPixelFormatTypeKey as String: pixelFormat
                 ]
                 self.videoOutput.setSampleBufferDelegate(self, queue: self.frameQueue)
 
@@ -539,6 +727,9 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 self.updateStatus(nil)
                 self.publishTorchState()
                 self.setZoomFactorOnSessionQueue(self.defaultZoomFactor)
+                // Layer-to-metadata conversions depend on the input's format;
+                // redo the scan-area rects in case layout ran before it existed.
+                self.updateScanAreaRegion()
                 self.startScanning()
             } catch {
                 self.updateStatus(NSLocalizedString("Camera failed to start", comment: "Camera failed to start status"))
@@ -646,10 +837,15 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
             latestBufferIsPortrait = CVPixelBufferGetHeight(pixelBuffer) >= CVPixelBufferGetWidth(pixelBuffer)
         }
-        latestAcceptanceRegionOfInterest = currentActiveVisionScanRect()
-        latestDetectionRegionOfInterest = latestAcceptanceRegionOfInterest.map {
+        let scanAreaRects = currentScanAreaRects()
+        latestDetectionRegionOfInterest = scanAreaRects.scanRect.map {
             Self.expandedVisionRect($0, paddingRatio: 0.18)
         } ?? Self.fullVisionRegion
+        latestAcceptanceRegionOfInterest = Self.acceptanceRect(
+            scanRect: scanAreaRects.scanRect,
+            uncoveredMetadataRect: scanAreaRects.uncoveredMetadataRect,
+            bufferIsPortrait: latestBufferIsPortrait
+        )
         barcodeRequest.regionOfInterest = latestDetectionRegionOfInterest
 
         let handler = VNImageRequestHandler(cmSampleBuffer: sampleBuffer, orientation: .right, options: [:])
@@ -682,7 +878,11 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
                 acceptanceRegionOfInterest: latestAcceptanceRegionOfInterest
             ) else { continue }
 
-            let key = BarcodeCandidateKey(value: value, symbology: observation.symbology.rawValue)
+            // Within a session the payload is the identity, reported with the
+            // symbology it was first seen as (see `candidateKeyByValue`).
+            let key = candidateKeyByValue[value]
+                ?? BarcodeCandidateKey(value: value, symbology: observation.symbology.rawValue)
+            candidateKeyByValue[value] = key
             guard frameRects[key] == nil else { continue }
             frameCandidates.append(key)
             frameRects[key] = Self.fullImageBoundingBox(
@@ -701,7 +901,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             presentBatchOutlines(frameRects, tracker: batch)
             // One delivery per code, in order; each gets its sound and row.
             for key in added {
-                deliverResult(for: key, highlightingSelection: false)
+                deliverResult(for: key, highlightingSelection: false, isBatchAddition: true)
             }
             return
         }
@@ -715,7 +915,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             didScan = true
             lastKnownCandidateRects.removeAll()
             presentCandidates([])
-            deliverResult(for: key, highlightingSelection: false)
+            deliverResult(for: key, highlightingSelection: false, isBatchAddition: false)
         case .choose(let keys):
             lastKnownCandidateRects.merge(frameRects) { _, newRect in newRect }
             // Codes Vision skipped this frame keep their last outline until they expire.
@@ -779,24 +979,24 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
             self.didScan = true
             self.isPresentingCandidates = false
             self.lastKnownCandidateRects.removeAll()
-            self.deliverResult(for: key, highlightingSelection: true)
+            self.deliverResult(for: key, highlightingSelection: true, isBatchAddition: false)
         }
     }
 
-    private func deliverResult(for key: BarcodeCandidateKey, highlightingSelection: Bool) {
+    private func deliverResult(for key: BarcodeCandidateKey, highlightingSelection: Bool, isBatchAddition: Bool) {
         let result = ScannerCodeResult(
             value: key.value,
             codeFormat: key.symbology,
-            isManualEntry: false
+            isManualEntry: false,
+            isBatchAddition: isBatchAddition
         )
-        let continues = batchTracker != nil
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if highlightingSelection {
                 self.candidateOverlay.highlight(key)
             }
-            if !continues {
+            if !isBatchAddition {
                 self.updateCandidateAccessibility([])
             }
             self.delegate?.barcodeCaptureViewController(self, didScan: result)
@@ -809,29 +1009,17 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         var elementsByKey: [BarcodeCandidateKey: BarcodeCandidateAccessibilityElement] = [:]
         var selectableCount = 0
 
-        for candidate in candidates {
+        // Only single-scan choices are elements: they are how a VoiceOver user
+        // picks a code. Batch outlines are not interactive and the batch panel
+        // lists the codes; elements for them pulled focus away from the panel.
+        for candidate in candidates where candidate.style == .selectable {
             let element = candidateAccessibilityElements[candidate.key]
                 ?? BarcodeCandidateAccessibilityElement(accessibilityContainer: view as Any)
-            let label = "\(candidate.key.value), \(ScanHistoryItem.displayName(forCodeFormat: candidate.key.symbology))"
-            switch candidate.style {
-            case .confirming:
-                // Not added yet and not interactive; announced once it is added.
-                continue
-            case .added:
-                element.accessibilityLabel = String(
-                    format: NSLocalizedString("%@, added", comment: "Outlined code already in the batch list; %@ is the code and its format"),
-                    label
-                )
-                element.accessibilityHint = nil
-                element.accessibilityTraits = .staticText
-                element.onActivate = nil
-            case .selectable:
-                element.accessibilityLabel = label
-                element.accessibilityHint = NSLocalizedString("Uses this code.", comment: "Selectable scanned code accessibility hint")
-                element.accessibilityTraits = .button
-                element.onActivate = { [weak self] in self?.selectCandidate(candidate.key) }
-                selectableCount += 1
-            }
+            element.accessibilityLabel = "\(Self.spokenCode(candidate.key.value)), \(ScanHistoryItem.displayName(forCodeFormat: candidate.key.symbology))"
+            element.accessibilityHint = NSLocalizedString("Uses this code.", comment: "Selectable scanned code accessibility hint")
+            element.accessibilityTraits = .button
+            element.onActivate = { [weak self] in self?.selectCandidate(candidate.key) }
+            selectableCount += 1
             element.accessibilityFrameInContainerSpace = BarcodeCandidateOverlayView.tapTarget(for: candidate.rect)
             elements.append(element)
             elementsByKey[candidate.key] = element
@@ -840,7 +1028,7 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         candidateAccessibilityElements = elementsByKey
         view.accessibilityElements = elements.isEmpty ? nil : elements
 
-        if Set(elementsByKey.keys) != previousKeys {
+        if !continuesScanning, Set(elementsByKey.keys) != previousKeys {
             UIAccessibility.post(notification: .layoutChanged, argument: nil)
         }
         if publishedSelectableCodeCount == 0, selectableCount > 0 {
@@ -879,12 +1067,33 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         return acceptanceRegionOfInterest.contains(observationCenter)
     }
 
-    private func currentActiveVisionScanRect() -> CGRect? {
+    private func currentScanAreaRects() -> (scanRect: CGRect?, uncoveredMetadataRect: CGRect?) {
         scanAreaLock.lock()
         defer { scanAreaLock.unlock() }
-        return activeVisionScanRect
+        return (activeVisionScanRect, activeUncoveredMetadataRect)
     }
 
+    /// Where a code's centre must lie to be used: the scan area (nil: the whole
+    /// image), in batch mode cut down to the part the batch panel leaves visible.
+    private static func acceptanceRect(
+        scanRect: CGRect?,
+        uncoveredMetadataRect: CGRect?,
+        bufferIsPortrait: Bool
+    ) -> CGRect? {
+        guard let uncoveredMetadataRect else { return scanRect }
+        let uncovered = visionRect(fromMetadataRect: uncoveredMetadataRect, bufferIsPortrait: bufferIsPortrait)
+        // An empty intersection (`.null`) contains no point: nothing is used.
+        return (scanRect ?? fullVisionRegion).intersection(uncovered)
+    }
+
+    /// Long payloads (URLs, PDF417 data) are cut so VoiceOver does not read them in full.
+    private static func spokenCode(_ value: String) -> String {
+        value.count > 40 ? String(value.prefix(40)) + "…" : value
+    }
+
+    /// For the centred scan box only. It is symmetric about the image centre,
+    /// where this agrees with `visionRect(fromMetadataRect:bufferIsPortrait:)`;
+    /// any other rect needs that exact inverse of the overlay mapping.
     private static func visionRect(fromMetadataRect rect: CGRect) -> CGRect {
         return clampedUnitRect(
             CGRect(
@@ -908,6 +1117,14 @@ final class BarcodeCaptureViewController: UIViewController, AVCaptureVideoDataOu
         }
         // Unrotated sensor buffer: `.right` yields the portrait image, swapping the axes.
         return CGRect(x: 1 - rect.maxY, y: 1 - rect.maxX, width: rect.height, height: rect.width)
+    }
+
+    /// The exact inverse of `metadataRect(fromVisionRect:bufferIsPortrait:)`.
+    private static func visionRect(fromMetadataRect rect: CGRect, bufferIsPortrait: Bool) -> CGRect {
+        if bufferIsPortrait {
+            return clampedUnitRect(CGRect(x: 1 - rect.maxX, y: rect.minY, width: rect.width, height: rect.height))
+        }
+        return clampedUnitRect(CGRect(x: 1 - rect.maxY, y: 1 - rect.maxX, width: rect.height, height: rect.width))
     }
 
     private static func expandedVisionRect(_ rect: CGRect, paddingRatio: CGFloat) -> CGRect {
