@@ -13,6 +13,17 @@ struct BatchScanEntry: Identifiable, Equatable {
         self.codeFormat = codeFormat
         self.scannedAt = scannedAt
     }
+
+    /// The value as VoiceOver speaks it in labels and announcements: long
+    /// payloads are cut so they are not read in full every time.
+    var spokenValue: String {
+        Self.spokenPreview(of: value)
+    }
+
+    static func spokenPreview(of value: String, limit: Int = 40) -> String {
+        guard value.count > limit else { return value }
+        return String(value.prefix(limit)) + "…"
+    }
 }
 
 /// The ordered list of codes of one batch scan. Pure value type (Foundation
@@ -44,8 +55,33 @@ struct BatchScanCollection: Equatable {
         return .added(count: entries.count)
     }
 
-    mutating func remove(id: BatchScanEntry.ID) {
-        entries.removeAll { $0.id == id }
+    func contains(value: String) -> Bool {
+        entries.contains { $0.value == value }
+    }
+
+    /// Entries whose value already appears earlier in the list.
+    var repeatedEntryIDs: Set<BatchScanEntry.ID> {
+        var seen = Set<String>()
+        var repeated = Set<BatchScanEntry.ID>()
+        for entry in entries where !seen.insert(entry.value).inserted {
+            repeated.insert(entry.id)
+        }
+        return repeated
+    }
+
+    /// Removes an entry and returns it with its position, so it can be restored.
+    @discardableResult
+    mutating func remove(id: BatchScanEntry.ID) -> (entry: BatchScanEntry, index: Int)? {
+        guard let index = entries.firstIndex(where: { $0.id == id }) else { return nil }
+        return (entries.remove(at: index), index)
+    }
+
+    /// Puts a removed entry back at its old position (or at the end if the list
+    /// has become shorter). Refused when the list is full or already has it.
+    mutating func restore(_ entry: BatchScanEntry, at index: Int) -> Bool {
+        guard !isFull, !entries.contains(where: { $0.id == entry.id }) else { return false }
+        entries.insert(entry, at: min(max(index, 0), entries.count))
+        return true
     }
 
     mutating func removeAll() {
@@ -57,5 +93,28 @@ struct BatchScanCollection: Equatable {
     /// applied later by the keyboard, once, exactly as for a single scan.
     func joinedText(separator: BatchSeparator) -> String {
         entries.map(\.value).joined(separator: separator.text)
+    }
+}
+
+extension BatchSeparator {
+    /// Whether the value contains this separator, which makes the joined text
+    /// ambiguous. Space also matches other whitespace and line breaks, New Line
+    /// also a carriage return: receiving fields treat them alike.
+    func occurs(in value: String) -> Bool {
+        let characters: CharacterSet
+        switch self {
+        case .comma:
+            characters = CharacterSet(charactersIn: ",")
+        case .semicolon:
+            characters = CharacterSet(charactersIn: ";")
+        case .space:
+            characters = .whitespacesAndNewlines
+        case .tab:
+            characters = CharacterSet(charactersIn: "\t")
+        case .newline:
+            characters = .newlines
+        }
+        // Scalars, not Characters: "\r\n" is a single Character in Swift.
+        return value.unicodeScalars.contains { characters.contains($0) }
     }
 }

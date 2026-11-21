@@ -400,17 +400,20 @@ private struct ScannerSettingsPage: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            if scannerScanMode.wrappedValue == .batch {
-                Picker("Batch Separator", selection: batchSeparator) {
-                    ForEach(BatchSeparator.allCases) { separator in
-                        Text(separator.title).tag(separator)
-                    }
+            // Always shown: the scanner's toolbar can switch to Batch whatever the default.
+            Picker("Batch Separator", selection: batchSeparator) {
+                ForEach(BatchSeparator.allCases) { separator in
+                    Text(separator.title).tag(separator)
                 }
-
-                Text(batchSeparator.wrappedValue.detail)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
+
+            Text(batchSeparator.wrappedValue.detail)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
+            Text("Used whenever you scan in Batch mode, including when you switch to Batch in the scanner.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         } header: {
             Text("Scanner")
         } footer: {

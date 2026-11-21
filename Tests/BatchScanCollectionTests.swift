@@ -11,6 +11,10 @@ enum BatchScanCollectionTests {
         singleCodeBatchIsThePlainCode()
         stopsAtTheCap()
         removingAnEntryKeepsOrderAndFreesASlot()
+        undoPutsAnEntryBackAtItsPosition()
+        marksRepeatedValues()
+        detectsCodesContainingTheSeparator()
+        capsTheSpokenValue()
         print("BatchScanCollectionTests passed")
     }
 
@@ -86,5 +90,64 @@ enum BatchScanCollectionTests {
         precondition(batch.joinedText(separator: .comma) == "A,C,D")
         batch.removeAll()
         precondition(batch.isEmpty)
+    }
+
+    static func undoPutsAnEntryBackAtItsPosition() {
+        var batch = BatchScanCollection(maximumCount: 3)
+        let entries = ["A", "B", "C"].map { BatchScanEntry(value: $0, codeFormat: nil) }
+        for entry in entries { _ = batch.append(entry) }
+        let removed = batch.remove(id: entries[1].id)
+        precondition(removed?.entry == entries[1] && removed?.index == 1)
+        precondition(batch.remove(id: entries[1].id) == nil, "already removed")
+        precondition(!batch.contains(value: "B"))
+        precondition(batch.restore(entries[1], at: 1))
+        precondition(batch.entries.map(\.value) == ["A", "B", "C"])
+        precondition(!batch.restore(entries[1], at: 1), "no second copy of the same entry")
+
+        // A shorter list gets the entry at the end; a full list refuses it.
+        _ = batch.remove(id: entries[0].id)
+        let last = batch.remove(id: entries[2].id)!
+        precondition(batch.restore(last.entry, at: last.index))
+        precondition(batch.entries.map(\.value) == ["B", "C"])
+        _ = batch.append(BatchScanEntry(value: "D", codeFormat: nil))
+        precondition(!batch.restore(entries[0], at: 0))
+        precondition(batch.entries.map(\.value) == ["B", "C", "D"])
+    }
+
+    static func marksRepeatedValues() {
+        let batch = collection(["A", "B", "A", "C", "A", "B"])
+        let ids = batch.entries.map(\.id)
+        precondition(batch.repeatedEntryIDs == [ids[2], ids[4], ids[5]])
+        precondition(batch.contains(value: "C") && !batch.contains(value: "c"))
+        precondition(collection(["A", " A", "a"]).repeatedEntryIDs.isEmpty, "values compare exactly")
+    }
+
+    static func detectsCodesContainingTheSeparator() {
+        let cases: [(String, Set<BatchSeparator>)] = [
+            ("4012345678901", []),
+            ("a,b", [.comma]),
+            ("a;b", [.semicolon]),
+            ("a b", [.space]),
+            ("a\tb", [.space, .tab]),
+            ("a\nb", [.space, .newline]),
+            ("a\rb", [.space, .newline]),
+            ("a\r\nb", [.space, .newline]),
+            ("a\u{00A0}b", [.space]),
+            (",;", [.comma, .semicolon]),
+        ]
+        for (value, expected) in cases {
+            for separator in BatchSeparator.allCases {
+                precondition(separator.occurs(in: value) == expected.contains(separator),
+                             "\(separator) in \(value.debugDescription)")
+            }
+        }
+    }
+
+    static func capsTheSpokenValue() {
+        let short = String(repeating: "7", count: 40)
+        precondition(BatchScanEntry(value: short, codeFormat: nil).spokenValue == short)
+        let long = String(repeating: "x", count: 200)
+        let spoken = BatchScanEntry(value: long, codeFormat: nil).spokenValue
+        precondition(spoken == String(repeating: "x", count: 40) + "…")
     }
 }

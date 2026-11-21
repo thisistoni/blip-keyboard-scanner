@@ -279,10 +279,23 @@ enum ScannerScanMode: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Shown next to the mode in the scanner's mode menu.
+    var systemImage: String {
+        switch self {
+        case .single:
+            "viewfinder"
+        case .batch:
+            "square.stack.3d.up"
+        }
+    }
+
     var detail: String {
         switch self {
         case .single:
-            NSLocalizedString("The scanner closes after one code.", comment: "Single scan mode detail")
+            NSLocalizedString(
+                "The scanner closes after one code. To collect several codes, switch to Batch with the stack button at the top of the scanner.",
+                comment: "Single scan mode detail"
+            )
         case .batch:
             String(
                 format: NSLocalizedString(
@@ -297,9 +310,9 @@ enum ScannerScanMode: String, CaseIterable, Identifiable {
 
 enum BatchScanLimit {
     /// Codes per batch. Large enough for a shelf or carton count, small enough
-    /// to review on a phone and to keep the joined text that travels through the
-    /// shared defaults to the keyboard small (50 typical 13-48 character codes
-    /// stay under 3 KB).
+    /// to review on a phone. Only the count is limited: the joined text that
+    /// travels through the shared defaults to the keyboard grows with the codes'
+    /// length (2D codes can carry long payloads).
     static let maximumCodeCount = 50
 }
 
