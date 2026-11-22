@@ -621,7 +621,7 @@ struct KeyboardReturnGuidanceView: View {
         case .safari:
             "For automatic return, choose another supported Return Target."
         case .custom:
-            "Check the Custom Return URL in Settings under Return & Insertion."
+            "Check the **Custom Return URL** in Settings under **Return & Insertion**."
         default:
             nil
         }

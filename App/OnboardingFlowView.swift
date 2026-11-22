@@ -39,7 +39,7 @@ struct OnboardingFlowView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 18) {
                     switch page {
                     case .howItWorks: howItWorksPage
                     case .keyboard: keyboardPage
@@ -47,8 +47,8 @@ struct OnboardingFlowView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
+                .padding(.top, 4)
+                .padding(.bottom, 20)
                 .frame(maxWidth: 560)
                 .frame(maxWidth: .infinity)
             }
@@ -96,7 +96,7 @@ struct OnboardingFlowView: View {
                 OnboardingStep(
                     number: 3,
                     title: "The code is typed for you",
-                    message: "You return to your app and Blip puts the code into the text field."
+                    message: "Blip goes back to the app you choose in this introduction and puts the code into the text field."
                 )
             }
         }
@@ -146,8 +146,8 @@ struct OnboardingFlowView: View {
         Group {
             OnboardingHeader(
                 systemImage: "arrow.uturn.backward.circle",
-                title: "Getting back to your app",
-                message: "After a scan, Blip returns to the app you were typing in. Where do you scan most?"
+                title: "Where should Blip return to?",
+                message: "Blip cannot tell which app you were typing in. After every scan it returns to the one app you choose here."
             )
 
             OnboardingCard {
@@ -165,16 +165,46 @@ struct OnboardingFlowView: View {
                 }
             }
 
-            Text(returnTarget.usesSystemPreviousAppReturn
-                 ? "iOS does not let Blip return to Safari or to other apps by itself. After a scan, tap the small back arrow at the top left of the screen, then tap Insert Last Scan on the Blip keyboard."
-                 : "Blip returns by itself after a scan and puts the code into the text field.")
+            Text(Self.emphasized(returnExplanation))
                 .font(.subheadline)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("You can change this at any time in Settings under Return & Insertion.")
+            Text("If you scan in a different app later, change this in Settings under **Return & Insertion**.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// What the chosen target really does. Blip never goes back to "the app
+    /// you came from": it opens the one configured target, or nothing.
+    private var returnExplanation: String {
+        switch returnTarget {
+        case .safari:
+            NSLocalizedString(
+                "Blip cannot open Safari or other apps by itself. After every scan, tap the small back arrow at the top left of the screen, then tap **Insert Last Scan** on the Blip keyboard.",
+                comment: "Onboarding explanation of manual return"
+            )
+        case .custom:
+            NSLocalizedString(
+                "After every scan Blip opens your **Custom Return URL** and puts the code into the text field.",
+                comment: "Onboarding explanation of the custom return target"
+            )
+        default:
+            String(
+                format: NSLocalizedString(
+                    "After every scan Blip opens **%@**, whichever app you started in, and puts the code into the text field.",
+                    comment: "Onboarding explanation of automatic return; %@ is the browser"
+                ),
+                returnTarget.title
+            )
+        }
+    }
+
+    /// Names of buttons and settings are set in bold (`**name**` in the text),
+    /// so they stand out from the sentence around them.
+    private static func emphasized(_ text: String) -> AttributedString {
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
     }
 
     /// The custom target needs a URL and is set up in Settings; it is listed
@@ -273,12 +303,12 @@ private struct OnboardingHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Image(systemName: systemImage)
-                .font(.system(size: 44, weight: .semibold))
+                .font(.system(size: 34, weight: .semibold))
                 .foregroundStyle(.blue)
                 .accessibilityHidden(true)
 
             Text(title)
-                .font(.largeTitle.weight(.bold))
+                .font(.title.weight(.bold))
                 .accessibilityAddTraits(.isHeader)
 
             Text(message)
@@ -356,7 +386,7 @@ private struct OnboardingChoiceRow: View {
                     .foregroundStyle(Color.secondary)
                     .multilineTextAlignment(.trailing)
             }
-            .padding(.vertical, 13)
+            .padding(.vertical, 11)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -355,7 +355,7 @@
 "%@ did not open" = "%@ wurde nicht geöffnet";
 "No installed app answers to your Custom Return URL." = "Keine installierte App reagiert auf deine eigene Rückkehr-URL.";
 "Blip could not open %@. Check that it is installed." = "Blip konnte %@ nicht öffnen. Prüfe, ob die App installiert ist.";
-"Check the Custom Return URL in Settings under Return & Insertion." = "Prüfe die eigene Rückkehr-URL in den Einstellungen unter „Rückkehr & Einfügen“.";
+"Check the **Custom Return URL** in Settings under **Return & Insertion**." = "Prüfe die **eigene Rückkehr-URL** in den Einstellungen unter **Rückkehr & Einfügen**.";
 "Scan into any text field" = "In jedes Textfeld scannen";
 "Blip is a keyboard with a Scan button. It types barcodes and QR codes for you, in any app." = "Blip ist eine Tastatur mit Scan-Taste. Sie tippt Barcodes und QR-Codes für dich, in jeder App.";
 "Switch to the Blip keyboard" = "Zur Blip-Tastatur wechseln";
@@ -363,7 +363,6 @@
 "Tap Scan" = "Auf „Scan“ tippen";
 "The Blip app opens its camera and reads the code." = "Die Blip-App öffnet ihre Kamera und liest den Code.";
 "The code is typed for you" = "Der Code wird für dich getippt";
-"You return to your app and Blip puts the code into the text field." = "Du kehrst zu deiner App zurück und Blip setzt den Code in das Textfeld.";
 "Turn on the Blip keyboard" = "Blip-Tastatur einschalten";
 "You do this once, in the iOS Settings." = "Das machst du einmal, in den iOS-Einstellungen.";
 "Use the button below. Settings opens on the Blip page." = "Nutze die Taste unten. Die Einstellungen öffnen sich auf der Blip-Seite.";
@@ -372,11 +371,6 @@
 "Without it the scanner cannot hand the code to the keyboard. Your scans stay on this device." = "Ohne ihn kann der Scanner den Code nicht an die Tastatur übergeben. Deine Scans bleiben auf diesem Gerät.";
 "The Blip keyboard is on." = "Die Blip-Tastatur ist eingeschaltet.";
 "Come back to Blip when you are done. If Blip does not notice the keyboard, close Blip completely and open it again." = "Komm zu Blip zurück, wenn du fertig bist. Falls Blip die Tastatur nicht erkennt, schließe Blip vollständig und öffne es erneut.";
-"Getting back to your app" = "Zurück zu deiner App";
-"After a scan, Blip returns to the app you were typing in. Where do you scan most?" = "Nach dem Scan kehrt Blip zu der App zurück, in der du getippt hast. Wo scannst du am häufigsten?";
-"iOS does not let Blip return to Safari or to other apps by itself. After a scan, tap the small back arrow at the top left of the screen, then tap Insert Last Scan on the Blip keyboard." = "iOS erlaubt Blip nicht, selbst zu Safari oder zu anderen Apps zurückzukehren. Tippe nach dem Scan oben links auf den kleinen Zurück-Pfeil und dann auf der Blip-Tastatur auf „Scan einfügen“.";
-"Blip returns by itself after a scan and puts the code into the text field." = "Blip kehrt nach dem Scan selbst zurück und setzt den Code in das Textfeld.";
-"You can change this at any time in Settings under Return & Insertion." = "Du kannst das jederzeit in den Einstellungen unter „Rückkehr & Einfügen“ ändern.";
 "Safari or another app" = "Safari oder eine andere App";
 "Step %d of %d" = "Schritt %d von %d";
 "Continue" = "Weiter";
@@ -385,3 +379,10 @@
 "Open Settings" = "Einstellungen öffnen";
 "Manual" = "Manuell";
 "Automatic" = "Automatisch";
+"Blip goes back to the app you choose in this introduction and puts the code into the text field." = "Blip kehrt zu der App zurück, die du in dieser Einführung auswählst, und setzt den Code in das Textfeld.";
+"Where should Blip return to?" = "Wohin soll Blip zurückkehren?";
+"Blip cannot tell which app you were typing in. After every scan it returns to the one app you choose here." = "Blip kann nicht erkennen, in welcher App du getippt hast. Nach jedem Scan kehrt es zu der einen App zurück, die du hier auswählst.";
+"Blip cannot open Safari or other apps by itself. After every scan, tap the small back arrow at the top left of the screen, then tap **Insert Last Scan** on the Blip keyboard." = "Blip kann Safari und andere Apps nicht selbst öffnen. Tippe nach jedem Scan oben links auf den kleinen Zurück-Pfeil und dann auf der Blip-Tastatur auf **Scan einfügen**.";
+"After every scan Blip opens your **Custom Return URL** and puts the code into the text field." = "Nach jedem Scan öffnet Blip deine **eigene Rückkehr-URL** und setzt den Code in das Textfeld.";
+"After every scan Blip opens **%@**, whichever app you started in, and puts the code into the text field." = "Nach jedem Scan öffnet Blip **%@**, egal in welcher App du gestartet bist, und setzt den Code in das Textfeld.";
+"If you scan in a different app later, change this in Settings under **Return & Insertion**." = "Wenn du später in einer anderen App scannst, ändere das in den Einstellungen unter **Rückkehr & Einfügen**.";
