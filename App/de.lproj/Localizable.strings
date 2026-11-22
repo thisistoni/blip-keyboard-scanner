@@ -176,7 +176,6 @@
 "Maximum default zoom for tiny or distant codes." = "Maximaler Standardzoom für sehr kleine oder entfernte Codes.";
 "More" = "Mehr";
 "No cloud sync" = "Keine Cloud-Synchronisierung";
-"No matching scans" = "Keine passenden Scans";
 "No scan history" = "Kein Scanverlauf";
 "Not queued" = "Nicht vorgemerkt";
 "Only scan codes inside the centered guide box." = "Nur Codes innerhalb des zentrierten Rahmens scannen.";
@@ -197,7 +196,6 @@
 "Scan history is local to this device and can be cleared from the History tab." = "Der Scanverlauf ist lokal auf diesem Gerät und kann im Verlauf-Tab gelöscht werden.";
 "Scan suffix" = "Scan-Suffix";
 "Scans stay on this device" = "Scans bleiben auf diesem Gerät";
-"Search scans" = "Scans suchen";
 "Send Feedback" = "Feedback senden";
 "Support Page" = "Support-Seite";
 "Sound, flashlight, zoom, and scan area" = "Sound, Taschenlampe, Zoom und Scanbereich";
@@ -205,7 +203,6 @@
 "The profile contains an invalid value for %@." = "Das Profil enthält einen ungültigen Wert für %@.";
 "This profile matches the current settings." = "Dieses Profil entspricht den aktuellen Einstellungen.";
 "This removes local scan history from this device." = "Dadurch wird der lokale Scanverlauf von diesem Gerät entfernt.";
-"Try a different search term." = "Versuche einen anderen Suchbegriff.";
 "Unknown" = "Unbekannt";
 "Unknown format" = "Unbekanntes Format";
 "Use the normal camera view." = "Normale Kameraansicht verwenden.";
@@ -350,3 +347,9 @@
 "Show Less" = "Weniger anzeigen";
 "Scan several codes at once" = "Mehrere Codes auf einmal scannen";
 "Switch to Batch with the stack button at the top of the scanner to collect a list and insert it in one go." = "Tippe oben im Scanner auf das Stapel-Symbol und wähle „Mehrfach“, um eine Liste zu sammeln und in einem Schritt einzufügen.";
+"For example msteams" = "Zum Beispiel msteams";
+"Your Custom Return URL is the link name (URL scheme) of the app Blip should open after a scan, for example msteams for Microsoft Teams. To find it, ask the app's maker or search the web for the app's name and “URL scheme”. Then test it with the button below." = "Deine eigene Rückkehr-URL ist der Link-Name (URL-Schema) der App, die Blip nach dem Scan öffnen soll, zum Beispiel msteams für Microsoft Teams. Du findest ihn beim Hersteller der App oder über eine Websuche nach dem App-Namen und „URL-Schema“. Teste ihn danach mit der Taste darunter.";
+"No App Opened" = "Keine App geöffnet";
+"No installed app answers to this Custom Return URL. Check the spelling." = "Keine installierte App reagiert auf diese Rückkehr-URL. Prüfe die Schreibweise.";
+"Tap the previous-app control in the top-left to return to your app." = "Tippe oben links auf die Steuerung zur vorherigen App, um zu deiner App zurückzukehren.";
+"Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion." = "Blip konnte deine eigene Rückkehr-URL nicht öffnen. Prüfe sie in den Einstellungen unter „Rückkehr & Einfügen“.";

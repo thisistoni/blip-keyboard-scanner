@@ -498,7 +498,17 @@ struct ScannerScreen: View {
 
     private func finishKeyboardSession(_ session: ScannerSession, hasPendingScan: Bool) {
         if session.returnTarget == .custom {
-            SourceAppReturnController.openCustomReturnURL(session.customReturnURL)
+            // A mistyped or empty custom link opens nothing: say how to get back
+            // instead of leaving the user in Blip without a hint.
+            SourceAppReturnController.openCustomReturnURL(session.customReturnURL) { didOpen in
+                guard !didOpen else { return }
+                Task { @MainActor in
+                    returnGuidance = KeyboardReturnGuidance(
+                        target: session.returnTarget,
+                        hasPendingScan: hasPendingScan
+                    )
+                }
+            }
             return
         }
 
@@ -568,6 +578,17 @@ struct KeyboardReturnGuidanceView: View {
     let guidance: KeyboardReturnGuidance
     let onClose: () -> Void
 
+    private var footnote: LocalizedStringKey {
+        switch guidance.target {
+        case .safari:
+            "For automatic return, choose another supported Return Target."
+        case .custom:
+            "Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion."
+        default:
+            "If the app did not reopen, use iOS's previous-app control."
+        }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
@@ -598,6 +619,11 @@ struct KeyboardReturnGuidanceView: View {
                     if guidance.target == .safari {
                         KeyboardReturnGuidanceStep(
                             text: Text("Return to your original Safari tab and text field with iOS's previous-app control."),
+                            systemImage: "arrow.backward.circle.fill"
+                        )
+                    } else if guidance.target == .custom {
+                        KeyboardReturnGuidanceStep(
+                            text: Text("Tap the previous-app control in the top-left to return to your app."),
                             systemImage: "arrow.backward.circle.fill"
                         )
                     } else {
@@ -631,9 +657,7 @@ struct KeyboardReturnGuidanceView: View {
                 .padding(20)
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
 
-                Text(guidance.target == .safari
-                     ? "For automatic return, choose another supported Return Target."
-                     : "If the app did not reopen, use iOS's previous-app control.")
+                Text(footnote)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

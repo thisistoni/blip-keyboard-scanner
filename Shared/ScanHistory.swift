@@ -196,8 +196,12 @@ enum ScanHistoryStore {
             return items()
         }
 
-        let filtered = rawItems().filter { $0.scannedAt >= cutoffDate }
-        save(filtered)
+        let stored = rawItems()
+        let filtered = stored.filter { $0.scannedAt >= cutoffDate }
+        // Usually nothing has expired: leave the stored history untouched then.
+        if filtered.count != stored.count {
+            save(filtered)
+        }
         return filtered.sorted { $0.scannedAt > $1.scannedAt }
     }
 
@@ -207,16 +211,22 @@ enum ScanHistoryStore {
 
     /// Records several scans (in scan order) with one read and write, e.g. a batch.
     static func record(contentsOf items: [ScanHistoryItem]) {
-        guard SharedKeyboardState.scanHistoryRetention != .off else {
+        let retention = SharedKeyboardState.scanHistoryRetention
+        guard retention != .off else {
             save([])
             return
         }
         guard !items.isEmpty else { return }
 
-        var currentItems = applyRetention()
+        // The history is stored as one value, and this runs on the way back to
+        // the keyboard: read it once and write it once.
+        var currentItems = rawItems()
+        if let cutoffDate = retention.cutoffDate() {
+            currentItems.removeAll { $0.scannedAt < cutoffDate }
+        }
+        currentItems.sort { $0.scannedAt > $1.scannedAt }
         currentItems.insert(contentsOf: items.reversed(), at: 0)
         save(currentItems)
-        _ = applyRetention()
     }
 
     static func delete(_ item: ScanHistoryItem) {

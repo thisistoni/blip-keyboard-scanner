@@ -35,7 +35,10 @@ struct AppRootView: View {
             refreshSetupStatus()
         }
         .onReceive(setupPoller) { _ in
-            refreshSetupStatus()
+            // Only the keyboard state. Expired history is removed when the app
+            // opens or becomes active; reading the whole history here, several
+            // times a second, made a long history slow the app down.
+            setupStatus = .current
         }
     }
 

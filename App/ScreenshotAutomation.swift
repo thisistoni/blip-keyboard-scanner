@@ -176,7 +176,8 @@ struct AppStoreScreenshotRootView: View {
             }
         case .guidance:
             KeyboardReturnGuidanceView(
-                guidance: KeyboardReturnGuidance(target: .safari, hasPendingScan: true),
+                // The review follows the stored Return Target, e.g. `-returnTarget custom`.
+                guidance: KeyboardReturnGuidance(target: SharedKeyboardState.returnTarget, hasPendingScan: true),
                 onClose: {}
             )
         case .profiles:

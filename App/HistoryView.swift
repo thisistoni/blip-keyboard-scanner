@@ -8,7 +8,6 @@ struct HistoryView: View {
     private var retentionRawValue = SharedKeyboardState.scanHistoryRetention.rawValue
 
     @State private var items: [ScanHistoryItem] = []
-    @State private var searchText = ""
     @State private var showingClearConfirmation = false
     @State private var showingMailError = false
     @State private var copiedTarget: HistoryCopyTarget?
@@ -21,31 +20,15 @@ struct HistoryView: View {
         ScanHistoryRetention(rawValue: retentionRawValue) ?? .thirtyDays
     }
 
-    private var filteredItems: [ScanHistoryItem] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else { return items }
-
-        return items.filter { item in
-            [
-                item.value,
-                item.codeFormat ?? "",
-                item.source.title,
-                item.returnTarget?.title ?? "",
-                item.insertionStatus.title,
-            ]
-            .contains { $0.lowercased().contains(query) }
-        }
-    }
-
     var body: some View {
         NavigationStack {
             Group {
-                if filteredItems.isEmpty {
-                    HistoryEmptyState(isSearching: !searchText.isEmpty, retention: retention)
+                if items.isEmpty {
+                    HistoryEmptyState(retention: retention)
                 } else {
                     List {
                         Section {
-                            ForEach(filteredItems) { item in
+                            ForEach(items) { item in
                                 HistoryRow(
                                     item: item,
                                     copiedTarget: copiedTarget?.itemID == item.id ? copiedTarget : nil,
@@ -71,7 +54,6 @@ struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
-            .searchable(text: $searchText, prompt: "Search scans")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .destructive) {
@@ -386,16 +368,15 @@ private enum HistoryDateFormatter {
 }
 
 private struct HistoryEmptyState: View {
-    let isSearching: Bool
     let retention: ScanHistoryRetention
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: isSearching ? "magnifyingglass" : "clock.arrow.circlepath")
+            Image(systemName: "clock.arrow.circlepath")
                 .font(.system(size: 44, weight: .semibold))
                 .foregroundStyle(.secondary)
 
-            Text(isSearching ? "No matching scans" : "No scan history")
+            Text("No scan history")
                 .font(.headline)
 
             Text(message)
@@ -409,10 +390,6 @@ private struct HistoryEmptyState: View {
     }
 
     private var message: LocalizedStringKey {
-        if isSearching {
-            return "Try a different search term."
-        }
-
         if retention == .off {
             return "History is off. Turn it on in Settings if you want Blip to keep local scan history."
         }

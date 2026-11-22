@@ -73,3 +73,13 @@ Test each target on a physical iPhone before trusting it for company rollout:
 - Firefox
 - Brave
 - Custom URL scheme
+
+Custom Return URL:
+
+- Enter a working scheme with and without `://` (for example `msteams` and `msteams://`). Test Custom Return URL opens the app both ways.
+- Enter a scheme no installed app has. Test Custom Return URL shows "No App Opened".
+- With that wrong scheme, scan from the keyboard in another app. Blip shows the return screen with the hint to check the Custom Return URL, and the scan is inserted after returning by hand.
+
+History size:
+
+- With several hundred History entries, the Scan and Settings tabs stay smooth while Blip is open, and a scan from the keyboard returns as fast as with an empty History.

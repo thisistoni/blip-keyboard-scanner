@@ -22,13 +22,21 @@ enum SourceAppReturnController {
         UIApplication.shared.open(url, options: [:], completionHandler: completion)
     }
 
-    static func openCustomReturnURL(_ customURLString: String) {
+    /// Opens the app behind a custom URL scheme. The scheme may be given with
+    /// or without "://". `completion` reports whether an app opened.
+    static func openCustomReturnURL(_ customURLString: String, completion: (@Sendable (Bool) -> Void)? = nil) {
         let trimmed = customURLString.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else {
+            completion?(false)
+            return
+        }
 
         let normalized = trimmed.contains("://") ? trimmed : trimmed + "://"
-        guard let url = URL(string: normalized) else { return }
+        guard let url = URL(string: normalized) else {
+            completion?(false)
+            return
+        }
 
-        UIApplication.shared.open(url, options: [:])
+        UIApplication.shared.open(url, options: [:], completionHandler: completion)
     }
 }

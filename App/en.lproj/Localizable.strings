@@ -176,7 +176,6 @@
 "Maximum default zoom for tiny or distant codes." = "Maximum default zoom for tiny or distant codes.";
 "More" = "More";
 "No cloud sync" = "No cloud sync";
-"No matching scans" = "No matching scans";
 "No scan history" = "No scan history";
 "Not queued" = "Not queued";
 "Only scan codes inside the centered guide box." = "Only scan codes inside the centered guide box.";
@@ -197,7 +196,6 @@
 "Scan history is local to this device and can be cleared from the History tab." = "Scan history is local to this device and can be cleared from the History tab.";
 "Scan suffix" = "Scan suffix";
 "Scans stay on this device" = "Scans stay on this device";
-"Search scans" = "Search scans";
 "Send Feedback" = "Send Feedback";
 "Support Page" = "Support Page";
 "Sound, flashlight, zoom, and scan area" = "Sound, flashlight, zoom, and scan area";
@@ -205,7 +203,6 @@
 "The profile contains an invalid value for %@." = "The profile contains an invalid value for %@.";
 "This profile matches the current settings." = "This profile matches the current settings.";
 "This removes local scan history from this device." = "This removes local scan history from this device.";
-"Try a different search term." = "Try a different search term.";
 "Unknown" = "Unknown";
 "Unknown format" = "Unknown format";
 "Use the normal camera view." = "Use the normal camera view.";
@@ -350,3 +347,9 @@
 "Show Less" = "Show Less";
 "Scan several codes at once" = "Scan several codes at once";
 "Switch to Batch with the stack button at the top of the scanner to collect a list and insert it in one go." = "Switch to Batch with the stack button at the top of the scanner to collect a list and insert it in one go.";
+"For example msteams" = "For example msteams";
+"Your Custom Return URL is the link name (URL scheme) of the app Blip should open after a scan, for example msteams for Microsoft Teams. To find it, ask the app's maker or search the web for the app's name and “URL scheme”. Then test it with the button below." = "Your Custom Return URL is the link name (URL scheme) of the app Blip should open after a scan, for example msteams for Microsoft Teams. To find it, ask the app's maker or search the web for the app's name and “URL scheme”. Then test it with the button below.";
+"No App Opened" = "No App Opened";
+"No installed app answers to this Custom Return URL. Check the spelling." = "No installed app answers to this Custom Return URL. Check the spelling.";
+"Tap the previous-app control in the top-left to return to your app." = "Tap the previous-app control in the top-left to return to your app.";
+"Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion." = "Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion.";

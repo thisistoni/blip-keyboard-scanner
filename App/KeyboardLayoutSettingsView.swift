@@ -479,6 +479,7 @@ struct ReturnInsertionSettingsPage: View {
     private var insertSuffixRawValue = InsertSuffix.none.rawValue
 
     @State private var showingSystemReturnHelp = false
+    @State private var showingCustomReturnFailure = false
 
     private var returnTarget: Binding<ReturnTarget> {
         Binding {
@@ -516,6 +517,11 @@ struct ReturnInsertionSettingsPage: View {
         }
         .navigationTitle("Return & Insertion")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("No App Opened", isPresented: $showingCustomReturnFailure) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("No installed app answers to this Custom Return URL. Check the spelling.")
+        }
         .alert("Return to Safari", isPresented: $showingSystemReturnHelp) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -543,15 +549,24 @@ struct ReturnInsertionSettingsPage: View {
             }
 
             if returnTarget.wrappedValue == .custom {
-                TextField("exampleapp://", text: $customReturnURL)
+                TextField("For example msteams", text: $customReturnURL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.URL)
+                    .explainedBelow()
+
+                Text("Your Custom Return URL is the link name (URL scheme) of the app Blip should open after a scan, for example msteams for Microsoft Teams. To find it, ask the app's maker or search the web for the app's name and “URL scheme”. Then test it with the button below.")
+                    .settingExplanation()
             }
 
             if returnTarget.wrappedValue == .custom {
                 Button {
-                    SourceAppReturnController.openCustomReturnURL(customReturnURL)
+                    SourceAppReturnController.openCustomReturnURL(customReturnURL) { didOpen in
+                        guard !didOpen else { return }
+                        Task { @MainActor in
+                            showingCustomReturnFailure = true
+                        }
+                    }
                 } label: {
                     Label("Test Custom Return URL", systemImage: "arrow.up.forward.app")
                 }
