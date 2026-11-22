@@ -246,7 +246,6 @@
 "Return to your original Safari tab and text field with iOS's previous-app control." = "Return to your original Safari tab and text field with iOS's previous-app control.";
 "Tap Insert Last Scan on the Blip keyboard." = "Tap Insert Last Scan on the Blip keyboard.";
 "For automatic return, choose another supported Return Target." = "For automatic return, choose another supported Return Target.";
-"If the app did not reopen, use iOS's previous-app control." = "If the app did not reopen, use iOS's previous-app control.";
 "Return to Safari Manually" = "Return to Safari Manually";
 "Insert Scans Automatically" = "Insert Scans Automatically";
 "Blip can't automatically return to your original Safari tab." = "Blip can't automatically return to your original Safari tab.";
@@ -352,4 +351,8 @@
 "No App Opened" = "No App Opened";
 "No installed app answers to this Custom Return URL. Check the spelling." = "No installed app answers to this Custom Return URL. Check the spelling.";
 "Tap the previous-app control in the top-left to return to your app." = "Tap the previous-app control in the top-left to return to your app.";
-"Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion." = "Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion.";
+"Your app did not open" = "Your app did not open";
+"%@ did not open" = "%@ did not open";
+"No installed app answers to your Custom Return URL." = "No installed app answers to your Custom Return URL.";
+"Blip could not open %@. Check that it is installed." = "Blip could not open %@. Check that it is installed.";
+"Check the Custom Return URL in Settings under Return & Insertion." = "Check the Custom Return URL in Settings under Return & Insertion.";

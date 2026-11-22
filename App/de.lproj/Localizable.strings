@@ -246,7 +246,6 @@
 "Return to your original Safari tab and text field with iOS's previous-app control." = "Kehre mit der iOS-Steuerung zur vorherigen App zum ursprünglichen Safari-Tab und Textfeld zurück.";
 "Tap Insert Last Scan on the Blip keyboard." = "Tippe auf der Blip-Tastatur auf „Letzten Scan einfügen“.";
 "For automatic return, choose another supported Return Target." = "Wähle für die automatische Rückkehr ein anderes unterstütztes Rückkehrziel.";
-"If the app did not reopen, use iOS's previous-app control." = "Falls die App nicht geöffnet wurde, nutze die iOS-Steuerung zur vorherigen App.";
 "Return to Safari Manually" = "Manuell zu Safari zurück";
 "Insert Scans Automatically" = "Scans automatisch einfügen";
 "Blip can't automatically return to your original Safari tab." = "Blip kann nicht automatisch zu deinem ursprünglichen Safari-Tab zurückkehren.";
@@ -352,4 +351,8 @@
 "No App Opened" = "Keine App geöffnet";
 "No installed app answers to this Custom Return URL. Check the spelling." = "Keine installierte App reagiert auf diese Rückkehr-URL. Prüfe die Schreibweise.";
 "Tap the previous-app control in the top-left to return to your app." = "Tippe oben links auf die Steuerung zur vorherigen App, um zu deiner App zurückzukehren.";
-"Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion." = "Blip konnte deine eigene Rückkehr-URL nicht öffnen. Prüfe sie in den Einstellungen unter „Rückkehr & Einfügen“.";
+"Your app did not open" = "Deine App wurde nicht geöffnet";
+"%@ did not open" = "%@ wurde nicht geöffnet";
+"No installed app answers to your Custom Return URL." = "Keine installierte App reagiert auf deine eigene Rückkehr-URL.";
+"Blip could not open %@. Check that it is installed." = "Blip konnte %@ nicht öffnen. Prüfe, ob die App installiert ist.";
+"Check the Custom Return URL in Settings under Return & Insertion." = "Prüfe die eigene Rückkehr-URL in den Einstellungen unter „Rückkehr & Einfügen“.";

@@ -581,14 +581,60 @@ struct KeyboardReturnGuidanceView: View {
     let guidance: KeyboardReturnGuidance
     let onClose: () -> Void
 
-    private var footnote: LocalizedStringKey {
+    /// Safari is always returned to by hand. For every other target this
+    /// screen only appears when Blip failed to open the app, so it must read
+    /// as a problem, not as a success.
+    private var returnFailed: Bool {
+        guidance.target != .safari
+    }
+
+    private var title: String {
+        guard returnFailed else {
+            return guidance.hasPendingScan
+                ? NSLocalizedString("Scan ready", comment: "Return screen title with a queued scan")
+                : NSLocalizedString("Scanner closed", comment: "Return screen title without a scan")
+        }
+        if guidance.target == .custom {
+            return NSLocalizedString("Your app did not open", comment: "Return screen title when the custom return URL opened nothing")
+        }
+        return String(
+            format: NSLocalizedString("%@ did not open", comment: "Return screen title when the return target app did not open; %@ is the app"),
+            guidance.target.title
+        )
+    }
+
+    private var message: String {
+        guard returnFailed else {
+            return NSLocalizedString("Blip can't automatically return to your original Safari tab.", comment: "Safari return screen message")
+        }
+        if guidance.target == .custom {
+            return NSLocalizedString("No installed app answers to your Custom Return URL.", comment: "Return screen message when the custom return URL opened nothing")
+        }
+        return String(
+            format: NSLocalizedString("Blip could not open %@. Check that it is installed.", comment: "Return screen message when the return target app did not open; %@ is the app"),
+            guidance.target.title
+        )
+    }
+
+    private var footnote: LocalizedStringKey? {
         switch guidance.target {
         case .safari:
             "For automatic return, choose another supported Return Target."
         case .custom:
-            "Blip could not open your Custom Return URL. Check it in Settings under Return & Insertion."
+            "Check the Custom Return URL in Settings under Return & Insertion."
         default:
-            "If the app did not reopen, use iOS's previous-app control."
+            nil
+        }
+    }
+
+    @ViewBuilder
+    private var statusIcon: some View {
+        if returnFailed {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+        } else {
+            Image(systemName: guidance.hasPendingScan ? "checkmark.circle.fill" : "xmark.circle")
+                .foregroundStyle(guidance.hasPendingScan ? .green : .secondary)
         }
     }
 
@@ -597,25 +643,30 @@ struct KeyboardReturnGuidanceView: View {
             VStack(spacing: 24) {
                 Spacer()
 
-                Image(systemName: guidance.hasPendingScan ? "checkmark.circle.fill" : "xmark.circle")
+                statusIcon
                     .font(.system(size: 68))
-                    .foregroundStyle(guidance.hasPendingScan ? .green : .secondary)
+                    .accessibilityHidden(true)
 
                 VStack(spacing: 8) {
-                    Text(guidance.hasPendingScan ? "Scan ready" : "Scanner closed")
+                    Text(title)
                         .font(.title.bold())
+                        .multilineTextAlignment(.center)
 
-                    if guidance.target == .safari {
-                        Text("Blip can't automatically return to your original Safari tab.")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    } else {
+                    Text(message)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                if returnFailed {
+                    // The scan itself is fine: say so, but below the problem.
+                    Label {
                         Text(guidance.hasPendingScan ? "Your scan is queued for the Blip keyboard." : "No scan was queued.")
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
+                    } icon: {
+                        Image(systemName: guidance.hasPendingScan ? "checkmark.circle.fill" : "xmark.circle")
+                            .foregroundStyle(guidance.hasPendingScan ? .green : .secondary)
                     }
+                    .font(.subheadline.weight(.semibold))
                 }
 
                 VStack(alignment: .leading, spacing: 18) {
@@ -660,10 +711,12 @@ struct KeyboardReturnGuidanceView: View {
                 .padding(20)
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
 
-                Text(footnote)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                if let footnote {
+                    Text(footnote)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
 
                 Spacer()
             }

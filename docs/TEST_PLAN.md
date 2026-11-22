@@ -78,7 +78,7 @@ Custom Return URL:
 
 - Enter a working scheme with and without `://` (for example `msteams` and `msteams://`). Test Custom Return URL opens the app both ways.
 - Enter a scheme no installed app has. Test Custom Return URL shows "No App Opened".
-- With that wrong scheme, scan from the keyboard in another app. Blip shows the return screen with the hint to check the Custom Return URL, and the scan is inserted after returning by hand.
+- With that wrong scheme, scan from the keyboard in another app. Blip shows the return screen as a problem: an orange warning sign, "Your app did not open", and below it that the scan is queued. The scan is inserted after returning by hand. The same screen names the browser when Chrome, Edge, Firefox or Brave is the target and is not installed. The Safari screen keeps its green "Scan ready".
 
 History size:
 
