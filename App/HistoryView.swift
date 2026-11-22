@@ -183,10 +183,12 @@ private struct HistoryRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
                 // Short codes stay large; long payloads such as links get the
-                // smaller size so more of them fits in three lines.
+                // smaller size so more of them fits. Always one line, cut off at
+                // the end: copying still takes the whole value.
                 Text(item.value)
                     .font(item.value.count > Self.largeValueLength ? .body.monospaced() : .title3.monospaced())
-                    .lineLimit(3)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -303,13 +305,12 @@ private struct HistoryRow: View {
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    // A button centres wrapped label text unless told otherwise.
+                    // One line per code, cut off at the end; tapping copies all of it.
                     Text(verbatim: code.value)
                         .font(.body.monospaced())
                         .foregroundStyle(Color.primary)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
 
                     if showsFormat {
                         Text(verbatim: ScanHistoryItem.displayName(forCodeFormat: code.codeFormat))
