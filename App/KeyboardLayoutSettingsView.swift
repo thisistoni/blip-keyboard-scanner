@@ -460,7 +460,13 @@ struct ScannerSettingsPage: View {
         } header: {
             Text("History")
         } footer: {
-            Text("Scan history is local to this device and can be cleared from the History tab.")
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString(
+                    "Scan history is local to this device and can be cleared from the History tab. Blip keeps the newest %d entries.",
+                    comment: "History settings footer; %d is the maximum number of history entries"
+                ),
+                ScanHistoryLimit.maximumEntryCount
+            ))
         }
     }
 }

@@ -193,7 +193,7 @@
 "Scan Area" = "Scanbereich";
 "Scan any supported code visible to the camera." = "Jeden unterstützten Code scannen, der in der Kamera sichtbar ist.";
 "Scan formats" = "Scanformate";
-"Scan history is local to this device and can be cleared from the History tab." = "Der Scanverlauf ist lokal auf diesem Gerät und kann im Verlauf-Tab gelöscht werden.";
+"Scan history is local to this device and can be cleared from the History tab. Blip keeps the newest %d entries." = "Der Scanverlauf ist lokal auf diesem Gerät und kann im Verlauf-Tab gelöscht werden. Blip behält die neuesten %%d Einträge.";
 "Scan suffix" = "Scan-Suffix";
 "Scans stay on this device" = "Scans bleiben auf diesem Gerät";
 "Send Feedback" = "Feedback senden";

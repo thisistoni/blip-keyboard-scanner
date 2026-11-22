@@ -18,6 +18,7 @@ enum BatchScanCollectionTests {
         capsTheSpokenValue()
         reportsTheSharedFormatOnly()
         historyEntryKeepsTheBatchCodes()
+        historyKeepsOnlyTheNewestEntriesThatFit()
         print("BatchScanCollectionTests passed")
     }
 
@@ -181,6 +182,46 @@ enum BatchScanCollectionTests {
         var unknown = collection(["1"])
         _ = unknown.append(BatchScanEntry(value: "2", codeFormat: nil))
         precondition(unknown.commonCodeFormat == nil)
+    }
+
+    static func historyKeepsOnlyTheNewestEntriesThatFit() {
+        func item(_ value: String) -> ScanHistoryItem {
+            ScanHistoryItem(value: value, codeFormat: "VNBarcodeSymbologyEAN13", source: .keyboard,
+                            returnTargetRawValue: "chrome", insertionStatus: .queuedForKeyboardInsertion)
+        }
+        // Newest first, as History is stored.
+        let items = (0..<50).map { item("401234567\(1000 + $0)") }
+
+        // Within both limits nothing is dropped.
+        let all = ScanHistoryStore.bounded(items, maximumCount: 50, maximumBytes: 1_000_000)!
+        precondition(all.items == items)
+        precondition((try! JSONDecoder().decode([ScanHistoryItem].self, from: all.data)) == items)
+
+        // Over the count: the newest stay.
+        let counted = ScanHistoryStore.bounded(items, maximumCount: 10, maximumBytes: 1_000_000)!
+        precondition(counted.items == Array(items.prefix(10)))
+
+        // Over the size: fewer entries, still the newest, and the result fits.
+        let sized = ScanHistoryStore.bounded(items, maximumCount: 50, maximumBytes: all.data.count / 2)!
+        precondition(sized.data.count <= all.data.count / 2)
+        precondition(!sized.items.isEmpty && sized.items.count < 50)
+        precondition(sized.items == Array(items.prefix(sized.items.count)))
+        precondition((try! JSONDecoder().decode([ScanHistoryItem].self, from: sized.data)) == sized.items)
+
+        // Not needlessly few: at least a third of what would fit exactly.
+        precondition(sized.items.count >= 50 / 2 / 3)
+
+        // One entry larger than the limit is kept rather than leaving History empty.
+        let huge = [item(String(repeating: "9", count: 5_000)), item("1")]
+        let single = ScanHistoryStore.bounded(huge, maximumCount: 50, maximumBytes: 1_000)!
+        precondition(single.items == [huge[0]])
+
+        // The real limits hold for a history far beyond them.
+        let many = (0..<5_000).map { item("40123456\(10_000 + $0)") }
+        let real = ScanHistoryStore.bounded(many)!
+        precondition(real.items.count <= ScanHistoryLimit.maximumEntryCount)
+        precondition(real.data.count <= ScanHistoryLimit.maximumStoredBytes)
+        precondition(real.items == Array(many.prefix(real.items.count)))
     }
 
     static func historyEntryKeepsTheBatchCodes() {

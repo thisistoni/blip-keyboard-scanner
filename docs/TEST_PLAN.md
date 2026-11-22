@@ -83,3 +83,4 @@ Custom Return URL:
 History size:
 
 - With several hundred History entries, the Scan and Settings tabs stay smooth while Blip is open, and a scan from the keyboard returns as fast as with an empty History.
+- History holds the newest 2,000 entries and at most 512 KB, whatever Keep History is set to; older entries are dropped. Scanner Settings names the limit below Keep History. The limits are covered by `Tests/BatchScanCollectionTests.swift`.

@@ -193,7 +193,7 @@
 "Scan Area" = "Scan Area";
 "Scan any supported code visible to the camera." = "Scan any supported code visible to the camera.";
 "Scan formats" = "Scan formats";
-"Scan history is local to this device and can be cleared from the History tab." = "Scan history is local to this device and can be cleared from the History tab.";
+"Scan history is local to this device and can be cleared from the History tab. Blip keeps the newest %d entries." = "Scan history is local to this device and can be cleared from the History tab. Blip keeps the newest %%d entries.";
 "Scan suffix" = "Scan suffix";
 "Scans stay on this device" = "Scans stay on this device";
 "Send Feedback" = "Send Feedback";

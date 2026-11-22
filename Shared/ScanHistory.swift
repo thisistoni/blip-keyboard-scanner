@@ -175,9 +175,41 @@ enum ScanHistoryRetention: String, CaseIterable, Identifiable {
     }
 }
 
+/// History is a short list of recent scans, not an archive. It is stored as
+/// one value that is read and written whole and that the keyboard loads with
+/// the shared settings, so its size decides how long every scan takes. Both
+/// limits apply whatever the retention setting; the oldest entries go first.
+enum ScanHistoryLimit {
+    /// More than anyone scrolls through, and about 11 ms to read on an M1.
+    static let maximumEntryCount = 2_000
+    /// The count alone does not bound long payloads: a batch entry can hold 50
+    /// codes and a 2D code several kilobytes.
+    static let maximumStoredBytes = 512 * 1024
+}
+
 enum ScanHistoryStore {
     private static let decoder = JSONDecoder()
     private static let encoder = JSONEncoder()
+
+    /// The newest of `items` (given newest first) that fit both limits, with
+    /// their encoding. The newest entry is always kept.
+    static func bounded(
+        _ items: [ScanHistoryItem],
+        maximumCount: Int = ScanHistoryLimit.maximumEntryCount,
+        maximumBytes: Int = ScanHistoryLimit.maximumStoredBytes
+    ) -> (items: [ScanHistoryItem], data: Data)? {
+        var kept = items.count > maximumCount ? Array(items.prefix(maximumCount)) : items
+        guard var data = try? encoder.encode(kept) else { return nil }
+        while data.count > maximumBytes, kept.count > 1 {
+            // Cut in proportion to the overshoot, a little further so one or
+            // two passes are enough even when the entries differ in size.
+            let fitting = kept.count * maximumBytes / data.count * 9 / 10
+            kept = Array(kept.prefix(max(1, min(kept.count - 1, fitting))))
+            guard let shorter = try? encoder.encode(kept) else { return nil }
+            data = shorter
+        }
+        return (kept, data)
+    }
 
     static func items() -> [ScanHistoryItem] {
         rawItems().sorted { $0.scannedAt > $1.scannedAt }
@@ -192,17 +224,18 @@ enum ScanHistoryStore {
             return []
         }
 
-        guard let cutoffDate = retention.cutoffDate(now: now) else {
-            return items()
-        }
-
         let stored = rawItems()
-        let filtered = stored.filter { $0.scannedAt >= cutoffDate }
-        // Usually nothing has expired: leave the stored history untouched then.
-        if filtered.count != stored.count {
-            save(filtered)
+        var kept = stored
+        if let cutoffDate = retention.cutoffDate(now: now) {
+            kept = stored.filter { $0.scannedAt >= cutoffDate }
         }
-        return filtered.sorted { $0.scannedAt > $1.scannedAt }
+        kept.sort { $0.scannedAt > $1.scannedAt }
+        // Usually nothing has expired: leave the stored history untouched then.
+        // A history saved before the limits existed is cut down here once.
+        if kept.count != stored.count || kept.count > ScanHistoryLimit.maximumEntryCount {
+            kept = save(kept)
+        }
+        return kept
     }
 
     static func record(_ item: ScanHistoryItem) {
@@ -248,9 +281,12 @@ enum ScanHistoryStore {
         return (try? decoder.decode([ScanHistoryItem].self, from: data)) ?? []
     }
 
-    private static func save(_ items: [ScanHistoryItem]) {
-        guard let data = try? encoder.encode(items) else { return }
-        SharedKeyboardState.defaults?.set(data, forKey: SharedKeyboardState.Keys.scanHistoryItems)
+    /// Saves `items` (newest first) cut to the limits and returns what was kept.
+    @discardableResult
+    private static func save(_ items: [ScanHistoryItem]) -> [ScanHistoryItem] {
+        guard let bounded = bounded(items) else { return items }
+        SharedKeyboardState.defaults?.set(bounded.data, forKey: SharedKeyboardState.Keys.scanHistoryItems)
+        return bounded.items
     }
 
     private static func refreshLastScanAfterHistoryChange(_ remainingItems: [ScanHistoryItem]) {

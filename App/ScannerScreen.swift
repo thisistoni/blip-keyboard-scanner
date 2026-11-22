@@ -457,25 +457,28 @@ struct ScannerScreen: View {
         lastScannedCode = text
         UIPasteboard.general.string = text
 
-        if !history.isEmpty {
-            ScanHistoryStore.record(contentsOf: history)
-        }
-
         activeSession = nil
 
-        guard session.source == .keyboard else { return }
+        if session.source == .keyboard {
+            SharedKeyboardState.queuePendingInsertion(
+                text,
+                requestIdentifier: session.requestID,
+                autoInsert: session.returnTarget.shouldAutomaticallyInsertScan(userEnabled: SharedKeyboardState.autoInsertScans)
+            )
+            scanInsertionLogger.info("Scan queued for keyboard and copied to clipboard")
 
-        SharedKeyboardState.queuePendingInsertion(
-            text,
-            requestIdentifier: session.requestID,
-            autoInsert: session.returnTarget.shouldAutomaticallyInsertScan(userEnabled: SharedKeyboardState.autoInsertScans)
-        )
-        scanInsertionLogger.info("Scan queued for keyboard and copied to clipboard")
+            let returnDelay: TimeInterval = playScanSound ? 0.45 : 0.2
 
-        let returnDelay: TimeInterval = playScanSound ? 0.45 : 0.2
+            DispatchQueue.main.asyncAfter(deadline: .now() + returnDelay) {
+                finishKeyboardSession(session, hasPendingScan: true)
+            }
+        }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + returnDelay) {
-            finishKeyboardSession(session, hasPendingScan: true)
+        // Last on purpose: the scan is already queued for the keyboard and the
+        // return is already scheduled, so writing History falls into the wait
+        // before the return and never delays the hand-over.
+        if !history.isEmpty {
+            ScanHistoryStore.record(contentsOf: history)
         }
     }
 
