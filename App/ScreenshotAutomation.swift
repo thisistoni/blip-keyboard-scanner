@@ -20,6 +20,9 @@ enum AppStoreScreenshotScene: String {
     case profilePreview
     case profileQR
     case guidance
+    case onboarding
+    case onboardingKeyboard
+    case onboardingReturn
 }
 
 enum ScreenshotAutomation {
@@ -174,6 +177,12 @@ struct AppStoreScreenshotRootView: View {
             if let code = try? CompanyProfileQRCode(profile: .current) {
                 CompanyProfileQRCodeView(code: code)
             }
+        case .onboarding:
+            OnboardingFlowView(status: .current, startPage: .howItWorks, onFinish: {})
+        case .onboardingKeyboard:
+            OnboardingFlowView(status: .current, startPage: .keyboard, onFinish: {})
+        case .onboardingReturn:
+            OnboardingFlowView(status: .current, startPage: .returnTarget, onFinish: {})
         case .guidance:
             KeyboardReturnGuidanceView(
                 // The review follows the stored Return Target, e.g. `-returnTarget custom`.

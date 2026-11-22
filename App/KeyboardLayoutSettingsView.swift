@@ -4,6 +4,7 @@ import UIKit
 struct KeyboardLayoutSettingsView: View {
     @State private var showingMailError = false
     @State private var showingStoreError = false
+    @State private var showingIntroduction = false
 
     private let appStoreReviewURL = URL(string: "https://apps.apple.com/app/id6782697501?action=write-review")!
 
@@ -49,6 +50,12 @@ struct KeyboardLayoutSettingsView: View {
                 }
 
                 Section {
+                    Button {
+                        showingIntroduction = true
+                    } label: {
+                        Label("How Blip Works", systemImage: "questionmark.circle")
+                    }
+
                     NavigationLink {
                         PrivacyTrustView()
                     } label: {
@@ -71,6 +78,11 @@ struct KeyboardLayoutSettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .sheet(isPresented: $showingIntroduction) {
+                OnboardingFlowView(status: .current, isReplay: true) {
+                    showingIntroduction = false
+                }
+            }
             .alert("Mail is not available", isPresented: $showingMailError) {
                 Button("OK", role: .cancel) {}
             } message: {

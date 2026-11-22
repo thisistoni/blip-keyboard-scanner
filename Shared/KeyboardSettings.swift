@@ -526,6 +526,27 @@ enum ScannerScanAreaGuide {
     }
 }
 
+/// Where a new install stands with the introduction. iOS can end the app
+/// while the keyboard is being turned on in Settings, so "in progress" is
+/// stored: the next launch continues instead of treating the install as set up.
+enum OnboardingStage: String {
+    case inProgress
+    case completed
+
+    /// What to do at launch. An install that already has the keyboard, from a
+    /// version before the introduction existed, never sees it.
+    static func atLaunch(stored: OnboardingStage?, keyboardIsSetUp: Bool) -> (stage: OnboardingStage, resumes: Bool) {
+        switch stored {
+        case .completed:
+            (.completed, false)
+        case .inProgress:
+            (.inProgress, true)
+        case nil:
+            (keyboardIsSetUp ? .completed : .inProgress, false)
+        }
+    }
+}
+
 enum ReturnTarget: String, CaseIterable, Identifiable {
     case safari
     case chrome
@@ -750,6 +771,7 @@ enum SharedKeyboardState {
         static let customReturnURL = "customReturnURL"
         static let scanHistoryItems = "scanHistoryItems"
         static let scanHistoryRetention = "scanHistoryRetention"
+        static let onboardingStage = "onboardingStage"
         static let scannerZoomLevel = "scannerZoomLevel"
         static let scannerScanArea = "scannerScanArea"
         static let scannerScanMode = "scannerScanMode"
@@ -1092,6 +1114,22 @@ enum SharedKeyboardState {
         set {
             defaults?.set(newValue.rawValue, forKey: Keys.scannerFlashlightMode)
         }
+    }
+
+    /// Nil until the app has decided whether this install needs the
+    /// introduction. Not part of a company profile.
+    static var onboardingStage: OnboardingStage? {
+        get {
+            defaults?.string(forKey: Keys.onboardingStage).flatMap(OnboardingStage.init(rawValue:))
+        }
+        set {
+            defaults?.set(newValue?.rawValue, forKey: Keys.onboardingStage)
+        }
+    }
+
+    /// The keyboard has run at least once on this device.
+    static var keyboardWasActivated: Bool {
+        defaults?.bool(forKey: Keys.keyboardWasActivated) ?? false
     }
 
     static var scanHistoryRetention: ScanHistoryRetention {

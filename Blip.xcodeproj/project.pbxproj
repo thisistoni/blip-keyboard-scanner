@@ -15,6 +15,7 @@
 		40F8928D20247E13575C8B1D /* CompanyProfilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1998ECC1E46ECFC99560FC /* CompanyProfilesView.swift */; };
 		57529D367579FBB392D934F1 /* KeyboardLayoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26321A8980AA74A3344BA6C0 /* KeyboardLayoutEngine.swift */; };
 		5A58F72225AA9AC29660CDBE /* PrivacyTrustView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271839042EB437631C2FC4D5 /* PrivacyTrustView.swift */; };
+		7B1E4C9A2F3D5E6A8C0B1D2E /* OnboardingFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D2F6A1B3C4E5F7081A2B3C4 /* OnboardingFlowView.swift */; };
 		5EE50794936F1D0649608DC1 /* KeyboardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7636556798B59B570DF3FDEC /* KeyboardSettings.swift */; };
 		6C13EDB8BC00E0DC04A87530 /* KeyboardLayoutSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEA5B0A14FD586843C508DD /* KeyboardLayoutSettingsView.swift */; };
 		81D48C0E1E7375F69D833F3B /* SourceAppReturnController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC5308A53DBB6DC61E056339 /* SourceAppReturnController.swift */; };
@@ -72,6 +73,7 @@
 		1BA697C95BE99E6286ED83DC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		26321A8980AA74A3344BA6C0 /* KeyboardLayoutEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardLayoutEngine.swift; sourceTree = "<group>"; };
 		271839042EB437631C2FC4D5 /* PrivacyTrustView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyTrustView.swift; sourceTree = "<group>"; };
+		9D2F6A1B3C4E5F7081A2B3C4 /* OnboardingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingFlowView.swift; sourceTree = "<group>"; };
 		2A14A6BBDE409BA05BA1074C /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
 		35C96B9AE7D53BEFF432430C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		44CF3526A50C09EB7952DA29 /* BlipKeyboardExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BlipKeyboardExtension.entitlements; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 				5C8F80527E7467A2DC79EA75 /* HistoryView.swift */,
 				92506F914D036514AB4055CD /* Info.plist */,
 				EDEA5B0A14FD586843C508DD /* KeyboardLayoutSettingsView.swift */,
+				9D2F6A1B3C4E5F7081A2B3C4 /* OnboardingFlowView.swift */,
 				271839042EB437631C2FC4D5 /* PrivacyTrustView.swift */,
 				BD8752A0ED9DD4F722F13A8C /* ScannerScreen.swift */,
 				A13418EDC64D955E03A48729 /* ScanSoundPlayer.swift */,
@@ -318,6 +321,7 @@
 				894B18C47218DDC15B7E8A76 /* HistoryView.swift in Sources */,
 				6C13EDB8BC00E0DC04A87530 /* KeyboardLayoutSettingsView.swift in Sources */,
 				28F0AF201A16A119DFD1ADE6 /* KeyboardSettings.swift in Sources */,
+				7B1E4C9A2F3D5E6A8C0B1D2E /* OnboardingFlowView.swift in Sources */,
 				5A58F72225AA9AC29660CDBE /* PrivacyTrustView.swift in Sources */,
 				ED860D2D15741BE25855EFDA /* ScanHistory.swift in Sources */,
 				9F8D52AEDD42C5D3C08FD6FE /* ScanSoundPlayer.swift in Sources */,

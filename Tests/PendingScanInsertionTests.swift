@@ -312,5 +312,27 @@ enum PendingScanInsertionTests {
         let olderReader = JSONDecoder()
         olderReader.dateDecodingStrategy = .iso8601
         precondition((try? olderReader.decode(ReleasedProfileKeys.self, from: batchProfile.exportData()))?.profileVersion == 1)
+
+        introductionOnlyForNewInstalls()
+    }
+
+    static func introductionOnlyForNewInstalls() {
+        // A new install without the keyboard gets the introduction from the start.
+        let new = OnboardingStage.atLaunch(stored: nil, keyboardIsSetUp: false)
+        precondition(new.stage == .inProgress && !new.resumes)
+
+        // An install that already has the keyboard (updated from an earlier
+        // version) never sees it.
+        let existing = OnboardingStage.atLaunch(stored: nil, keyboardIsSetUp: true)
+        precondition(existing.stage == .completed && !existing.resumes)
+
+        // iOS ended the app while the keyboard was turned on in Settings: the
+        // next launch continues, although the keyboard is set up by now.
+        let interrupted = OnboardingStage.atLaunch(stored: .inProgress, keyboardIsSetUp: true)
+        precondition(interrupted.stage == .inProgress && interrupted.resumes)
+
+        // Finished once, never again, even if the keyboard is turned off later.
+        let done = OnboardingStage.atLaunch(stored: .completed, keyboardIsSetUp: false)
+        precondition(done.stage == .completed && !done.resumes)
     }
 }

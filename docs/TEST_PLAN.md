@@ -84,3 +84,11 @@ History size:
 
 - With several hundred History entries, the Scan and Settings tabs stay smooth while Blip is open, and a scan from the keyboard returns as fast as with an empty History.
 - History holds the newest 2,000 entries and at most 512 KB, whatever Keep History is set to; older entries are dropped. Scanner Settings names the limit below Keep History. The limits are covered by `Tests/BatchScanCollectionTests.swift`.
+
+## Introduction
+
+- New install (delete Blip first, keyboard not enabled): Blip opens on the introduction. Page 1 explains the three steps; page 2 opens Settings and shows "The Blip keyboard is on." after returning; page 3 sets the Return Target; Done opens the Scan tab.
+- While turning the keyboard on in Settings, iOS may end Blip. Opening Blip again continues on page 3, not on the Scan tab.
+- Update from an earlier version with the keyboard already on: the introduction does not appear.
+- A scan requested from the keyboard during the introduction opens the scanner as usual.
+- Settings > How Blip Works opens the introduction again; it can be closed on every page and changes the Return Target only when another one is chosen.
