@@ -552,12 +552,12 @@ private struct ScannerWorkflowGuideView: View {
             ScannerWorkflowGuideRow(
                 systemImage: "barcode.viewfinder",
                 title: "Scan from the keyboard",
-                message: "Blip returns automatically to Chrome, Edge, Firefox, or Brave. Safari uses manual return and Insert Last Scan."
+                message: "Blip then opens the **Return Target** you set in Settings: Chrome, Edge, Firefox or Brave. For Safari and other apps you go back yourself and tap **Insert Last Scan**."
             )
 
             ScannerWorkflowGuideRow(
                 systemImage: "text.cursor",
-                title: "Inserted where you started",
+                title: "The code is inserted",
                 message: "Blip attempts to insert the scan and copies it for Paste if needed."
             )
 

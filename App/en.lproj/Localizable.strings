@@ -104,7 +104,7 @@
 "Check Again" = "Check Again";
 "How It Works" = "How It Works";
 "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button." = "In Safari or another app, tap a text field and switch to Blip with the bottom-left keyboard button.";
-"Inserted where you started" = "Inserted where you started";
+"The code is inserted" = "The code is inserted";
 "Scan from the keyboard" = "Scan from the keyboard";
 "Still seeing setup?" = "Still seeing setup?";
 "Tap Scan, scan the barcode, and Blip returns to the original app." = "Tap Scan, scan the barcode, and Blip returns to the original app.";
@@ -242,7 +242,7 @@
 "How to Return to Safari" = "How to Return to Safari";
 "Return to Safari" = "Return to Safari";
 "Blip can't automatically return to your original Safari tab. Use iOS's previous-app control or swipe right on the Home indicator. In the original Safari field, tap Insert Last Scan on the Blip keyboard. For automatic return, choose another supported Return Target." = "Blip can't automatically return to your original Safari tab. Use iOS's previous-app control or swipe right on the Home indicator. In the original Safari field, tap Insert Last Scan on the Blip keyboard. For automatic return, choose another supported Return Target.";
-"Blip returns automatically to Chrome, Edge, Firefox, or Brave. Safari uses manual return and Insert Last Scan." = "Blip returns automatically to Chrome, Edge, Firefox, or Brave. Safari uses manual return and Insert Last Scan.";
+"Blip then opens the **Return Target** you set in Settings: Chrome, Edge, Firefox or Brave. For Safari and other apps you go back yourself and tap **Insert Last Scan**." = "Blip then opens the **Return Target** you set in Settings: Chrome, Edge, Firefox or Brave. For Safari and other apps you go back yourself and tap **Insert Last Scan**.";
 "Return to your original Safari tab and text field with iOS's previous-app control." = "Return to your original Safari tab and text field with iOS's previous-app control.";
 "Tap Insert Last Scan on the Blip keyboard." = "Tap Insert Last Scan on the Blip keyboard.";
 "For automatic return, choose another supported Return Target." = "For automatic return, choose another supported Return Target.";
