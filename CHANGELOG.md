@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.0
+
+- Batch scan mode (opt-in): collect up to 50 codes and insert them as one text, joined by a comma, semicolon, space, tab or new line. Single scan stays the default.
+- When several codes are in view, each one is outlined and the user taps the code to use.
+- A three-step introduction for new installs: how a scan reaches a text field, turning on the keyboard, and choosing the Return Target. It can be reopened in Settings under How Blip Works.
+- Custom Return URL: the field explains what to enter, the test button reports when no app opened, and a failed return is shown as a problem instead of "Scan ready".
+- History: a batch is one entry, a value stays on one line, and the newest 2,000 entries are kept. History search is removed.
+- History is read and written once per scan and no longer rewritten by the setup timer.
+- Camera: 4K capture with near-range autofocus, frame analysis off the main queue, and recovery after interruptions.
+- Scanner Settings grouped into Camera, Codes, and Single and Batch Scan.
+
 ## 1.0.1
 
 - Improve scan return and one-time insertion in supported browser targets.
