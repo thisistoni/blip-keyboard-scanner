@@ -7,12 +7,24 @@ struct AppRootView: View {
     @State private var scannerLaunchRequest: KeyboardScanRequest?
     @State private var didResetTestScope = false
     @State private var setupStatus = SetupVerificationStatus.current
+    /// The page the introduction opens on, while it is shown.
+    @State private var onboardingStartPage: OnboardingPage?
+    @State private var didDecideOnboarding = false
 
     private let setupPoller = Timer.publish(every: 0.7, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Group {
-            if setupStatus.isKeyboardEnabled || scannerLaunchRequest != nil {
+            // A scan requested from the keyboard always gets the scanner.
+            if scannerLaunchRequest != nil {
+                appTabs
+            } else if let onboardingStartPage {
+                OnboardingFlowView(status: setupStatus, startPage: onboardingStartPage) {
+                    SharedKeyboardState.onboardingStage = .completed
+                    self.onboardingStartPage = nil
+                    selectedTab = .scan
+                }
+            } else if setupStatus.isKeyboardEnabled {
                 appTabs
             } else {
                 SetupFlowView(status: setupStatus, onCheckAgain: refreshSetupStatus)
@@ -25,6 +37,7 @@ struct AppRootView: View {
                 didResetTestScope = true
             }
             refreshSetupStatus()
+            decideOnboarding()
         }
         .onChange(of: selectedTab) { tab in
             if tab != .scan { SharedKeyboardState.cancelKeyboardTest() }
@@ -35,7 +48,10 @@ struct AppRootView: View {
             refreshSetupStatus()
         }
         .onReceive(setupPoller) { _ in
-            refreshSetupStatus()
+            // Only the keyboard state. Expired history is removed when the app
+            // opens or becomes active; reading the whole history here, several
+            // times a second, made a long history slow the app down.
+            setupStatus = .current
         }
     }
 
@@ -70,6 +86,28 @@ struct AppRootView: View {
         refreshSetupStatus()
     }
 
+    /// Once per launch: new installs get the introduction, and one that was
+    /// interrupted (iOS may end Blip while the keyboard is turned on in
+    /// Settings) continues where the user is.
+    private func decideOnboarding() {
+        guard !didDecideOnboarding else { return }
+        didDecideOnboarding = true
+
+        let keyboardIsEnabled = setupStatus.isKeyboardEnabled
+        let launch = OnboardingStage.atLaunch(
+            stored: SharedKeyboardState.onboardingStage,
+            keyboardIsSetUp: keyboardIsEnabled || SharedKeyboardState.keyboardWasActivated
+        )
+        SharedKeyboardState.onboardingStage = launch.stage
+        guard launch.stage == .inProgress else { return }
+
+        if launch.resumes {
+            onboardingStartPage = keyboardIsEnabled ? .returnTarget : .keyboard
+        } else {
+            onboardingStartPage = .howItWorks
+        }
+    }
+
     private func refreshSetupStatus() {
         setupStatus = .current
         _ = ScanHistoryStore.applyRetention()
@@ -94,7 +132,7 @@ struct SetupVerificationStatus: Equatable {
     }
 }
 
-private struct SetupFlowView: View {
+struct SetupFlowView: View {
     let status: SetupVerificationStatus
     let onCheckAgain: () -> Void
 

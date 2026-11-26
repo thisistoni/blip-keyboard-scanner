@@ -33,8 +33,7 @@ enum SupportEmail {
 
 
             Scan:
-            Value: \(item.value)
-            Format: \(item.codeFormat ?? "Unknown")
+            \(scanDescription(for: item))
             Date: \(Self.dateFormatter.string(from: item.scannedAt))
             Source: \(item.source.title)
             Return Target: \(item.returnTarget?.title ?? "None")
@@ -44,6 +43,18 @@ enum SupportEmail {
             \(settingsContext())
             """
         )
+    }
+
+    /// A single scan is its value and format; a batch lists every code with its
+    /// own format, since a problem usually concerns one of them.
+    private static func scanDescription(for item: ScanHistoryItem) -> String {
+        guard let codes = item.batchCodes else {
+            return "Value: \(item.value)\nFormat: \(item.codeFormat ?? "Unknown")"
+        }
+        let lines = codes.enumerated().map { index, code in
+            "\(index + 1). \(code.value) (\(code.codeFormat ?? "Unknown"))"
+        }
+        return (["Batch of \(codes.count) codes:"] + lines).joined(separator: "\n")
     }
 
     static func open(_ url: URL, onFailure: @escaping () -> Void) {

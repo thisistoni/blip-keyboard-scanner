@@ -4,6 +4,7 @@ import UIKit
 struct KeyboardLayoutSettingsView: View {
     @State private var showingMailError = false
     @State private var showingStoreError = false
+    @State private var showingIntroduction = false
 
     private let appStoreReviewURL = URL(string: "https://apps.apple.com/app/id6782697501?action=write-review")!
 
@@ -49,6 +50,12 @@ struct KeyboardLayoutSettingsView: View {
                 }
 
                 Section {
+                    Button {
+                        showingIntroduction = true
+                    } label: {
+                        Label("How Blip Works", systemImage: "questionmark.circle")
+                    }
+
                     NavigationLink {
                         PrivacyTrustView()
                     } label: {
@@ -64,13 +71,18 @@ struct KeyboardLayoutSettingsView: View {
                     Button {
                         rateBlip()
                     } label: {
-                        Label("Rate Blip", systemImage: "star.fill")
+                        Label("Rate Blip", systemImage: "star")
                     }
                 } header: {
                     Text("Help & Feedback")
                 }
             }
             .navigationTitle("Settings")
+            .sheet(isPresented: $showingIntroduction) {
+                OnboardingFlowView(status: .current, isReplay: true) {
+                    showingIntroduction = false
+                }
+            }
             .alert("Mail is not available", isPresented: $showingMailError) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -108,7 +120,7 @@ struct KeyboardLayoutSettingsView: View {
     }
 }
 
-private struct KeyboardSettingsPage: View {
+struct KeyboardSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.keyboardLanguage, store: SharedKeyboardState.appStorageDefaults)
     private var keyboardLanguageRawValue = SharedKeyboardState.keyboardLanguage.rawValue
 
@@ -262,7 +274,7 @@ private struct KeyboardSettingsPage: View {
     }
 }
 
-private struct ScannerSettingsPage: View {
+struct ScannerSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.scannerFlashlightMode, store: SharedKeyboardState.appStorageDefaults)
     private var scannerFlashlightModeRawValue = ScannerFlashlightMode.off.rawValue
 
@@ -274,6 +286,15 @@ private struct ScannerSettingsPage: View {
 
     @AppStorage(SharedKeyboardState.Keys.scannerScanArea, store: SharedKeyboardState.appStorageDefaults)
     private var scannerScanAreaRawValue = SharedKeyboardState.scannerScanArea.rawValue
+
+    @AppStorage(SharedKeyboardState.Keys.scannerScanMode, store: SharedKeyboardState.appStorageDefaults)
+    private var scannerScanModeRawValue = SharedKeyboardState.scannerScanMode.rawValue
+
+    @AppStorage(SharedKeyboardState.Keys.batchSeparator, store: SharedKeyboardState.appStorageDefaults)
+    private var batchSeparatorRawValue = SharedKeyboardState.batchSeparator.rawValue
+
+    @AppStorage(SharedKeyboardState.Keys.batchSkipDuplicates, store: SharedKeyboardState.appStorageDefaults)
+    private var batchSkipDuplicates = SharedKeyboardState.batchSkipDuplicates
 
     @AppStorage(SharedKeyboardState.Keys.playScanSound, store: SharedKeyboardState.appStorageDefaults)
     private var playScanSound = SharedKeyboardState.playScanSound
@@ -313,6 +334,22 @@ private struct ScannerSettingsPage: View {
         }
     }
 
+    private var scannerScanMode: Binding<ScannerScanMode> {
+        Binding {
+            ScannerScanMode(rawValue: scannerScanModeRawValue) ?? .single
+        } set: { newValue in
+            scannerScanModeRawValue = newValue.rawValue
+        }
+    }
+
+    private var batchSeparator: Binding<BatchSeparator> {
+        Binding {
+            BatchSeparator(rawValue: batchSeparatorRawValue) ?? .comma
+        } set: { newValue in
+            batchSeparatorRawValue = newValue.rawValue
+        }
+    }
+
     private var historyRetention: Binding<ScanHistoryRetention> {
         Binding {
             ScanHistoryRetention(rawValue: historyRetentionRawValue) ?? .thirtyDays
@@ -323,7 +360,9 @@ private struct ScannerSettingsPage: View {
 
     var body: some View {
         List {
-            scannerSection
+            cameraSection
+            scanningSection
+            batchSection
             historySection
         }
         .navigationTitle("Scanner Settings")
@@ -333,44 +372,89 @@ private struct ScannerSettingsPage: View {
         }
     }
 
-    private var scannerSection: some View {
+    /// How the camera starts when the scanner opens.
+    private var cameraSection: some View {
         Section {
             Toggle("Flashlight by default", isOn: flashlightEnabledByDefault)
-            Toggle("Blip sound on scan", isOn: $playScanSound)
-
-            Picker("Scan Formats", selection: scanFormatProfile) {
-                ForEach(ScanFormatProfile.allCases) { profile in
-                    Text(profile.title).tag(profile)
-                }
-            }
-
-            Text(scanFormatProfile.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
 
             Picker("Default Zoom", selection: scannerZoomLevel) {
                 ForEach(ScannerZoomLevel.allCases) { zoomLevel in
                     Text(zoomLevel.title).tag(zoomLevel)
                 }
             }
+            .explainedBelow()
 
             Text(scannerZoomLevel.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
 
             Picker("Scan Area", selection: scannerScanArea) {
                 ForEach(ScannerScanArea.allCases) { area in
                     Text(area.title).tag(area)
                 }
             }
+            .explainedBelow()
 
             Text(scannerScanArea.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
         } header: {
-            Text("Scanner")
+            Text("Camera")
+        }
+    }
+
+    /// What is recognised and how a scan is confirmed.
+    private var scanningSection: some View {
+        Section {
+            Picker("Scan Formats", selection: scanFormatProfile) {
+                ForEach(ScanFormatProfile.allCases) { profile in
+                    Text(profile.title).tag(profile)
+                }
+            }
+            .explainedBelow()
+
+            Text(scanFormatProfile.wrappedValue.detail)
+                .settingExplanation()
+
+            Toggle("Blip sound on scan", isOn: $playScanSound)
+        } header: {
+            Text("Codes")
         } footer: {
             Text("Regular QR codes are inserted as text. Company profiles open a preview.")
+        }
+    }
+
+    /// One code per scan or a list, and how the list is handed over.
+    private var batchSection: some View {
+        Section {
+            Picker("Scan Mode", selection: scannerScanMode) {
+                ForEach(ScannerScanMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .explainedBelow()
+
+            Text(scannerScanMode.wrappedValue.detail)
+                .settingExplanation()
+
+            // Always shown: the scanner's toolbar can switch to Batch whatever the default.
+            Picker("Separator", selection: batchSeparator) {
+                ForEach(BatchSeparator.allCases) { separator in
+                    Text(separator.title).tag(separator)
+                }
+            }
+            .explainedBelow()
+
+            Text(batchSeparator.wrappedValue.detail)
+                .settingExplanation()
+
+            Toggle("Skip Duplicate Codes", isOn: $batchSkipDuplicates)
+                .explainedBelow()
+
+            Text("In Batch mode, a code that is already in the list is not added again. Leave this off to count identical items by scanning each one.")
+                .settingExplanation()
+        } header: {
+            Text("Single and Batch Scan")
+        } footer: {
+            Text("Separator and duplicates apply whenever you scan in Batch mode, including when you switch to Batch in the scanner.")
         }
     }
 
@@ -381,19 +465,25 @@ private struct ScannerSettingsPage: View {
                     Text(retention.title).tag(retention)
                 }
             }
+            .explainedBelow()
 
             Text(historyRetention.wrappedValue.detail)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .settingExplanation()
         } header: {
             Text("History")
         } footer: {
-            Text("Scan history is local to this device and can be cleared from the History tab.")
+            Text(String.localizedStringWithFormat(
+                NSLocalizedString(
+                    "Scan history is local to this device and can be cleared from the History tab. Blip keeps the newest %d entries.",
+                    comment: "History settings footer; %d is the maximum number of history entries"
+                ),
+                ScanHistoryLimit.maximumEntryCount
+            ))
         }
     }
 }
 
-private struct ReturnInsertionSettingsPage: View {
+struct ReturnInsertionSettingsPage: View {
     @AppStorage(SharedKeyboardState.Keys.returnTarget, store: SharedKeyboardState.appStorageDefaults)
     private var returnTargetRawValue = ReturnTarget.safari.rawValue
 
@@ -407,6 +497,7 @@ private struct ReturnInsertionSettingsPage: View {
     private var insertSuffixRawValue = InsertSuffix.none.rawValue
 
     @State private var showingSystemReturnHelp = false
+    @State private var showingCustomReturnFailure = false
 
     private var returnTarget: Binding<ReturnTarget> {
         Binding {
@@ -444,6 +535,11 @@ private struct ReturnInsertionSettingsPage: View {
         }
         .navigationTitle("Return & Insertion")
         .navigationBarTitleDisplayMode(.inline)
+        .alert("No App Opened", isPresented: $showingCustomReturnFailure) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("No installed app answers to this Custom Return URL. Check the spelling.")
+        }
         .alert("Return to Safari", isPresented: $showingSystemReturnHelp) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -461,25 +557,34 @@ private struct ReturnInsertionSettingsPage: View {
                         .tag(target)
                 }
             }
+            .listRowSeparator(returnTarget.wrappedValue != .safari ? .hidden : .automatic, edges: .bottom)
 
             if returnTarget.wrappedValue != .safari {
                 Text(automaticReturnDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .settingExplanation()
 
                 Toggle("Insert Scans Automatically", isOn: $autoInsertScans)
             }
 
             if returnTarget.wrappedValue == .custom {
-                TextField("exampleapp://", text: $customReturnURL)
+                TextField("For example msteams", text: $customReturnURL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.URL)
+                    .explainedBelow()
+
+                Text("Your Custom Return URL is the link name (URL scheme) of the app Blip should open after a scan, for example msteams for Microsoft Teams. To find it, ask the app's maker or search the web for the app's name and “URL scheme”. Then test it with the button below.")
+                    .settingExplanation()
             }
 
             if returnTarget.wrappedValue == .custom {
                 Button {
-                    SourceAppReturnController.openCustomReturnURL(customReturnURL)
+                    SourceAppReturnController.openCustomReturnURL(customReturnURL) { didOpen in
+                        guard !didOpen else { return }
+                        Task { @MainActor in
+                            showingCustomReturnFailure = true
+                        }
+                    }
                 } label: {
                     Label("Test Custom Return URL", systemImage: "arrow.up.forward.app")
                 }
@@ -506,6 +611,25 @@ private struct ReturnInsertionSettingsPage: View {
         } header: {
             Text("Scan Suffix")
         }
+    }
+}
+
+private extension View {
+    /// A setting whose explanation follows as its own row: no line between them.
+    func explainedBelow() -> some View {
+        listRowSeparator(.hidden, edges: .bottom)
+    }
+
+    /// The explanation of the setting above, pulled up so both read as one row.
+    func settingExplanation() -> some View {
+        font(.footnote)
+            .foregroundStyle(.secondary)
+            // Top-aligned in the row: a one-line text would otherwise be
+            // centred in the minimum row height, away from its setting.
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.top, -12)
+            .padding(.bottom, -4)
+            .listRowSeparator(.hidden, edges: .top)
     }
 }
 

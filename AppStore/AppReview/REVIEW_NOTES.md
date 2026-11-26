@@ -20,14 +20,21 @@ identifier. If a configured app cannot handle its URL scheme, the reviewer can
 use iOS's system Back-to-app control to return to the original text field. The
 queued scan remains available through Insert Last Scan.
 
-Keyboard setup steps:
+Keyboard setup steps (from version 1.1.0 a new install starts with a
+three-step introduction):
 
-1. Open Blip.
-2. Tap Open Keyboard Settings.
+1. Open Blip. The introduction explains the workflow. Tap Continue.
+2. Tap Open Settings.
 3. In iOS Settings, tap Keyboards.
 4. Enable Blip.
 5. Enable Allow Full Access.
-6. Return to Blip and tap Check Again.
+6. Return to Blip. The introduction shows "The Blip keyboard is on." Tap Continue.
+7. Choose the app Blip should open after a scan (the Return Target), then tap Done. Choose Chrome, Edge, Firefox or Brave for automatic return, or "Safari or another app" for manual return.
+
+Batch scanning (new in 1.1.0): in the scanner, the stack button at the top
+switches between Single and Batch. In Batch mode every scanned code is added
+to a list, and the Insert Codes button hands the whole list to the text field
+as one text.
 
 Why Full Access is requested:
 

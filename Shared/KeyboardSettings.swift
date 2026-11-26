@@ -262,6 +262,116 @@ enum InsertSuffix: String, CaseIterable, Identifiable {
     }
 }
 
+enum ScannerScanMode: String, CaseIterable, Identifiable {
+    /// The scanner closes after one code (the original behaviour).
+    case single
+    /// The scanner stays open and collects a list of codes.
+    case batch
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .single:
+            NSLocalizedString("Single", comment: "Single scan mode")
+        case .batch:
+            NSLocalizedString("Batch", comment: "Batch scan mode")
+        }
+    }
+
+    /// Shown next to the mode in the scanner's mode menu.
+    var systemImage: String {
+        switch self {
+        case .single:
+            "viewfinder"
+        case .batch:
+            "square.stack.3d.up"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .single:
+            NSLocalizedString(
+                "The scanner closes after one code. To collect several codes, switch to Batch with the stack button at the top of the scanner.",
+                comment: "Single scan mode detail"
+            )
+        case .batch:
+            String(
+                format: NSLocalizedString(
+                    "The scanner stays open and lists up to %d codes. Insert them all at once; the Scan Suffix follows the last code.",
+                    comment: "Batch scan mode detail; %d is the maximum number of codes"
+                ),
+                BatchScanLimit.maximumCodeCount
+            )
+        }
+    }
+}
+
+enum BatchScanLimit {
+    /// Codes per batch. Large enough for a shelf or carton count, small enough
+    /// to review on a phone. Only the count is limited: the joined text that
+    /// travels through the shared defaults to the keyboard grows with the codes'
+    /// length (2D codes can carry long payloads).
+    static let maximumCodeCount = 50
+}
+
+enum BatchSeparator: String, CaseIterable, Identifiable {
+    case comma
+    case semicolon
+    case space
+    case tab
+    case newline
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .comma:
+            NSLocalizedString("Comma", comment: "Batch separator comma")
+        case .semicolon:
+            NSLocalizedString("Semicolon", comment: "Batch separator semicolon")
+        case .space:
+            NSLocalizedString("Space", comment: "Space scan suffix")
+        case .tab:
+            NSLocalizedString("Tab", comment: "Tab scan suffix")
+        case .newline:
+            NSLocalizedString("New Line", comment: "Batch separator new line")
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .comma:
+            NSLocalizedString("Example: 123,456,789", comment: "Batch separator comma example")
+        case .semicolon:
+            NSLocalizedString("Example: 123;456;789", comment: "Batch separator semicolon example")
+        case .space:
+            NSLocalizedString("Example: 123 456 789", comment: "Batch separator space example")
+        case .tab:
+            NSLocalizedString("Suits spreadsheet-style inputs. Some fields ignore tabs or move to the next field instead.", comment: "Batch separator tab detail")
+        case .newline:
+            NSLocalizedString("Suits multi-line fields and spreadsheet-style inputs. Some single-line fields may submit the form or ignore the line break.", comment: "Batch separator new line detail")
+        }
+    }
+
+    /// Text placed between two codes; never after the last one.
+    var text: String {
+        switch self {
+        case .comma:
+            ","
+        case .semicolon:
+            ";"
+        case .space:
+            " "
+        case .tab:
+            "\t"
+        case .newline:
+            "\n"
+        }
+    }
+}
+
 enum ScannerFlashlightMode: String, CaseIterable, Identifiable {
     case off
     case on
@@ -413,6 +523,27 @@ enum ScannerScanAreaGuide {
             width: guideSize.width,
             height: guideSize.height
         )
+    }
+}
+
+/// Where a new install stands with the introduction. iOS can end the app
+/// while the keyboard is being turned on in Settings, so "in progress" is
+/// stored: the next launch continues instead of treating the install as set up.
+enum OnboardingStage: String {
+    case inProgress
+    case completed
+
+    /// What to do at launch. An install that already has the keyboard, from a
+    /// version before the introduction existed, never sees it.
+    static func atLaunch(stored: OnboardingStage?, keyboardIsSetUp: Bool) -> (stage: OnboardingStage, resumes: Bool) {
+        switch stored {
+        case .completed:
+            (.completed, false)
+        case .inProgress:
+            (.inProgress, true)
+        case nil:
+            (keyboardIsSetUp ? .completed : .inProgress, false)
+        }
     }
 }
 
@@ -640,8 +771,12 @@ enum SharedKeyboardState {
         static let customReturnURL = "customReturnURL"
         static let scanHistoryItems = "scanHistoryItems"
         static let scanHistoryRetention = "scanHistoryRetention"
+        static let onboardingStage = "onboardingStage"
         static let scannerZoomLevel = "scannerZoomLevel"
         static let scannerScanArea = "scannerScanArea"
+        static let scannerScanMode = "scannerScanMode"
+        static let batchSeparator = "batchSeparator"
+        static let batchSkipDuplicates = "batchSkipDuplicates"
     }
 
     static var defaults: UserDefaults? {
@@ -981,6 +1116,22 @@ enum SharedKeyboardState {
         }
     }
 
+    /// Nil until the app has decided whether this install needs the
+    /// introduction. Not part of a company profile.
+    static var onboardingStage: OnboardingStage? {
+        get {
+            defaults?.string(forKey: Keys.onboardingStage).flatMap(OnboardingStage.init(rawValue:))
+        }
+        set {
+            defaults?.set(newValue?.rawValue, forKey: Keys.onboardingStage)
+        }
+    }
+
+    /// The keyboard has run at least once on this device.
+    static var keyboardWasActivated: Bool {
+        defaults?.bool(forKey: Keys.keyboardWasActivated) ?? false
+    }
+
     static var scanHistoryRetention: ScanHistoryRetention {
         get {
             let rawValue = defaults?.string(forKey: Keys.scanHistoryRetention) ?? ScanHistoryRetention.thirtyDays.rawValue
@@ -1008,6 +1159,37 @@ enum SharedKeyboardState {
         }
         set {
             defaults?.set(newValue.rawValue, forKey: Keys.scannerScanArea)
+        }
+    }
+
+    static var scannerScanMode: ScannerScanMode {
+        get {
+            let rawValue = defaults?.string(forKey: Keys.scannerScanMode) ?? ScannerScanMode.single.rawValue
+            return ScannerScanMode(rawValue: rawValue) ?? .single
+        }
+        set {
+            defaults?.set(newValue.rawValue, forKey: Keys.scannerScanMode)
+        }
+    }
+
+    static var batchSeparator: BatchSeparator {
+        get {
+            let rawValue = defaults?.string(forKey: Keys.batchSeparator) ?? BatchSeparator.comma.rawValue
+            return BatchSeparator(rawValue: rawValue) ?? .comma
+        }
+        set {
+            defaults?.set(newValue.rawValue, forKey: Keys.batchSeparator)
+        }
+    }
+
+    /// Batch scans: a code already in the list is not added again. Off by
+    /// default, so counting identical items by scanning each one keeps working.
+    static var batchSkipDuplicates: Bool {
+        get {
+            defaults?.bool(forKey: Keys.batchSkipDuplicates) ?? false
+        }
+        set {
+            defaults?.set(newValue, forKey: Keys.batchSkipDuplicates)
         }
     }
 
